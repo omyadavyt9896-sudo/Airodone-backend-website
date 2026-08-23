@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Certificate | airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <h1>Certificate Verification</h1>
+            <p>Verify authentic Airodrone STEM & Robotics Certificates of Completion.</p>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="contact-form-wrapper" style="max-width: 550px; margin: 0 auto;">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔍</div>
+                <h2>Enter Certificate ID</h2>
+                <p style="color: var(--color-text-muted);">Schools, employers, and organizations can instantly verify any Airodrone certificate.</p>
+            </div>
+
+            <form method="post" action="{{ url_for('verify_lookup') }}" class="contact-form">
+                <div class="form-field">
+                    <label for="certificate_id">Certificate ID<span class="required">*</span></label>
+                    <input type="text" id="certificate_id" name="certificate_id" required 
+                           placeholder="e.g. AIR-2026-A1B2C3D4" 
+                           style="font-family: monospace; font-size: 1.1rem; text-transform: uppercase;">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Verify Certificate &rarr;</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

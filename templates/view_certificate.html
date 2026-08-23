@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if not_found %}Certificate Not Found | airodrone{% else %}Certificate {{ cert.certificate_id }} | airodrone{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if not_found %}
+<section class="section">
+    <div class="container text-center" style="padding: 4rem 0;">
+        <h1>Certificate Not Found</h1>
+        <p>Sorry, the certificate you requested does not exist or is invalid.</p>
+        <a href="{{ url_for('student_certificates') }}" class="btn btn-primary">My Certificates</a>
+    </div>
+</section>
+{% else %}
+
+<section class="section">
+    <div class="container">
+        <!-- Top Toolbar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <a href="{{ url_for('student_certificates') }}" class="btn btn-outline">&larr; Back to My Certificates</a>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="{{ url_for('download_certificate_pdf', certificate_id=cert.certificate_id) }}" class="btn btn-primary">
+                    Download PDF Certificate &darr;
+                </a>
+                <a href="{{ url_for('verify_certificate', certificate_id=cert.certificate_id) }}" class="btn btn-secondary" target="_blank">
+                    Public Verification Page &nearr;
+                </a>
+            </div>
+        </div>
+
+        <!-- Printable Certificate Container -->
+        <div class="certificate-paper-wrap">
+            <div class="certificate-inner-border">
+                <div class="cert-header-brand">
+                    <h2 class="cert-brand-title">AIRODRONE</h2>
+                    <p class="cert-brand-subtitle">FUTURE-READY STEM & INNOVATION LEARNING</p>
+                    <div class="cert-divider-line"></div>
+                </div>
+
+                <div class="cert-body-content">
+                    <h1 class="cert-main-heading">CERTIFICATE OF COMPLETION</h1>
+                    <p class="cert-presentation-text">This certificate is proudly presented to</p>
+
+                    <h2 class="cert-student-name">{{ cert.student_name }}</h2>
+                    <div class="cert-name-underline"></div>
+
+                    <p class="cert-fulfillment-text">for successfully completing the STEM course</p>
+                    <h3 class="cert-course-name">{{ cert.course_name }}</h3>
+
+                    <div class="cert-stats-badge">
+                        Verified Course Completion: <strong>{{ cert.completion_percentage }}%</strong>
+                    </div>
+                </div>
+
+                <div class="cert-footer-row">
+                    <div class="cert-meta-col">
+                        <p style="margin: 0 0 0.25rem 0;"><strong>Certificate ID:</strong> <code>{{ cert.certificate_id }}</code></p>
+                        <p style="margin: 0 0 0.25rem 0;"><strong>Issue Date:</strong> {{ cert.issued_at }}</p>
+                        <p style="margin: 0; font-size: 0.8rem; color: var(--color-text-muted);">
+                            Verify at: <code>airodrone.com/verify-certificate/{{ cert.certificate_id }}</code>
+                        </p>
+                    </div>
+                    <div class="cert-signature-col">
+                        <div class="signature-line"></div>
+                        <strong>Airodrone Academic Board</strong>
+                        <span>Authorized Signatory</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

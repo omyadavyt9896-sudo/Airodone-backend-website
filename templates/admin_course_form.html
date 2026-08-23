@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Course | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_courses') }}">Course Management</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ action }} Course</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>{{ action }} STEM Course</h1>
+                <p style="font-size: 1.05rem; max-width: 600px; color: var(--color-text-muted);">
+                    Manage public marketing information, learning outcomes, benefits, and publishing status.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div style="max-width: 760px; margin: 0 auto;">
+            {% if error %}
+            <div class="alert alert-error" style="margin-bottom: 1.5rem;">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="post" class="profile-form">
+                <!-- Section 1: Course Identity -->
+                <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
+                    <h2 style="font-size: 1.25rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem; color: var(--color-accent);">
+                        Course Identity
+                    </h2>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="title" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Course Title <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <input type="text" 
+                               id="title" 
+                               name="title" 
+                               class="form-control" 
+                               value="{{ request.form.get('title', course.title if course else '') }}" 
+                               required 
+                               placeholder="e.g. Artificial Intelligence & Robotics">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="slug" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            URL Slug (Optional)
+                        </label>
+                        <input type="text" 
+                               id="slug" 
+                               name="slug" 
+                               class="form-control" 
+                               value="{{ request.form.get('slug', course.slug if course else '') }}" 
+                               placeholder="e.g. ai-robotics (leave blank to auto-generate)">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem;">
+                        <div class="form-group">
+                            <label for="level" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                                Target Skill Level
+                            </label>
+                            <select id="level" name="level" class="form-control">
+                                {% set current_lvl = request.form.get('level', course.level if course else 'Beginner') %}
+                                <option value="Beginner" {% if current_lvl == 'Beginner' %}selected{% endif %}>Beginner</option>
+                                <option value="Intermediate" {% if current_lvl == 'Intermediate' %}selected{% endif %}>Intermediate</option>
+                                <option value="Advanced" {% if current_lvl == 'Advanced' %}selected{% endif %}>Advanced</option>
+                                <option value="All Levels" {% if current_lvl == 'All Levels' %}selected{% endif %}>All Levels</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="image" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                                Course Image Path
+                            </label>
+                            <input type="text" 
+                                   id="image" 
+                                   name="image" 
+                                   class="form-control" 
+                                   value="{{ request.form.get('image', course.image if course else 'images/services/drone.jpg') }}" 
+                                   placeholder="e.g. images/services/drone.jpg">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Public Course Information -->
+                <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
+                    <h2 style="font-size: 1.25rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem; color: var(--color-accent);">
+                        Public Course Information
+                    </h2>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="short_description" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Short Description <span style="color: var(--color-text-muted); font-size: 0.85rem;">(Used on catalogue course cards)</span>
+                        </label>
+                        <textarea id="short_description" 
+                                  name="short_description" 
+                                  class="form-control" 
+                                  rows="2" 
+                                  placeholder="Brief summary for catalogue card preview...">{{ request.form.get('short_description', course.short_description if course else '') }}</textarea>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="description" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Full Description <span style="color: var(--color-error);">*</span> <span style="color: var(--color-text-muted); font-size: 0.85rem;">(Used on public course detail page)</span>
+                        </label>
+                        <textarea id="description" 
+                                  name="description" 
+                                  class="form-control" 
+                                  rows="5" 
+                                  required 
+                                  placeholder="Detailed course overview and curriculum description...">{{ request.form.get('description', course.description if course else '') }}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="estimated_duration" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Estimated Duration
+                        </label>
+                        <input type="text" 
+                               id="estimated_duration" 
+                               name="estimated_duration" 
+                               class="form-control" 
+                               value="{{ request.form.get('estimated_duration', course.estimated_duration if course else '') }}" 
+                               placeholder="e.g. 12 Hours of Hands-on Learning">
+                    </div>
+                </div>
+
+                <!-- Section 3: What Students Will Learn -->
+                <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
+                    <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--color-accent);">
+                        What Students Will Learn
+                    </h2>
+                    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1rem;">
+                        Enter individual learning outcomes (one bullet point per line).
+                    </p>
+                    <div class="form-group">
+                        <textarea id="learning_outcomes" 
+                                  name="learning_outcomes" 
+                                  class="form-control" 
+                                  rows="4" 
+                                  placeholder="AI Fundamentals & Neural Networks&#10;Computer Vision & Model Deployment&#10;Hands-on Python & Robotics Projects">{{ request.form.get('learning_outcomes', course.learning_outcomes if course else '') }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Section 4: Course Benefits -->
+                <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
+                    <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--color-accent);">
+                        Course Benefits
+                    </h2>
+                    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1rem;">
+                        Enter practical course benefits for students (one benefit per line).
+                    </p>
+                    <div class="form-group">
+                        <textarea id="course_benefits" 
+                                  name="course_benefits" 
+                                  class="form-control" 
+                                  rows="4" 
+                                  placeholder="Instructor-guided STEM curriculum&#10;Verified completion certificate for portfolio&#10;Practical hands-on hardware & coding experience">{{ request.form.get('course_benefits', course.course_benefits if course else '') }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Section 5: Certificate Information -->
+                <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
+                    <h2 style="font-size: 1.25rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem; color: var(--color-accent);">
+                        Certificate Information
+                    </h2>
+                    <div class="form-group">
+                        <label for="certificate_description" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Certificate Description / Requirement
+                        </label>
+                        <input type="text" 
+                               id="certificate_description" 
+                               name="certificate_description" 
+                               class="form-control" 
+                               value="{{ request.form.get('certificate_description', course.certificate_description if course else '') }}" 
+                               placeholder="e.g. Earn an official Airodrone Certificate upon 75% verified course completion.">
+                    </div>
+                </div>
+
+                <!-- Section 6: Publishing -->
+                <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
+                    <h2 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--color-accent);">
+                        Publishing Status
+                    </h2>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" 
+                                   name="is_active" 
+                                   value="1" 
+                                   {% if request.form.get('is_active') or (course and course.is_active) or (not course) %}checked{% endif %}>
+                            <span style="font-weight: 600;">Active (Published & Visible in Catalogue)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem;">
+                    <button type="submit" class="btn btn-primary btn-md">Save Course &rarr;</button>
+                    {% if course %}
+                    <a href="{{ url_for('admin_course_detail', course_id=course.id) }}" class="btn btn-outline">&larr; Cancel</a>
+                    {% else %}
+                    <a href="{{ url_for('admin_courses') }}" class="btn btn-outline">&larr; Cancel</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

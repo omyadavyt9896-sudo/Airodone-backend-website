@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}STEM Courses | airodrone{% endblock %}
+{% block meta_description %}Explore Airodrone's practical STEM courses in Drone Technology, Artificial Intelligence, Robotics, Coding, and ATL Lab education.{% endblock %}
+
+{% block content %}
+<!-- Course Catalogue Hero Section -->
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <div class="hero-tagline-pill">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Practical STEM Learning
+            </div>
+            <h1 style="margin-top: 0.75rem;">STEM Courses</h1>
+            <p style="font-size: 1.15rem; max-width: 620px; color: var(--color-text-muted);">
+                Learn practical skills in AI, Robotics, Drones and Technology.
+            </p>
+        </div>
+        <div class="page-hero-media">
+            <img src="{{ url_for('static', filename='images/services/drone.jpg') }}" alt="Airodrone STEM Courses and hands-on learning illustration" class="hero-img-glow">
+        </div>
+    </div>
+</section>
+
+<!-- Course Catalogue Grid -->
+<section class="section">
+    <div class="container">
+        <div class="section-heading">
+            <h2>Explore STEM Learning Tracks</h2>
+            <p>Select a course track below to start your hands-on journey into cutting-edge technology and engineering.</p>
+        </div>
+
+        {% if courses %}
+        <div class="card-grid card-grid-3">
+            {% for course in courses %}
+            <article class="card course-card-v2">
+                <div class="course-card-image-wrap">
+                    {% if course.image %}
+                    <img src="{{ url_for('static', filename=course.image) }}" 
+                         alt="{{ course.title }} course banner" 
+                         class="course-card-img-v2"
+                         onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/services/drone.jpg') }}';">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='images/services/drone.jpg') }}" 
+                         alt="{{ course.title }} fallback course banner" 
+                         class="course-card-img-v2">
+                    {% endif %}
+                    <span class="course-badge-v2">{{ course.level or 'Beginner' }}</span>
+                </div>
+                
+                <div class="course-card-body-v2">
+                    <h3 class="course-card-title-v2">{{ course.title }}</h3>
+                    <p class="course-card-desc-v2">{{ course.short_description or course.description }}</p>
+                    
+                    <div class="course-meta-v2">
+                        <span class="course-meta-pill">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> {{ course.total_modules }} Modules
+                        </span>
+                        <span class="course-meta-pill">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg> {{ course.total_videos }} Lessons
+                        </span>
+                        {% if course.estimated_duration %}
+                        <span class="course-meta-pill">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> {{ course.estimated_duration }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if current_user.is_authenticated and course.is_enrolled and not current_user.is_admin() %}
+                    <div class="course-card-progress-wrap">
+                        <div class="course-card-progress-header">
+                            <span class="course-card-progress-label">Progress: {{ course.progress_pct }}%</span>
+                            {% if course.has_certificate %}
+                            <span class="cert-pill cert-pill-issued"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> Certificate Earned</span>
+                            {% elif course.progress_pct >= 75.0 %}
+                            <span class="cert-pill cert-pill-available"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> Certificate Available</span>
+                            {% endif %}
+                        </div>
+                        <div class="player-progress-track">
+                            <div class="player-progress-fill" style="width: {{ course.progress_pct }}%;"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="course-card-footer-v2">
+                        <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-primary btn-block">
+                            View Course Details <span aria-hidden="true">&rarr;</span>
+                        </a>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No courses available at the moment. Please check back soon!</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Institutional STEM Strip -->
+<section class="section section-light">
+    <div class="container highlight-strip">
+        <div class="highlight-text">
+            <h2>Looking for custom STEM workshops for your institution?</h2>
+            <p>We tailor course modules, equipment kits, and ATL lab roadmaps to align with your school's specific syllabus and academic calendar.</p>
+        </div>
+        <div class="highlight-action">
+            <a href="{{ url_for('contact') }}" class="btn btn-primary">Contact Us Today &rarr;</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

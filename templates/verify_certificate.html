@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Certificate | airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <h1>Certificate Verification</h1>
+            <p>Official public validation tool for Airodrone STEM Course Certificates of Completion.</p>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div style="max-width: 650px; margin: 0 auto;">
+            {% if cert %}
+            <div class="verification-card verification-success">
+                <div class="verification-header">
+                    <div class="verification-status-icon">✓</div>
+                    <div>
+                        <h2>Certificate Verified</h2>
+                        <p style="margin: 0; color: #15803d;">This is an authentic, verified Airodrone Certificate of Completion.</p>
+                    </div>
+                </div>
+
+                <div class="verification-details-table">
+                    <div class="verify-row">
+                        <span class="verify-label">Certificate ID</span>
+                        <span class="verify-val"><code>{{ cert.certificate_id }}</code></span>
+                    </div>
+                    <div class="verify-row">
+                        <span class="verify-label">Student Name</span>
+                        <span class="verify-val"><strong>{{ cert.student_name }}</strong></span>
+                    </div>
+                    <div class="verify-row">
+                        <span class="verify-label">Course Name</span>
+                        <span class="verify-val">{{ cert.course_name }}</span>
+                    </div>
+                    <div class="verify-row">
+                        <span class="verify-label">Verified Completion</span>
+                        <span class="verify-val"><strong style="color: #16a34a;">{{ cert.completion_percentage }}%</strong></span>
+                    </div>
+                    <div class="verify-row">
+                        <span class="verify-label">Issue Date</span>
+                        <span class="verify-val">{{ cert.issued_at }}</span>
+                    </div>
+                    <div class="verify-row">
+                        <span class="verify-label">Issuer</span>
+                        <span class="verify-val">Airodrone STEM & Robotics Academy</span>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 1.5rem;">
+                    <a href="{{ url_for('verify_lookup') }}" class="btn btn-outline">Verify Another Certificate</a>
+                </div>
+            </div>
+            {% else %}
+            <div class="verification-card verification-failed">
+                <div class="verification-header">
+                    <div class="verification-status-icon" style="background: rgba(239, 68, 68, 0.15); color: #dc2626;">✕</div>
+                    <div>
+                        <h2>Certificate Not Found</h2>
+                        <p style="margin: 0; color: #b91c1c;">No certificate matches the requested Certificate ID.</p>
+                    </div>
+                </div>
+
+                <div style="padding: 1.5rem 0; text-align: center;">
+                    <p>Please double-check the Certificate ID format (e.g. <code>AIR-2026-XXXXXXXX</code>) and try again.</p>
+                    <a href="{{ url_for('verify_lookup') }}" class="btn btn-primary" style="margin-top: 1rem;">Back to Verification Search</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

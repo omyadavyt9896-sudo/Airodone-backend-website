@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Results — {{ attempt.quiz_title }} | airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('courses') }}">Courses</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('course_detail', slug=course.slug) }}">{{ course.title }}</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Quiz Results</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>Quiz Results</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    Quiz: <strong>{{ attempt.quiz_title }}</strong> &bull; Module: <strong>{{ module.title }}</strong> &bull; Attempt {{ attempt.attempt_number }} of {{ attempt.max_attempts }}
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div style="max-width: 780px; margin: 0 auto;">
+
+            <!-- Overall Result Banner Card -->
+            <div class="card profile-form-card" style="margin-bottom: 2rem; text-align: center; padding: 2.25rem 1.5rem;">
+                {% if attempt.is_invalidated %}
+                    <div style="width: 64px; height: 64px; margin: 0 auto 1rem; border-radius: 50%; background: rgba(220, 38, 38, 0.12); color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 1.75rem;">
+                        ✕
+                    </div>
+                    <span class="badge-status badge-inactive" style="font-size: 0.9rem; padding: 0.35rem 0.85rem; margin-bottom: 0.5rem;">Attempt Invalidated</span>
+                    <h2 style="font-size: 2rem; margin: 0.5rem 0; color: #dc2626;">Quiz Focus Lost</h2>
+                    <p style="color: var(--color-text-muted); max-width: 500px; margin: 0 auto 1.5rem auto;">
+                        This attempt was marked as invalid because the browser tab or window focus was lost during the active assessment session. One attempt has been consumed.
+                    </p>
+                {% elif attempt.passed %}
+                    <div style="width: 64px; height: 64px; margin: 0 auto 1rem; border-radius: 50%; background: rgba(22, 163, 74, 0.12); color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 1.75rem;">
+                        ✓
+                    </div>
+                    <span class="badge-status badge-active" style="font-size: 0.9rem; padding: 0.35rem 0.85rem; margin-bottom: 0.5rem;">✓ Assessment Passed</span>
+                    <h2 style="font-size: 2.5rem; margin: 0.25rem 0; color: var(--color-primary);">{{ attempt.score }}%</h2>
+                    <p style="color: var(--color-text-muted); font-size: 1.05rem; margin-bottom: 1.5rem;">
+                        You answered <strong>{{ attempt.correct_answers }} of {{ attempt.total_questions }}</strong> questions correctly (Passing Score: {{ attempt.passing_score }}%).
+                    </p>
+                {% else %}
+                    <div style="width: 64px; height: 64px; margin: 0 auto 1rem; border-radius: 50%; background: rgba(234, 179, 8, 0.12); color: #ca8a04; display: flex; align-items: center; justify-content: center; font-size: 1.75rem;">
+                        !
+                    </div>
+                    <span class="badge-status badge-inactive" style="font-size: 0.9rem; padding: 0.35rem 0.85rem; margin-bottom: 0.5rem;">✗ Not Passed</span>
+                    <h2 style="font-size: 2.5rem; margin: 0.25rem 0; color: var(--color-primary);">{{ attempt.score }}%</h2>
+                    <p style="color: var(--color-text-muted); font-size: 1.05rem; margin-bottom: 1.5rem;">
+                        You answered <strong>{{ attempt.correct_answers }} of {{ attempt.total_questions }}</strong> questions correctly. You need at least <strong>{{ attempt.passing_score }}%</strong> to pass.
+                    </p>
+                {% endif %}
+
+                <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+                    {% if attempts_remaining > 0 %}
+                    <a href="{{ url_for('student_quiz_start', course_slug=course.slug, module_id=module.id) }}" class="btn btn-primary">
+                        Retry Quiz ({{ attempts_remaining }} attempts left) &rarr;
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-outline">
+                        Back to Course Overview
+                    </a>
+                </div>
+            </div>
+
+            <!-- Question-by-Question Review with Explanations -->
+            {% if review_questions %}
+            <h2 style="font-size: 1.35rem; margin-bottom: 1.25rem;">Question Breakdown & Explanations</h2>
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                {% for q in review_questions %}
+                <div class="card profile-form-card" style="padding: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem;">
+                        <h3 style="font-size: 1.1rem; margin: 0; line-height: 1.4;">
+                            <span style="color: var(--color-accent); font-weight: 700;">Q{{ loop.index }}.</span> {{ q.question_text }}
+                        </h3>
+                        {% if q.is_correct %}
+                            <span class="badge-status badge-active" style="flex-shrink: 0;">✓ Correct</span>
+                        {% else %}
+                            <span class="badge-status badge-inactive" style="flex-shrink: 0; background: rgba(220, 38, 38, 0.12); color: #dc2626;">✗ Incorrect</span>
+                        {% endif %}
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.65rem; margin-bottom: 1rem;">
+                        <div style="padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.9rem; {% if q.correct_option == 'A' %}background: rgba(22, 163, 74, 0.12); border: 1px solid #16a34a; font-weight: 600;{% elif q.selected_option == 'A' %}background: rgba(220, 38, 38, 0.12); border: 1px solid #dc2626;{% else %}background: var(--color-bg-subtle); border: 1px solid var(--color-border);{% endif %}">
+                            <strong>A.</strong> {{ q.option_a }}
+                        </div>
+                        <div style="padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.9rem; {% if q.correct_option == 'B' %}background: rgba(22, 163, 74, 0.12); border: 1px solid #16a34a; font-weight: 600;{% elif q.selected_option == 'B' %}background: rgba(220, 38, 38, 0.12); border: 1px solid #dc2626;{% else %}background: var(--color-bg-subtle); border: 1px solid var(--color-border);{% endif %}">
+                            <strong>B.</strong> {{ q.option_b }}
+                        </div>
+                        <div style="padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.9rem; {% if q.correct_option == 'C' %}background: rgba(22, 163, 74, 0.12); border: 1px solid #16a34a; font-weight: 600;{% elif q.selected_option == 'C' %}background: rgba(220, 38, 38, 0.12); border: 1px solid #dc2626;{% else %}background: var(--color-bg-subtle); border: 1px solid var(--color-border);{% endif %}">
+                            <strong>C.</strong> {{ q.option_c }}
+                        </div>
+                        <div style="padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.9rem; {% if q.correct_option == 'D' %}background: rgba(22, 163, 74, 0.12); border: 1px solid #16a34a; font-weight: 600;{% elif q.selected_option == 'D' %}background: rgba(220, 38, 38, 0.12); border: 1px solid #dc2626;{% else %}background: var(--color-bg-subtle); border: 1px solid var(--color-border);{% endif %}">
+                            <strong>D.</strong> {{ q.option_d }}
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1.5rem; font-size: 0.875rem; color: var(--color-text-muted); margin-bottom: 0.75rem;">
+                        <span>Your Answer: <strong style="color: var(--color-primary);">{{ q.selected_option or 'None' }}</strong></span>
+                        <span>Correct Answer: <strong style="color: #16a34a;">Option {{ q.correct_option }}</strong></span>
+                    </div>
+
+                    {% if q.explanation %}
+                    <div style="padding: 0.85rem 1rem; background: var(--color-bg-subtle); border-left: 3px solid var(--color-accent); border-radius: var(--radius-sm); font-size: 0.875rem;">
+                        <strong style="color: var(--color-primary); display: block; margin-bottom: 0.2rem;">Explanation:</strong>
+                        <span style="color: var(--color-text-muted); line-height: 1.5;">{{ q.explanation }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</section>
+{% endblock %}

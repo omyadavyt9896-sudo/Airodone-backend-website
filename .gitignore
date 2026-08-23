@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.db
+.env
+*.sql
+*.dump
+*.backup
+*_backup.json
+*.log
+.venv/
+env/
+.idea/
+.vscode/

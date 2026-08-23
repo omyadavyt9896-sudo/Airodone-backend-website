@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Video Lesson | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_courses') }}">Course Management</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_course_detail', course_id=mod_info.course_id) }}">{{ mod_info.course_title }}</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ action }} Video</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>{{ action }} Video Lesson</h1>
+                <p style="font-size: 1.05rem; max-width: 600px; color: var(--color-text-muted);">
+                    Course: <strong>{{ mod_info.course_title }}</strong> &bull; Module: <strong>{{ mod_info.module_title }}</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div style="max-width: 650px; margin: 0 auto;">
+            {% if error %}
+            <div class="alert alert-error" style="margin-bottom: 1.5rem;">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <div class="card profile-form-card">
+                <h2 style="font-size: 1.3rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem;">
+                    Video Lesson Details
+                </h2>
+
+                <form method="post" class="profile-form">
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="title" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Video Title <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <input type="text" 
+                               id="title" 
+                               name="title" 
+                               class="form-control" 
+                               value="{{ request.form.get('title', video.title if video else '') }}" 
+                               required 
+                               placeholder="e.g. Introduction to Drones">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="description" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Description
+                        </label>
+                        <textarea id="description" 
+                                  name="description" 
+                                  class="form-control" 
+                                  rows="3" 
+                                  placeholder="Lesson summary or learning outcomes...">{{ request.form.get('description', video.description if video else '') }}</textarea>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="youtube_video_id" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            YouTube Unlisted Video ID or URL
+                        </label>
+                        <input type="text" 
+                               id="youtube_video_id" 
+                               name="youtube_video_id" 
+                               class="form-control" 
+                               value="{{ request.form.get('youtube_video_id', video.youtube_video_id if video else '') }}" 
+                               placeholder="e.g. dQw4w9WgXcQ or https://youtu.be/dQw4w9WgXcQ">
+                        <small style="display: block; margin-top: 0.35rem; color: var(--color-text-muted); font-size: 0.825rem;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 2px;"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg> Accepts 11-character YouTube video ID or full YouTube URL. Leave empty to display "Video Coming Soon" on public course page.
+                        </small>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="duration" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Video Duration (MM:SS or HH:MM:SS)
+                        </label>
+                        <input type="text" 
+                               id="duration" 
+                               name="duration" 
+                               class="form-control" 
+                               value="{{ request.form.get('duration', video.duration if video else '10:00') }}" 
+                               placeholder="e.g. 12:45">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="sequence" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Sequence / Lesson Order
+                        </label>
+                        <input type="number" 
+                               id="sequence" 
+                               name="sequence" 
+                               class="form-control" 
+                               value="{{ request.form.get('sequence', video.sequence if video else 1) }}" 
+                               min="1" 
+                               max="99">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.75rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" 
+                                   name="is_active" 
+                                   value="1" 
+                                   {% if request.form.get('is_active') or (video and video.is_active) or (not video) %}checked{% endif %}>
+                            <span style="font-weight: 600;">Active Video Lesson</span>
+                        </label>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button type="submit" class="btn btn-primary">Save Video &rarr;</button>
+                        <a href="{{ url_for('admin_course_detail', course_id=mod_info.course_id) }}" class="btn btn-outline">&larr; Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

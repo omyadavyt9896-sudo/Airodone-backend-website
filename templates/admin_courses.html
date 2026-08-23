@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Admin — Course Management | airodrone{% endblock %}
+{% block meta_description %}Manage STEM courses, modules, and video contents on Airodrone.{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Course Management</span>
+        </nav>
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>Admin &mdash; Course Management</h1>
+                <p style="font-size: 1.1rem; max-width: 650px; color: var(--color-text-muted);">
+                    Create, configure, and manage STEM courses, curriculum modules, and YouTube Unlisted video lessons.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 2rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="admin-action-bar">
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <a href="{{ url_for('admin_add_course') }}" class="btn btn-primary">
+                    + Add New Course
+                </a>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="{{ url_for('admin_contacts') }}" class="btn btn-outline btn-sm">View Contacts</a>
+                <a href="{{ url_for('admin_users') }}" class="btn btn-outline btn-sm">Manage Users</a>
+                <a href="{{ url_for('admin') }}" class="btn btn-outline btn-sm">Admin Home</a>
+            </div>
+        </div>
+
+        {% if courses %}
+        <div class="card-grid card-grid-3">
+            {% for course in courses %}
+            <article class="card admin-course-card-v2">
+                <div class="admin-card-header-v2">
+                    <span class="course-badge-v2" style="position: static;">{{ course.level or 'All Levels' }}</span>
+                    <span class="badge-status {{ 'badge-active' if course.is_active else 'badge-inactive' }}">
+                        {{ 'Active' if course.is_active else 'Inactive' }}
+                    </span>
+                </div>
+                
+                <h3 style="font-size: 1.3rem; margin: 1rem 0 0.5rem 0; color: var(--color-text);">{{ course.title }}</h3>
+                <p style="font-size: 0.9rem; color: var(--color-text-muted); line-height: 1.5; flex: 1; margin-bottom: 1.25rem;">
+                    {{ course.description[:120] if course.description else 'No description available.' }}...
+                </p>
+
+                <div class="course-meta-v2" style="margin-bottom: 1.25rem;">
+                    <span class="course-meta-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> {{ course.total_modules }} Modules
+                    </span>
+                    <span class="course-meta-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg> {{ course.total_videos }} Videos
+                    </span>
+                </div>
+
+                <div style="margin-top: auto; display: flex; gap: 0.5rem;">
+                    <a href="{{ url_for('admin_course_detail', course_id=course.id) }}" class="btn btn-primary btn-block">
+                        Manage Course &rarr;
+                    </a>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No courses found in the system. Click "+ Add New Course" to create one!</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

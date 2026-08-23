@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }} — Quiz Overview | airodrone{% endblock %}
+{% block meta_description %}Take the {{ quiz.title }} quiz for {{ module.title }} on Airodrone.{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('courses') }}">Courses</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('course_detail', slug=course.slug) }}">{{ course.title }}</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Module Quiz</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <span class="course-badge-v2" style="position: static; display: inline-block; margin-bottom: 0.5rem;">Module Quiz</span>
+                <h1>{{ quiz.title }}</h1>
+                <p style="font-size: 1.1rem; max-width: 650px; color: var(--color-text-muted);">
+                    Module: <strong>{{ module.title }}</strong> &bull; Course: <strong>{{ course.title }}</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 1.75rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div style="max-width: 720px; margin: 0 auto;">
+            <!-- Quiz Info & Instructions Card -->
+            <div class="card profile-form-card" style="margin-bottom: 2rem;">
+                <h2 style="font-size: 1.35rem; margin-bottom: 0.75rem;">Assessment Overview</h2>
+                <p style="color: var(--color-text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.5rem;">
+                    {{ quiz.description or 'Test your understanding of the core concepts covered in this module.' }}
+                </p>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; padding: 1.25rem; background: var(--color-bg-subtle); border-radius: var(--radius-md); margin-bottom: 1.75rem;">
+                    <div>
+                        <span style="font-size: 0.8rem; color: var(--color-text-muted); display: block;">Questions</span>
+                        <strong style="font-size: 1.1rem; color: var(--color-primary);">{{ quiz.total_questions }} Questions</strong>
+                    </div>
+                    <div>
+                        <span style="font-size: 0.8rem; color: var(--color-text-muted); display: block;">Passing Score</span>
+                        <strong style="font-size: 1.1rem; color: var(--color-primary);">{{ quiz.passing_score }}%</strong>
+                    </div>
+                    <div>
+                        <span style="font-size: 0.8rem; color: var(--color-text-muted); display: block;">Attempt Allowance</span>
+                        <strong style="font-size: 1.1rem; color: var(--color-primary);">{{ attempts_used }} of {{ quiz.max_attempts }} Used</strong>
+                    </div>
+                </div>
+
+                <!-- Start Action / Attempt Limit Enforced Banner -->
+                {% if has_passed %}
+                <div class="cert-status-box cert-status-issued" style="margin-bottom: 1.5rem;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                    <div>
+                        <strong>✓ Quiz Passed (Highest Score: {{ highest_score }}%)</strong>
+                        <p style="margin: 0; font-size: 0.85rem;">You have successfully satisfied the requirements for this module assessment.</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if attempts_remaining > 0 %}
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <a href="{{ url_for('student_quiz_start', course_slug=course.slug, module_id=module.id) }}" class="btn btn-primary btn-lg js-start-quiz-btn">
+                        Start Quiz (Attempt {{ attempts_used + 1 }} of {{ quiz.max_attempts }}) &rarr;
+                    </a>
+                    <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-outline">&larr; Back to Course</a>
+                </div>
+                {% else %}
+                <div class="cert-status-box cert-status-locked" style="margin-bottom: 1.5rem; background: rgba(220, 38, 38, 0.08); border-color: rgba(220, 38, 38, 0.25); color: #b91c1c;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <div>
+                        <strong>Maximum attempts reached (5/5).</strong>
+                        <p style="margin: 0; font-size: 0.85rem;">You have used all {{ quiz.max_attempts }} allowed attempts for this module quiz.</p>
+                    </div>
+                </div>
+                <div>
+                    <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-outline">&larr; Back to Course Overview</a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Attempt History Table -->
+            {% if attempts %}
+            <div class="card profile-form-card">
+                <h3 style="font-size: 1.15rem; margin-bottom: 1rem;">Your Attempt History</h3>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Attempt</th>
+                                <th>Score</th>
+                                <th>Result</th>
+                                <th>Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in attempts %}
+                            <tr>
+                                <td>Attempt {{ a.attempt_number }}</td>
+                                <td>
+                                    <strong>{{ a.score }}%</strong> ({{ a.correct_answers }}/{{ a.total_questions }})
+                                </td>
+                                <td>
+                                    {% if a.is_invalidated %}
+                                        <span class="badge-status badge-inactive">Invalidated (Focus Lost)</span>
+                                    {% elif a.passed %}
+                                        <span class="badge-status badge-active">✓ Passed</span>
+                                    {% else %}
+                                        <span class="badge-status badge-inactive">✗ Not Passed</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ a.submitted_at[:16] if a.submitted_at else 'In Progress' }}</td>
+                                <td>
+                                    <a href="{{ url_for('student_quiz_result', course_slug=course.slug, module_id=module.id, attempt_id=a.id) }}" class="btn btn-outline btn-sm">
+                                        Review &rarr;
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

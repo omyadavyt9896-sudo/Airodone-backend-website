@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Admin — Student Account Management | airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h1>Admin &mdash; Student Account Management</h1>
+                <p style="color: var(--color-text-muted);">Manage private student credentials, course enrollments, and account access status.</p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin_user_new') }}" class="btn btn-primary btn-md">
+                    + Create Student Account
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 1.5rem;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div style="margin-bottom: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="{{ url_for('admin') }}" class="btn btn-outline">&larr; Back to Admin Panel</a>
+            <a href="{{ url_for('admin_courses') }}" class="btn btn-outline">Course Management</a>
+        </div>
+
+        {% if users and users|length > 0 %}
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Student Name</th>
+                        <th>Father's Name</th>
+                        <th>Email / Contact</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Enrolled Courses</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td><strong>#{{ u.id }}</strong></td>
+                        <td>
+                            <strong>{{ u.name }}</strong>
+                        </td>
+                        <td>{{ u.father_name or '&mdash;'|safe }}</td>
+                        <td>
+                            <a href="mailto:{{ u.email }}">{{ u.email }}</a>
+                            {% if u.phone %}
+                            <br><span style="font-size: 0.8rem; color: var(--color-text-muted);">Ph: {{ u.phone }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge-status {% if u.role == 'admin' %}badge-active{% else %}badge-inactive{% endif %}" style="font-size: 0.8rem;">
+                                {{ u.role|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge-status {% if u.is_active %}badge-active{% else %}badge-inactive{% endif %}">
+                                {{ 'Active' if u.is_active else 'Inactive' }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if u.role == 'admin' %}
+                                <span style="font-size: 0.85rem; color: var(--color-text-muted);">All Courses (Admin)</span>
+                            {% else %}
+                                <strong>{{ u.enrolled_count or 0 }} Course{% if u.enrolled_count != 1 %}s{% endif %}</strong>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                                {% if u.role != 'admin' %}
+                                <a href="{{ url_for('admin_user_courses', user_id=u.id) }}" class="btn btn-primary btn-sm">
+                                    Courses
+                                </a>
+                                <a href="{{ url_for('admin_user_edit', user_id=u.id) }}" class="btn btn-outline btn-sm">
+                                    Edit
+                                </a>
+                                {% endif %}
+
+                                <!-- Reset Password Inline Form -->
+                                <form method="post" action="{{ url_for('admin_user_reset_password', user_id=u.id) }}" style="display: inline;" onsubmit="return confirm('Reset password for {{ u.name }}? A temporary password will be generated.');">
+                                    <button type="submit" class="btn btn-outline btn-sm">
+                                        Reset Pass
+                                    </button>
+                                </form>
+
+                                {% if u.role != 'admin' %}
+                                <form method="post" action="{{ url_for('admin_user_toggle_active', user_id=u.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-outline btn-sm" style="{% if u.is_active %}color: var(--color-error); border-color: var(--color-error);{% else %}color: #16a34a; border-color: #16a34a;{% endif %}">
+                                        {{ 'Deactivate' if u.is_active else 'Activate' }}
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="color: var(--color-text-muted);">No student users registered yet.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

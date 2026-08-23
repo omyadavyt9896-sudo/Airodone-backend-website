@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile | airodrone{% endblock %}
+
+{% block meta_description %}Manage and update your Airodrone student profile information.{% endblock %}
+
+{% block content %}
+<!-- Profile Hero Header -->
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Profile</span>
+        </nav>
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>Profile Management</h1>
+                <p style="font-size: 1.1rem; max-width: 600px; color: var(--color-text-muted);">
+                    Update your personal profile information. This information is used for your account and course records.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Profile Form Section -->
+<section class="section">
+    <div class="container">
+        <div style="max-width: 680px; margin: 0 auto;">
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 1.5rem;">
+                {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            {% if error %}
+            <div class="alert alert-error" style="margin-bottom: 1.5rem;">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <div class="card profile-form-card">
+                <h2 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem;">
+                    Personal Information
+                </h2>
+
+                <form method="post" action="{{ url_for('profile') }}" class="profile-form">
+                    <!-- Full Name -->
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="name" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Full Name <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <input type="text" 
+                               id="name" 
+                               name="name" 
+                               class="form-control" 
+                               value="{{ request.form.get('name', current_user.name) }}" 
+                               required 
+                               minlength="2" 
+                               maxlength="100"
+                               placeholder="e.g. Om Yadav">
+                    </div>
+
+                    <!-- Email Address (Read-Only) -->
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="email" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Email Address
+                        </label>
+                        <input type="email" 
+                               id="email" 
+                               class="form-control form-control-readonly" 
+                               value="{{ current_user.email }}" 
+                               disabled 
+                               readonly>
+                        <small style="display: block; margin-top: 0.35rem; color: var(--color-text-muted); font-size: 0.825rem;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Email address cannot be changed. Contact support for email updates.
+                        </small>
+                    </div>
+
+                    <!-- Father's Name -->
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="father_name" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Father's Name <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <input type="text" 
+                               id="father_name" 
+                               name="father_name" 
+                               class="form-control" 
+                               value="{{ request.form.get('father_name', current_user.father_name or '') }}" 
+                               required 
+                               minlength="2" 
+                               maxlength="100"
+                               placeholder="e.g. Ramesh Yadav">
+                    </div>
+
+                    <!-- Contact Phone Number -->
+                    <div class="form-group" style="margin-bottom: 1.75rem;">
+                        <label for="phone" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Phone Number <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <input type="tel" 
+                               id="phone" 
+                               name="phone" 
+                               class="form-control" 
+                               value="{{ request.form.get('phone', current_user.phone or '') }}" 
+                               required 
+                               placeholder="e.g. +91 98765 43210">
+                        <small style="display: block; margin-top: 0.35rem; color: var(--color-text-muted); font-size: 0.825rem;">
+                            Enter a valid 10-digit mobile number.
+                        </small>
+                    </div>
+
+                    <!-- Actions -->
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button type="submit" class="btn btn-primary">Save Changes &rarr;</button>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline">&larr; Back to Dashboard</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Courses — {{ student.name }} | airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <h1>Course Access Management</h1>
+            <p>Student: <strong>{{ student.name }}</strong> ({{ student.email }})</p>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container" style="max-width: 850px; margin: 0 auto;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}" style="margin-bottom: 1.5rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div style="margin-bottom: 1.5rem;">
+            <a href="{{ url_for('admin_users') }}" class="btn btn-outline">&larr; Back to Student List</a>
+        </div>
+
+        <!-- Student Info Summary Card -->
+        <div class="card profile-form-card" style="margin-bottom: 2rem; padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h2 style="font-size: 1.25rem; margin: 0 0 0.25rem 0;">{{ student.name }}</h2>
+                    <p style="margin: 0; font-size: 0.9rem; color: var(--color-text-muted);">
+                        Email: <strong>{{ student.email }}</strong> &bull; Status: 
+                        <span class="badge-status {% if student.is_active %}badge-active{% else %}badge-inactive{% endif %}">
+                            {{ 'Active' if student.is_active else 'Inactive' }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assigned Courses -->
+        <div class="card profile-form-card" style="margin-bottom: 2rem; padding: 1.75rem;">
+            <h3 style="font-size: 1.15rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Assigned Courses ({{ assigned_courses|length }})
+            </h3>
+
+            {% if assigned_courses %}
+            <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                {% for course in assigned_courses %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md); flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <strong style="font-size: 1rem; color: var(--color-text);">{{ course.title }}</strong>
+                        <span style="font-size: 0.8rem; color: var(--color-text-muted); display: block;">Assigned on: {{ course.assigned_at[:10] if course.assigned_at else 'Active' }}</span>
+                    </div>
+                    <form method="post" action="{{ url_for('admin_user_remove_course', user_id=student.id, course_id=course.id) }}" onsubmit="return confirm('Remove access to {{ course.title }} for {{ student.name }}? Student progress will be preserved.');">
+                        <button type="submit" class="btn btn-outline btn-sm" style="color: var(--color-error); border-color: var(--color-error);">
+                            Remove Access
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color: var(--color-text-muted); margin: 0;">No courses assigned to this student yet.</p>
+            {% endif %}
+        </div>
+
+        <!-- Available Courses to Assign -->
+        <div class="card profile-form-card" style="padding: 1.75rem;">
+            <h3 style="font-size: 1.15rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Available Courses to Assign
+            </h3>
+
+            {% if unassigned_courses %}
+            <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                {% for course in unassigned_courses %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md); flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <strong style="font-size: 1rem; color: var(--color-text);">{{ course.title }}</strong>
+                        <span style="font-size: 0.8rem; color: var(--color-text-muted); display: block;">Level: {{ course.level }}</span>
+                    </div>
+                    <form method="post" action="{{ url_for('admin_user_assign_course', user_id=student.id) }}">
+                        <input type="hidden" name="course_id" value="{{ course.id }}">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            + Assign Course
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color: var(--color-text-muted); margin: 0;">All active courses are currently assigned to this student.</p>
+            {% endif %}
+        </div>
+
+    </div>
+</section>
+{% endblock %}

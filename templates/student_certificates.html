@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}My Certificates | airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <h1>My Certificates</h1>
+            <p>View, verify, and download your earned Airodrone STEM Certificates of Completion.</p>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 1.5rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% if certificates %}
+        <div class="certificates-grid">
+            {% for cert in certificates %}
+            <div class="certificate-card-item">
+                <div class="cert-card-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> Certificate Verified</div>
+                <h3>{{ cert.course_name }}</h3>
+                <p class="cert-card-id">ID: <code>{{ cert.certificate_id }}</code></p>
+                <div class="cert-card-meta">
+                    <span>Verified Completion: <strong>{{ cert.completion_percentage }}%</strong></span>
+                    <span>Issued: {{ cert.issued_at }}</span>
+                </div>
+                <div class="cert-card-actions-row">
+                    <a href="{{ url_for('view_certificate', certificate_id=cert.certificate_id) }}" class="btn btn-outline btn-sm">View Certificate</a>
+                    <a href="{{ url_for('download_certificate_pdf', certificate_id=cert.certificate_id) }}" class="btn btn-primary btn-sm">Download PDF &darr;</a>
+                    <a href="{{ url_for('verify_certificate', certificate_id=cert.certificate_id) }}" class="btn btn-secondary btn-sm" target="_blank">Verify Link &nearr;</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center" style="padding: 4rem 0;">
+            <div style="width: 64px; height: 64px; margin: 0 auto 1rem; border-radius: 50%; background: var(--color-primary-soft); color: var(--color-accent); display: flex; align-items: center; justify-content: center;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            </div>
+            <h3>No Certificates Earned Yet</h3>
+            <p>Complete at least 75% of any STEM course video curriculum to earn your official Certificate of Completion.</p>
+            <a href="{{ url_for('courses') }}" class="btn btn-primary" style="margin-top: 1rem;">Browse Courses &rarr;</a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if not_found %}Video Not Found | airodrone{% else %}{{ video.title }} — {{ course.title }} | airodrone{% endif %}
+{% endblock %}
+
+{% block meta_description %}
+{% if not_found %}The requested video could not be found.{% else %}Watch {{ video.title }} in {{ course.title }} on Airodrone.{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if not_found %}
+<section class="section">
+    <div class="container text-center" style="padding: 4rem 0;">
+        <h1>Video Not Found</h1>
+        <p>Sorry, the video you requested does not exist, is inactive, or has been moved.</p>
+        <a href="{{ url_for('courses') }}" class="btn btn-primary">Back to Courses</a>
+    </div>
+</section>
+{% else %}
+
+<section class="section" style="padding-top: 1.75rem;">
+    <div class="container">
+        <!-- Breadcrumb Navigation -->
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('courses') }}">Courses</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('course_detail', slug=course.slug) }}">{{ course.title }}</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ video.title }}</span>
+        </nav>
+
+        <!-- Toast Notification for Anti-Fast-Forward -->
+        <div id="antiSeekToast" class="anti-seek-toast" style="display: none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Fast-forwarding is disabled on first watch. Returning to your furthest watched position.
+        </div>
+
+        <div class="video-player-layout-v2">
+            <!-- Main Video Column -->
+            <div class="video-main-column-v2">
+                <!-- Video Header Wrap -->
+                <div class="video-header-wrap-v2">
+                    <span class="hero-tagline-pill" style="font-size: 0.75rem;">
+                        Module {{ "%02d" % video.module_sequence }}: {{ video.module_title }}
+                    </span>
+                    <h1 style="font-size: 1.85rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">{{ video.title }}</h1>
+                </div>
+
+                <!-- Player Progress Bar Header -->
+                {% if video.youtube_video_id %}
+                <div class="player-progress-bar-wrap">
+                    <div class="player-progress-header">
+                        <span id="progressText" class="progress-text-label">
+                            Progress: {{ video_progress.completion_percentage|round|int if video_progress else 0 }}%
+                        </span>
+                        <span id="completedBadge" class="progress-badge progress-badge-completed" style="display: {{ 'inline-block' if video_progress and video_progress.completed else 'none' }};">
+                            &check; Video Completed
+                        </span>
+                    </div>
+                    <div class="player-progress-track">
+                        <div id="playerProgressFill" class="player-progress-fill" style="width: {{ video_progress.completion_percentage if video_progress else 0 }}%;"></div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Responsive 16:9 Video Frame Container -->
+                {% if video.youtube_video_id %}
+                <div class="video-player-container-v2">
+                    <iframe id="ytPlayer"
+                            src="https://www.youtube.com/embed/{{ video.youtube_video_id }}?enablejsapi=1&rel=0&modestbranding=1" 
+                            title="{{ video.title }}" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            allowfullscreen 
+                            frameborder="0">
+                    </iframe>
+                </div>
+                {% else %}
+                <div class="video-placeholder-banner">
+                    <div class="video-placeholder-content">
+                        <div class="video-placeholder-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                        </div>
+                        <h3>Video Coming Soon</h3>
+                        <p>The video content for <strong>{{ video.title }}</strong> is currently being prepared. Check back soon!</p>
+                        <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-outline" style="margin-top: 1rem;">Back to Course Overview</a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Lesson Info & Metadata Box -->
+                <div class="video-details-box-v2">
+                    <h3>About this Lesson</h3>
+                    {% if video.description %}
+                    <p style="color: var(--color-text-muted); font-size: 0.95rem; line-height: 1.6;">{{ video.description }}</p>
+                    {% else %}
+                    <p class="text-muted" style="font-size: 0.9rem;">No additional description provided for this lesson video.</p>
+                    {% endif %}
+                    <div class="video-meta-pills" style="margin-top: 1rem;">
+                        <span class="course-stat-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Duration: {{ video.duration or '10:00' }}</span>
+                        <span class="course-stat-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Course: {{ course.title }}</span>
+                    </div>
+                </div>
+
+                <!-- Playlist Previous / Next Navigation Controls -->
+                <div class="video-nav-controls-v2">
+                    {% if prev_video %}
+                    <a href="{{ url_for('video_player', course_slug=course.slug, video_id=prev_video.id) }}" class="btn btn-outline">
+                        &larr; Previous: {{ prev_video.title }}
+                    </a>
+                    {% else %}
+                    <span></span>
+                    {% endif %}
+
+                    {% if next_video %}
+                    <a href="{{ url_for('video_player', course_slug=course.slug, video_id=next_video.id) }}" class="btn btn-primary">
+                        Next: {{ next_video.title }} &rarr;
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-primary">
+                        Course Overview &rarr;
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Curriculum Sidebar Column -->
+            <div class="video-sidebar-column-v2">
+                <div class="video-sidebar-card-v2">
+                    <div class="video-sidebar-header-v2">
+                        <h3>Course Content</h3>
+                        <p style="margin: 0; color: var(--color-text-muted); font-size: 0.85rem;">{{ course.title }}</p>
+                    </div>
+
+                    <div class="sidebar-curriculum-list-v2">
+                        {% for mod in modules %}
+                        <div class="sidebar-module-v2">
+                            <div class="sidebar-module-header-v2">
+                                <strong>Mod {{ "%02d" % mod.sequence }}: {{ mod.title }}</strong>
+                            </div>
+                            <div class="sidebar-video-list-v2">
+                                {% for v in mod.videos %}
+                                <a href="{{ url_for('video_player', course_slug=course.slug, video_id=v.id) }}" 
+                                   class="sidebar-video-item-v2 {% if v.id == video.id %}active{% endif %}">
+                                    <div class="sidebar-video-left-v2">
+                                        <span class="sidebar-video-status-icon">
+                                            {% if v.id == video.id %}
+                                                ▶
+                                            {% elif v.progress and v.progress.completed %}
+                                                ✓
+                                            {% elif v.progress and v.progress.completion_percentage > 0 %}
+                                                ◐
+                                            {% else %}
+                                                ○
+                                            {% endif %}
+                                        </span>
+                                        <span class="sidebar-video-title-v2">{{ v.title }}</span>
+                                    </div>
+                                    <div class="sidebar-video-right-v2">
+                                        {% if v.progress and v.progress.completed %}
+                                            <span class="cert-pill cert-pill-issued">✓</span>
+                                        {% endif %}
+                                        <span class="sidebar-video-duration-v2">{{ v.duration or '10:00' }}</span>
+                                    </div>
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if video.youtube_video_id %}
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+var videoId = {{ video.id }};
+var furthestWatched = {{ video_progress.watched_seconds if video_progress else 0.0 }};
+var isCompleted = {{ 'true' if video_progress and video_progress.completed else 'false' }};
+var player = null;
+var isSeekingBack = false;
+var hasAutoResumed = false;
+var syncTimer = null;
+var monitorTimer = null;
+var toastTimer = null;
+
+function onYouTubeIframeAPIReady() {
+    player = new YT.Player('ytPlayer', {
+        events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
+        }
+    });
+}
+
+function onPlayerReady(event) {
+    if (!isCompleted && furthestWatched > 5 && !hasAutoResumed) {
+        hasAutoResumed = true;
+        player.seekTo(furthestWatched, true);
+    }
+
+    monitorTimer = setInterval(checkAntiSeek, 250);
+
+    syncTimer = setInterval(function() {
+        syncProgressToServer('timeupdate');
+    }, 5000);
+}
+
+function onPlayerStateChange(event) {
+    if (event.data === YT.PlayerState.PAUSED) {
+        syncProgressToServer('pause');
+    } else if (event.data === YT.PlayerState.ENDED) {
+        syncProgressToServer('ended');
+    }
+}
+
+function checkAntiSeek() {
+    if (!player || typeof player.getCurrentTime !== 'function') return;
+    if (isSeekingBack) return;
+
+    var currTime = player.getCurrentTime();
+    if (typeof player.getPlayerState === 'function') {
+        var state = player.getPlayerState();
+        if (state !== YT.PlayerState.PLAYING && state !== YT.PlayerState.PAUSED) return;
+    }
+
+    if (!isCompleted) {
+        if (currTime > furthestWatched + 3.0) {
+            isSeekingBack = true;
+            player.seekTo(furthestWatched, true);
+            showAntiSeekToast();
+
+            setTimeout(function() {
+                isSeekingBack = false;
+            }, 800);
+        } else if (currTime > furthestWatched && currTime <= furthestWatched + 3.0) {
+            furthestWatched = currTime;
+            updateUIProgress();
+        }
+    } else {
+        if (currTime > furthestWatched) {
+            furthestWatched = currTime;
+            updateUIProgress();
+        }
+    }
+}
+
+function updateUIProgress() {
+    if (!player || typeof player.getDuration !== 'function') return;
+    var dur = player.getDuration();
+    if (!dur || dur <= 0) return;
+
+    var pct = Math.min(100, (furthestWatched / dur) * 100);
+    var fillEl = document.getElementById('playerProgressFill');
+    var textEl = document.getElementById('progressText');
+    if (fillEl) fillEl.style.width = pct + '%';
+    if (textEl && !isCompleted) textEl.textContent = 'Progress: ' + Math.round(pct) + '%';
+}
+
+function showAntiSeekToast() {
+    var toast = document.getElementById('antiSeekToast');
+    if (!toast) return;
+    toast.style.display = 'block';
+    toast.style.opacity = '1';
+
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() {
+        toast.style.opacity = '0';
+        setTimeout(function() { toast.style.display = 'none'; }, 300);
+    }, 3000);
+}
+
+function syncProgressToServer(eventName) {
+    if (!player || typeof player.getDuration !== 'function') return;
+    var dur = player.getDuration();
+    if (!dur || dur <= 0) return;
+
+    fetch('/courses/video/' + videoId + '/progress', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            watched_seconds: furthestWatched,
+            duration_seconds: dur,
+            event: eventName || 'timeupdate'
+        })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.success && data.progress) {
+            if (data.progress.completed) {
+                isCompleted = true;
+                var badge = document.getElementById('completedBadge');
+                var textEl = document.getElementById('progressText');
+                var fillEl = document.getElementById('playerProgressFill');
+                if (badge) badge.style.display = 'inline-block';
+                if (textEl) textEl.textContent = 'Progress: 100%';
+                if (fillEl) fillEl.style.width = '100%';
+            }
+        }
+    })
+    .catch(function(err) {
+        console.log('Progress sync note:', err);
+    });
+}
+
+window.addEventListener('beforeunload', function() {
+    if (player && typeof player.getDuration === 'function') {
+        var dur = player.getDuration();
+        if (dur > 0) {
+            navigator.sendBeacon('/courses/video/' + videoId + '/progress', JSON.stringify({
+                watched_seconds: furthestWatched,
+                duration_seconds: dur,
+                event: 'unload'
+            }));
+        }
+    }
+});
+</script>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Allow: /static/
+
+Sitemap: https://airodrone.in/sitemap.xml

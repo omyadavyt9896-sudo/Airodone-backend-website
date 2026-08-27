@@ -9,6 +9,51 @@
     <meta name="description"
         content="{% block meta_description %}airodrone offers AI, robotics, coding, electronics, drone technology, web design, ATL lab setup, and STEM workshops for schools and institutions.{% endblock %}">
 
+    <!-- Brand Metadata -->
+    <meta name="application-name" content="airodrone">
+    <meta name="theme-color" content="#0B1220">
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="48x48" href="{{ url_for('static', filename='images/favicon/favicon-48.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon/apple-touch-icon.png') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon/favicon.ico') }}">
+
+    <!-- Open Graph Metadata -->
+    <meta property="og:title" content="airodrone">
+    <meta property="og:description" content="AI, robotics, coding, electronics, drone, web design, ATL setup and STEM workshops for schools and institutions.">
+    <meta property="og:url" content="https://airodrone.in/">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://airodrone.in/static/images/favicon/favicon-512.png">
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://airodrone.in/#website",
+          "url": "https://airodrone.in/",
+          "name": "airodrone",
+          "description": "AI, robotics, coding, electronics, drone technology, web design, ATL lab setup, and STEM workshops for schools and institutions."
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://airodrone.in/#organization",
+          "name": "airodrone",
+          "url": "https://airodrone.in/",
+          "logo": "https://airodrone.in/static/images/favicon/favicon-512.png",
+          "sameAs": [
+            "https://www.instagram.com/airodrone_in/",
+            "https://x.com/airodrone_in",
+            "https://www.facebook.com/airodrone.in"
+          ]
+        }
+      ]
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"

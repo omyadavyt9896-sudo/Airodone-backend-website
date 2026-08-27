@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 from functools import wraps
 
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -43,6 +43,17 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 login_manager.login_message = "Please log in to access this page."
 login_manager.login_message_category = "info"
+
+
+@app.route('/robots.txt')
+def robots_txt():
+    return send_from_directory(app.static_folder, 'robots.txt')
+
+
+@app.route('/favicon.ico')
+def favicon_ico():
+    return send_from_directory(os.path.join(app.static_folder, 'images', 'favicon'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
 
 
 

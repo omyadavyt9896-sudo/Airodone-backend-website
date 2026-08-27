@@ -55,6 +55,12 @@ def favicon_ico():
     return send_from_directory(os.path.join(app.static_folder, 'images', 'favicon'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 
+@app.route('/googlef2b0a301d69fdec5.html')
+def google_verification():
+    return send_from_directory(app.root_path, 'googlef2b0a301d69fdec5.html', mimetype='text/html')
+
+
+
 
 
 

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Question | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_courses') }}">Course Management</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_course_detail', course_id=quiz.course_id) }}">{{ quiz.course_title }}</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_quiz_questions', quiz_id=quiz.quiz_id or quiz.id) }}">{{ quiz.quiz_title or quiz.title }} Questions</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ action }} Question</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>{{ action }} Quiz Question</h1>
+                <p style="font-size: 1.05rem; max-width: 600px; color: var(--color-text-muted);">
+                    Quiz: <strong>{{ quiz.quiz_title or quiz.title }}</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div style="max-width: 680px; margin: 0 auto;">
+            {% if error %}
+            <div class="alert alert-error" style="margin-bottom: 1.5rem;">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <div class="card profile-form-card">
+                <h2 style="font-size: 1.3rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem;">
+                    Question Details
+                </h2>
+
+                <form method="post" class="profile-form">
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="question_text" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Question Text <span class="required-star">*</span>
+                        </label>
+                        <textarea id="question_text" 
+                                  name="question_text" 
+                                  class="form-control" 
+                                  rows="3" 
+                                  required 
+                                  placeholder="e.g. What is the primary purpose of a flight controller?">{{ request.form.get('question_text', question.question_text if question else '') }}</textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                        <div class="form-group">
+                            <label for="option_a" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                                Option A <span class="required-star">*</span>
+                            </label>
+                            <input type="text" id="option_a" name="option_a" class="form-control" value="{{ request.form.get('option_a', question.option_a if question else '') }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="option_b" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                                Option B <span class="required-star">*</span>
+                            </label>
+                            <input type="text" id="option_b" name="option_b" class="form-control" value="{{ request.form.get('option_b', question.option_b if question else '') }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="option_c" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                                Option C <span class="required-star">*</span>
+                            </label>
+                            <input type="text" id="option_c" name="option_c" class="form-control" value="{{ request.form.get('option_c', question.option_c if question else '') }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="option_d" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                                Option D <span class="required-star">*</span>
+                            </label>
+                            <input type="text" id="option_d" name="option_d" class="form-control" value="{{ request.form.get('option_d', question.option_d if question else '') }}" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="correct_option" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Correct Option <span class="required-star">*</span>
+                        </label>
+                        <select id="correct_option" name="correct_option" class="form-control">
+                            {% set sel_opt = request.form.get('correct_option', question.correct_option if question else 'A') %}
+                            <option value="A" {% if sel_opt == 'A' %}selected{% endif %}>Option A</option>
+                            <option value="B" {% if sel_opt == 'B' %}selected{% endif %}>Option B</option>
+                            <option value="C" {% if sel_opt == 'C' %}selected{% endif %}>Option C</option>
+                            <option value="D" {% if sel_opt == 'D' %}selected{% endif %}>Option D</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="explanation" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Explanation (Shown Post-Submission)
+                        </label>
+                        <textarea id="explanation" 
+                                  name="explanation" 
+                                  class="form-control" 
+                                  rows="3" 
+                                  placeholder="Explain why the correct option is right...">{{ request.form.get('explanation', question.explanation if question else '') }}</textarea>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="sequence" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Question Order / Sequence
+                        </label>
+                        <input type="number" 
+                               id="sequence" 
+                               name="sequence" 
+                               class="form-control" 
+                               value="{{ request.form.get('sequence', question.sequence if question else 1) }}" 
+                               min="1" 
+                               max="99">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.75rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" 
+                                   name="is_active" 
+                                   value="1" 
+                                   {% if request.form.get('is_active') or (question and question.is_active) or (not question) %}checked{% endif %}>
+                            <span style="font-weight: 600;">Active Question</span>
+                        </label>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button type="submit" class="btn btn-primary">Save Question &rarr;</button>
+                        <a href="{{ url_for('admin_quiz_questions', quiz_id=quiz.quiz_id or quiz.id) }}" class="btn btn-outline">&larr; Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

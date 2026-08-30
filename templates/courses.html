@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}{% if show_grades %}Educational Grades & STEM Courses | airodrone{% else %}{{ grade_info.name }} Courses | airodrone{% endif %}{% endblock %}
+{% block meta_description %}Explore Airodrone's hands-on STEM curriculum structured across 5 educational Grades from Primary to Senior Secondary.{% endblock %}
+
+{% block content %}
+<!-- Course Catalogue Hero Section -->
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <div class="hero-tagline-pill">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> 
+                {% if show_grades %}Structured STEM Pathways{% else %}{{ grade_info.name }}{% endif %}
+            </div>
+            <h1 style="margin-top: 0.75rem;">
+                {% if show_grades %}
+                Educational Grades
+                {% else %}
+                {{ grade_info.name }} Courses
+                {% endif %}
+            </h1>
+            <p style="font-size: 1.15rem; max-width: 620px; color: var(--color-text-muted);">
+                {% if show_grades %}
+                Select your educational grade to explore curated, hands-on learning programs designed for your age and academic stage.
+                {% else %}
+                Targeted for {{ grade_info.classes }}. {{ grade_info.description }}
+                {% endif %}
+            </p>
+            {% if not show_grades %}
+            <div style="margin-top: 1rem;">
+                <a href="{{ url_for('courses') }}" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    &larr; Back to All Grades
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        <div class="page-hero-media">
+            <img src="{{ url_for('static', filename='images/services/drone.jpg') }}" alt="Airodrone STEM Courses and hands-on learning illustration" class="hero-img-glow">
+        </div>
+    </div>
+</section>
+
+{% if show_grades %}
+<!-- 5 Grades Grid Section -->
+<section class="section">
+    <div class="container">
+        <div class="section-heading">
+            <h2>Select Your Educational Grade</h2>
+            <p>Our curriculum is tailored across 5 progressive learning levels to nurture computational thinking, robotics, AI, and aerial technology.</p>
+        </div>
+
+        <div class="card-grid card-grid-3">
+            {% for g in grades %}
+            <article class="card course-card-v2" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div class="course-card-body-v2" style="padding: 2rem 1.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <span class="course-badge-v2" style="position: static; background: var(--color-primary-light, #e0f2fe); color: var(--color-primary, #0284c7); font-weight: 700; padding: 0.35rem 0.75rem; border-radius: 9999px;">
+                            Grade {{ g.grade_id }}
+                        </span>
+                        <span style="font-size: 0.85rem; color: var(--color-text-muted); font-weight: 600;">
+                            {{ g.course_count }} {{ 'Course' if g.course_count == 1 else 'Courses' }}
+                        </span>
+                    </div>
+
+                    <h3 class="course-card-title-v2" style="font-size: 1.35rem; margin-bottom: 0.35rem;">
+                        {{ g.name }}
+                    </h3>
+                    <div style="color: var(--color-primary, #0284c7); font-weight: 600; font-size: 0.95rem; margin-bottom: 0.75rem;">
+                        {{ g.classes }}
+                    </div>
+                    <p class="course-card-desc-v2" style="margin-bottom: 1.5rem; color: var(--color-text-muted);">
+                        {{ g.description }}
+                    </p>
+
+                    <div class="course-card-footer-v2" style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--color-border, #e2e8f0);">
+                        <a href="{{ url_for('courses', grade=g.grade_id) }}" class="btn btn-primary btn-block">
+                            Explore Grade {{ g.grade_id }} Courses &rarr;
+                        </a>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{% else %}
+
+<!-- Grade Filtered Course Catalogue Grid -->
+<section class="section">
+    <div class="container">
+        <div class="section-heading">
+            <h2>Courses for {{ grade_info.name }} ({{ grade_info.classes }})</h2>
+            <p>Enroll and start your learning tracks for {{ grade_info.name }}.</p>
+        </div>
+
+        {% if courses %}
+        <div class="card-grid card-grid-3">
+            {% for course in courses %}
+            <article class="card course-card-v2">
+                <div class="course-card-image-wrap">
+                    {% if course.image %}
+                    <img src="{{ url_for('static', filename=course.image) }}" 
+                         alt="{{ course.title }} course banner" 
+                         class="course-card-img-v2"
+                         onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/services/drone.jpg') }}';">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='images/services/drone.jpg') }}" 
+                         alt="{{ course.title }} fallback course banner" 
+                         class="course-card-img-v2">
+                    {% endif %}
+                    <span class="course-badge-v2">Grade {{ course.grade }} &bull; {{ course.level or 'Beginner' }}</span>
+                </div>
+                
+                <div class="course-card-body-v2">
+                    <h3 class="course-card-title-v2">{{ course.title }}</h3>
+                    <p class="course-card-desc-v2">{{ course.short_description or course.description }}</p>
+                    
+                    <div class="course-meta-v2">
+                        <span class="course-meta-pill">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> {{ course.total_modules }} Modules
+                        </span>
+                        <span class="course-meta-pill">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg> {{ course.total_videos }} Lessons
+                        </span>
+                        {% if course.estimated_duration %}
+                        <span class="course-meta-pill">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> {{ course.estimated_duration }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if current_user.is_authenticated and course.is_enrolled and not current_user.is_admin() %}
+                    <div class="course-card-progress-wrap">
+                        <div class="course-card-progress-header">
+                            <span class="course-card-progress-label">Progress: {{ course.progress_pct }}%</span>
+                            {% if course.has_certificate %}
+                            <span class="cert-pill cert-pill-issued"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> Certificate Earned</span>
+                            {% elif course.progress_pct >= 75.0 %}
+                            <span class="cert-pill cert-pill-available"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> Certificate Available</span>
+                            {% endif %}
+                        </div>
+                        <div class="player-progress-track">
+                            <div class="player-progress-fill" style="width: {{ course.progress_pct }}%;"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="course-card-footer-v2">
+                        <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-primary btn-block">
+                            View Course Details <span aria-hidden="true">&rarr;</span>
+                        </a>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="text-align: center; padding: 3rem 1rem;">
+            <p style="font-size: 1.1rem; color: var(--color-text-muted);">No courses currently active for {{ grade_info.name }}.</p>
+            <a href="{{ url_for('courses') }}" class="btn btn-secondary" style="margin-top: 1rem;">Browse Other Grades</a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Institutional STEM Strip -->
+<section class="section section-light">
+    <div class="container highlight-strip">
+        <div class="highlight-text">
+            <h2>Looking for custom STEM workshops for your institution?</h2>
+            <p>We tailor course modules, equipment kits, and ATL lab roadmaps to align with your school's specific syllabus and academic calendar.</p>
+        </div>
+        <div class="highlight-action">
+            <a href="{{ url_for('contact') }}" class="btn btn-primary">Contact Us Today &rarr;</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

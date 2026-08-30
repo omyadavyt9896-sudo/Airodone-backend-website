@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}About | airodrone{% endblock %}
+{% block meta_description %}Learn about airodrone's mission, approach, and expertise in building AI, robotics, and STEM ecosystems for schools and institutions.{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <h1>About airodrone</h1>
+            <p>
+                We exist to make innovation accessible, meaningful, and sustainable in every classroom.
+                Our team brings deep experience in education, technology, and lab enablement.
+            </p>
+        </div>
+        <div class="page-hero-media">
+            <img src="{{ url_for('static', filename='images/about/about.jpg') }}" alt="Facilitators collaborating in a lab environment">
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container two-column">
+        <div class="column-text">
+            <h2>Our Mission</h2>
+            <p>
+                airodrone partners with schools and institutions to build future-ready ATL and
+                STEM ecosystems. We go beyond equipment supply to focus on pedagogy, mentorship, and
+                long-term student engagement.
+            </p>
+            <p>
+                By combining structured curriculum, hands-on labs, and competition pathways, we help
+                students discover their interests in AI, Robotics, Coding, Electronics, and emerging
+                technologies while strengthening foundational skills.
+            </p>
+        </div>
+        <div class="column-text">
+            <h2>How We Work</h2>
+            <ul class="checklist">
+                <li>Diagnostic discussions to understand your current lab readiness and vision.</li>
+                <li>Custom roadmaps for ATL setup, utilization, and integration into timetables.</li>
+                <li>Expert-led training for teachers, coordinators, and student leaders.</li>
+                <li>Year-round support via projects, competitions, and showcase opportunities.</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="section section-light">
+    <div class="container">
+        <div class="section-heading">
+            <h2>What Makes Us Different</h2>
+            <p>A holistic partner for your innovation journey, not just a one-time vendor.</p>
+        </div>
+        <div class="card-grid card-grid-3">
+            <article class="card">
+                <h3>Education-First Design</h3>
+                <p>
+                    Every program and lab plan is created with learning outcomes, assessment, and
+                    classroom realities at the center.
+                </p>
+            </article>
+            <article class="card">
+                <h3>Multi-Disciplinary Expertise</h3>
+                <p>
+                    Our mentors span AI, Robotics, Electronics, Design, and Entrepreneurship, enabling
+                    truly interdisciplinary experiences.
+                </p>
+            </article>
+            <article class="card">
+                <h3>Long-Term Partnership</h3>
+                <p>
+                    From the first demo to subsequent academic years, we stay engaged to keep your lab
+                    active, visible, and impactful.
+                </p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container highlight-strip">
+        <div class="highlight-text">
+            <h2>Let’s build your next innovation milestone.</h2>
+            <p>Share your goals and constraints &mdash; we’ll help you design a practical, high-impact plan.</p>
+        </div>
+        <div class="highlight-action">
+            <a href="{{ url_for('contact') }}" class="btn btn-primary">Talk to our team</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+

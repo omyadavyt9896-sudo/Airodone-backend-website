@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | airodrone{% endblock %}
+
+{% block meta_description %}Manage your Airodrone student profile, continue your courses, and access your certificates.{% endblock %}
+
+{% block content %}
+<!-- Student Dashboard Hero Header -->
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <div class="hero-tagline-pill">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Student Dashboard
+            </div>
+            <h1 style="margin-top: 0.5rem;">Welcome back, {{ current_user.name }}!</h1>
+            <p style="font-size: 1.1rem; max-width: 600px; color: var(--color-text-muted);">
+                Track your course progress, manage your profile information, and access your verified certificates.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Dashboard Main Content -->
+<section class="section">
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="max-width: 900px; margin: 0 auto 2rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="dashboard-grid-v2" style="max-width: 1000px; margin: 0 auto;">
+            
+            <!-- Card 1: Learning Progress / Continue Learning -->
+            <article class="card dashboard-card-v2">
+                <div class="dashboard-card-icon-wrap">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                </div>
+                <h3>{% if latest_progress %}Continue Learning{% elif assigned_courses %}Start Learning{% else %}No Courses Assigned Yet{% endif %}</h3>
+                
+                {% if latest_progress %}
+                <p style="font-size: 0.95rem; color: var(--color-text-muted); margin-bottom: 0.75rem;">
+                    <strong>{{ latest_progress.course_title }}</strong><br>
+                    <span style="font-size: 0.875rem;">Lesson: {{ latest_progress.video_title }}</span>
+                </p>
+                <div class="player-progress-track" style="margin-bottom: 1.25rem;">
+                    <div class="player-progress-fill" style="width: {{ latest_progress.completion_percentage }}%;"></div>
+                </div>
+                <a href="{{ url_for('video_player', course_slug=latest_progress.course_slug, video_id=latest_progress.video_id) }}" class="btn btn-primary btn-block">
+                    Continue Learning &rarr;
+                </a>
+                {% elif assigned_courses %}
+                <p style="font-size: 0.95rem; color: var(--color-text-muted); margin-bottom: 0.75rem;">
+                    You have access to <strong>{{ assigned_courses|length }} STEM course{% if assigned_courses|length != 1 %}s{% endif %}</strong>{% if current_user.grade %} (Grade {{ current_user.grade }}){% endif %}:
+                </p>
+                <ul style="list-style: none; padding: 0; margin: 0 0 1.25rem 0; font-size: 0.9rem; color: var(--color-text-main);">
+                    {% for ac in assigned_courses[:3] %}
+                    <li style="margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="color: var(--color-primary); font-weight: bold;">&bull;</span>
+                        <a href="{{ url_for('course_detail', slug=ac.slug) }}" style="color: inherit; text-decoration: none; font-weight: 500;">{{ ac.title }}</a>
+                    </li>
+                    {% endfor %}
+                    {% if assigned_courses|length > 3 %}
+                    <li style="font-size: 0.85rem; color: var(--color-text-muted);">+ {{ assigned_courses|length - 3 }} more</li>
+                    {% endif %}
+                </ul>
+                <a href="{{ url_for('courses', grade=current_user.grade) if current_user.grade else url_for('courses') }}" class="btn btn-primary btn-block">
+                    View My Courses &rarr;
+                </a>
+                {% else %}
+                <p style="font-size: 0.95rem; color: var(--color-text-muted); margin-bottom: 1.5rem;">
+                    Your administrator will provide access to your courses. Please contact your course administrator for access credentials.
+                </p>
+                {% endif %}
+            </article>
+
+            <!-- Card 2: My Certificates -->
+            <article class="card dashboard-card-v2">
+                <div class="dashboard-card-icon-wrap">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                </div>
+                <h3>My Certificates</h3>
+                <p style="font-size: 0.95rem; color: var(--color-text-muted); margin-bottom: 1rem;">
+                    Access and download your verified Airodrone Certificates of Completion.
+                </p>
+                <div style="margin-bottom: 1.25rem;">
+                    <span class="cert-pill cert-pill-available" style="font-size: 0.85rem; padding: 0.35rem 0.75rem;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg> {{ cert_count }} Certificate{% if cert_count != 1 %}s{% endif %} Earned
+                    </span>
+                </div>
+                <a href="{{ url_for('student_certificates') }}" class="btn btn-outline btn-block">
+                    My Certificates &rarr;
+                </a>
+            </article>
+
+            <!-- Card 3: Personal Information -->
+            <article class="card dashboard-card-v2">
+                <div class="dashboard-card-icon-wrap">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <h3>Personal Information</h3>
+                <div class="dashboard-profile-info-list" style="margin-bottom: 1.25rem;">
+                    <div class="summary-info-item">
+                        <span class="summary-label">Full Name:</span>
+                        <span class="summary-val">{{ current_user.name }}</span>
+                    </div>
+                    <div class="summary-info-item">
+                        <span class="summary-label">Email:</span>
+                        <span class="summary-val" style="font-size: 0.85rem;">{{ current_user.email }}</span>
+                    </div>
+                    <div class="summary-info-item">
+                        <span class="summary-label">Father's Name:</span>
+                        <span class="summary-val">{{ current_user.father_name or 'Not specified' }}</span>
+                    </div>
+                    <div class="summary-info-item">
+                        <span class="summary-label">Phone:</span>
+                        <span class="summary-val">{{ current_user.phone or 'Not specified' }}</span>
+                    </div>
+                </div>
+                <a href="{{ url_for('profile') }}" class="btn btn-outline btn-block">
+                    Edit Profile &rarr;
+                </a>
+            </article>
+
+            <!-- Card 4: Account Actions -->
+            <article class="card dashboard-card-v2">
+                <div class="dashboard-card-icon-wrap">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </div>
+                <h3>Account Actions</h3>
+                <p style="font-size: 0.95rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">
+                    Quick account management and session logout.
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <a href="{{ url_for('profile') }}" class="btn btn-secondary btn-block">Edit Profile</a>
+                    <a href="{{ url_for('student_certificates') }}" class="btn btn-secondary btn-block">My Certificates</a>
+                    {% if current_user.is_admin() %}
+                    <a href="{{ url_for('admin') }}" class="btn btn-secondary btn-block">Admin Panel</a>
+                    {% endif %}
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline btn-block" style="color: var(--color-error); border-color: var(--color-error);">
+                        Logout &rarr;
+                    </a>
+                </div>
+            </article>
+
+        </div>
+    </div>
+</section>
+{% endblock %}

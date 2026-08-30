@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Contacts | airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <h1>Admin &mdash; Contact Submissions</h1>
+            <p>Manage all contact form submissions received through the website.</p>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div style="margin-bottom: 2rem;">
+            <a href="{{ url_for('admin') }}" class="btn btn-outline" style="margin-right: 1rem;">← Back to Admin</a>
+            <a href="{{ url_for('admin_users') }}" class="btn btn-outline">Manage Users</a>
+        </div>
+
+        {% if contacts and contacts|length > 0 %}
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Subject</th>
+                        <th>Message</th>
+                        <th>Date / Time (UTC)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in contacts %}
+                    <tr>
+                        <td>{{ row.id }}</td>
+                        <td>{{ row.name }}</td>
+                        <td><a href="mailto:{{ row.email }}">{{ row.email }}</a></td>
+                        <td>{{ row.phone or '-' }}</td>
+                        <td>{{ row.subject or '-' }}</td>
+                        <td class="cell-message">{{ row.message }}</td>
+                        <td>{{ row.created_at }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>No contact submissions found yet.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+

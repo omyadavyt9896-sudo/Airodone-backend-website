@@ -1,0 +1,96 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Evaluate Submission: {{ submission.student_name }} | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_courses') }}">Course Management</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_project_submissions', project_id=project.id) }}">{{ project.title }} Submissions</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Evaluate {{ submission.student_name }}</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>Evaluate Student Submission</h1>
+                <p style="font-size: 1.05rem; max-width: 600px; color: var(--color-text-muted);">
+                    Student: <strong>{{ submission.student_name }}</strong> ({{ submission.student_email }}) &bull; Project: <strong>{{ project.title }}</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container" style="max-width: 750px; margin: 0 auto;">
+        <!-- Submission Details Card -->
+        <div class="card" style="padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--color-border);">
+            <h3 style="margin: 0 0 1rem 0; font-size: 1.25rem;">Student's Submission Work</h3>
+            <p style="margin: 0 0 1rem 0; font-size: 0.85rem; color: var(--color-text-muted);">Submitted at: {{ submission.submitted_at }}</p>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="font-weight: 600; display: block; margin-bottom: 0.4rem;">Text Notes / Links:</label>
+                <div style="padding: 1rem; background: var(--color-bg-alt); border-radius: var(--radius-md, 8px); line-height: 1.6;">
+                    {{ submission.submission_text|nl2br|safe if submission.submission_text else 'No text notes submitted.' }}
+                </div>
+            </div>
+
+            {% if submission.submission_file %}
+            <div>
+                <label style="font-weight: 600; display: block; margin-bottom: 0.4rem;">Submitted File:</label>
+                <a href="{{ url_for('download_project_submission_file', submission_id=submission.id) }}" class="btn btn-secondary">
+                    📥 Download Attachment: {{ submission.submission_file }}
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Evaluation Form Card -->
+        <div class="card profile-form-card" style="padding: 2rem;">
+            <h3 style="font-size: 1.25rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
+                Grade & Feedback
+            </h3>
+
+            <form method="post" class="profile-form">
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="marks" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                        Awarded Marks (out of {{ project.max_marks }}) <span style="color: var(--color-error);">*</span>
+                    </label>
+                    <input type="number" 
+                           id="marks" 
+                           name="marks" 
+                           class="form-control" 
+                           min="0" 
+                           max="{{ project.max_marks }}" 
+                           value="{{ submission.marks if submission.marks is not none else '' }}" 
+                           required 
+                           placeholder="e.g. 85">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label for="feedback" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                        Instructor Feedback & Comments
+                    </label>
+                    <textarea id="feedback" 
+                              name="feedback" 
+                              class="form-control" 
+                              rows="4" 
+                              placeholder="Great work on the obstacle algorithm! Keep refining the sensor calibration...">{{ submission.feedback or '' }}</textarea>
+                </div>
+
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <button type="submit" class="btn btn-primary">
+                        Save Evaluation &rarr;
+                    </button>
+                    <a href="{{ url_for('admin_project_submissions', project_id=project.id) }}" class="btn btn-outline">&larr; Back to Submissions</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

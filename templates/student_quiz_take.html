@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Taking {{ quiz.title }} — Attempt {{ attempt_number }} | airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <span>{{ course.title }}</span>
+            <span aria-hidden="true">&rarr;</span>
+            <span>{{ module.title }}</span>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Quiz Assessment</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.5rem;">
+            <div>
+                <h1>{{ quiz.title }}</h1>
+                <p style="font-size: 1rem; color: var(--color-text-muted);">
+                    Attempt {{ attempt_number }} of {{ quiz.max_attempts }} &bull; {{ questions|length }} Questions &bull; Passing Score: {{ quiz.passing_score }}%
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div style="max-width: 780px; margin: 0 auto;">
+            
+            <!-- Assessment Environment Fullscreen Banner (Phase 7.6A) -->
+            <div id="quizFullscreenBanner" class="quiz-fullscreen-banner">
+                <div class="quiz-banner-left">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    <span id="quizFullscreenStatusText"><strong>Assessment Mode:</strong> Please remain on this page in fullscreen mode while completing the quiz.</span>
+                </div>
+                <button type="button" id="fullscreenToggleBtn" class="btn btn-secondary btn-sm" onclick="requestQuizFullscreen()">
+                    Enter Fullscreen
+                </button>
+            </div>
+
+            <!-- Quiz Submission Form -->
+            <form id="quizForm" method="post" action="{{ url_for('student_quiz_submit', course_slug=course.slug, module_id=module.id) }}">
+                <input type="hidden" name="attempt_id" value="{{ attempt_id }}">
+
+                <div style="display: flex; flex-direction: column; gap: 1.75rem; margin-bottom: 2.5rem;">
+                    {% for q in questions %}
+                    <div class="card profile-form-card" style="padding: 1.75rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem;">
+                            <h3 style="font-size: 1.15rem; margin: 0; line-height: 1.4;">
+                                <span style="color: var(--color-accent); font-weight: 700; margin-right: 0.4rem;">Q{{ loop.index }}.</span>
+                                {{ q.question_text }}
+                            </h3>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <label class="quiz-option-label" style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.85rem 1rem; background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: border-color 0.2s ease, background 0.2s ease;">
+                                <input type="radio" name="question_{{ q.id }}" value="A" style="margin-top: 0.25rem;">
+                                <span style="font-size: 0.95rem; line-height: 1.4;"><strong style="margin-right: 0.25rem;">A.</strong> {{ q.option_a }}</span>
+                            </label>
+
+                            <label class="quiz-option-label" style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.85rem 1rem; background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: border-color 0.2s ease, background 0.2s ease;">
+                                <input type="radio" name="question_{{ q.id }}" value="B" style="margin-top: 0.25rem;">
+                                <span style="font-size: 0.95rem; line-height: 1.4;"><strong style="margin-right: 0.25rem;">B.</strong> {{ q.option_b }}</span>
+                            </label>
+
+                            <label class="quiz-option-label" style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.85rem 1rem; background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: border-color 0.2s ease, background 0.2s ease;">
+                                <input type="radio" name="question_{{ q.id }}" value="C" style="margin-top: 0.25rem;">
+                                <span style="font-size: 0.95rem; line-height: 1.4;"><strong style="margin-right: 0.25rem;">C.</strong> {{ q.option_c }}</span>
+                            </label>
+
+                            <label class="quiz-option-label" style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.85rem 1rem; background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: border-color 0.2s ease, background 0.2s ease;">
+                                <input type="radio" name="question_{{ q.id }}" value="D" style="margin-top: 0.25rem;">
+                                <span style="font-size: 0.95rem; line-height: 1.4;"><strong style="margin-right: 0.25rem;">D.</strong> {{ q.option_d }}</span>
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="card profile-form-card text-center" style="padding: 1.5rem;">
+                    <p style="margin-bottom: 1rem; color: var(--color-text-muted); font-size: 0.9rem;">
+                        Please verify all questions are answered before submitting.
+                    </p>
+                    <button type="submit" id="submitBtn" class="btn btn-primary btn-lg" style="min-width: 220px;">
+                        Submit Quiz &rarr;
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</section>
+
+<!-- Quiz Focus Lost / Attempt Invalidated Modal (Phase 7.6A) -->
+<div id="quizFocusLostModal" class="airo-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="focusLostTitle" hidden>
+    <div class="airo-modal-container">
+        <div class="airo-modal-header-accent" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(245, 158, 11, 0.12) 100%);">
+            <div class="airo-modal-icon-wrapper" style="color: var(--color-error, #ef4444); border-color: rgba(239, 68, 68, 0.2);">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+            </div>
+            <span class="airo-modal-badge" style="color: #ef4444; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2);">SESSION INVALIDATED</span>
+        </div>
+        <div class="airo-modal-body">
+            <h3 id="focusLostTitle" class="airo-modal-title">Quiz Focus Lost</h3>
+            <p class="airo-modal-desc">
+                You navigated away from the quiz window or switched focus. To maintain assessment integrity, this attempt has been marked as invalid with a 0% score.
+            </p>
+        </div>
+        <div class="airo-modal-footer">
+            <button type="button" id="focusLostRedirectBtn" class="btn btn-primary btn-md">
+                View Attempt Results &rarr;
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen & Focus Loss Invalidation Client Script -->
+<script>
+var quizSubmitted = false;
+var isInvalidating = false;
+var attemptId = "{{ attempt_id }}";
+var invalidateUrl = "{{ url_for('student_quiz_invalidate', course_slug=course.slug, module_id=module.id) }}";
+var resultUrl = "{{ url_for('student_quiz_result', course_slug=course.slug, module_id=module.id, attempt_id=attempt_id) }}";
+
+function updateFullscreenStateUI() {
+    var isFS = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+    var statusText = document.getElementById("quizFullscreenStatusText");
+    var toggleBtn = document.getElementById("fullscreenToggleBtn");
+
+    if (isFS) {
+        if (statusText) statusText.innerHTML = '<span class="quiz-banner-indicator">✓ Fullscreen Assessment Mode Active</span>';
+        if (toggleBtn) toggleBtn.style.display = "none";
+    } else {
+        if (statusText) statusText.innerHTML = '<strong>Assessment Mode:</strong> Please remain on this page in fullscreen mode while completing the quiz.';
+        if (toggleBtn) toggleBtn.style.display = "inline-flex";
+    }
+}
+
+function requestQuizFullscreen() {
+    if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().then(updateFullscreenStateUI).catch(function(err) {
+            console.log("Fullscreen request declined or unsupported:", err);
+            updateFullscreenStateUI();
+        });
+    }
+}
+
+function handleInvalidation(reason) {
+    if (quizSubmitted || isInvalidating) return;
+    isInvalidating = true;
+    quizSubmitted = true;
+
+    // Show styled Airodrone focus lost modal (NO native alert)
+    var modal = document.getElementById("quizFocusLostModal");
+    var redirectBtn = document.getElementById("focusLostRedirectBtn");
+    if (redirectBtn) {
+        redirectBtn.onclick = function() {
+            window.location.href = resultUrl;
+        };
+    }
+
+    if (modal) {
+        modal.removeAttribute("hidden");
+        requestAnimationFrame(function() {
+            modal.classList.add("active");
+        });
+    }
+
+    var formData = new FormData();
+    formData.append("attempt_id", attemptId);
+
+    fetch(invalidateUrl, {
+        method: "POST",
+        body: formData,
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+    }).then(function(res) {
+        return res.json();
+    }).then(function(data) {
+        var target = data.redirect_url || resultUrl;
+        if (redirectBtn) {
+            redirectBtn.onclick = function() {
+                window.location.href = target;
+            };
+        }
+        setTimeout(function() {
+            window.location.href = target;
+        }, 2200);
+    }).catch(function() {
+        setTimeout(function() {
+            window.location.href = resultUrl;
+        }, 2200);
+    });
+}
+
+document.getElementById("quizForm").addEventListener("submit", function() {
+    quizSubmitted = true;
+});
+
+document.addEventListener("fullscreenchange", updateFullscreenStateUI);
+document.addEventListener("webkitfullscreenchange", updateFullscreenStateUI);
+
+// Deterrence Focus Detection: Visibility Change & Window Blur
+document.addEventListener("visibilitychange", function() {
+    if (document.hidden && !quizSubmitted) {
+        handleInvalidation("tab or window hidden");
+    }
+});
+
+window.addEventListener("blur", function() {
+    if (!quizSubmitted) {
+        handleInvalidation("window blur");
+    }
+});
+
+// Run initial fullscreen check on load
+updateFullscreenStateUI();
+</script>
+{% endblock %}

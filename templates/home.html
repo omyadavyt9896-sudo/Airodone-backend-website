@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Home | airodrone{% endblock %}
+{% block meta_description %}Discover airodrone's AI, robotics, coding, electronics, drone, web design, ATL setup, and
+STEM workshops designed for schools and institutions.{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="container hero-inner">
+        <div class="hero-text">
+            <div class="hero-tagline-pill">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> AI &bull; Robotics &bull; Drones &bull; STEM Education
+            </div>
+            <h1>Empowering Schools with AI, Robotics & Drone Technology</h1>
+            <p>
+                We partner with schools and training institutions to design, setup, and manage practical STEM and Atal Tinkering Labs (ATL) — equipping students with hands-on technical skills for the future.
+            </p>
+            <div class="hero-actions">
+                <a href="{{ url_for('courses') }}" class="btn btn-primary">Explore STEM Courses &rarr;</a>
+                <a href="{{ url_for('services') }}" class="btn btn-outline">Our Services</a>
+            </div>
+            <div class="hero-meta">
+                <span>ATL Setup &bull; Curriculum Design &bull; Mentor Capacity Building</span>
+            </div>
+        </div>
+        <div class="hero-media">
+            <div class="hero-image-stack">
+                <div class="hero-image-primary">
+                    <img src="{{ url_for('static', filename='images/hero/hero.jpg') }}"
+                        alt="Students working in an innovation lab">
+                </div>
+                <div class="hero-image-secondary">
+                    <img src="{{ url_for('static', filename='images/services/robotics.jpg') }}"
+                        alt="Hands-on robotics learning">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section section-light">
+    <div class="container two-column">
+        <div class="column-text">
+            <h2>Why Choose Airodrone?</h2>
+            <p>
+                We build sustainable, high-impact STEM ecosystems tailored to your school's syllabus and NITI Aayog ATL guidelines. Our turnkey support combines equipment, mentor enablement, and structured activity calendars.
+            </p>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <h3>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 6px; color: var(--color-accent);"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        Curriculum-Aligned
+                    </h3>
+                    <p>NEP 2020-compliant modules across AI, Robotics, Coding, and Electronics.</p>
+                </div>
+                <div class="feature-item">
+                    <h3>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 6px; color: var(--color-accent);"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        End-to-End Enablement
+                    </h3>
+                    <p>Turnkey lab setup, equipment maintenance, teacher training, and event support.</p>
+                </div>
+                <div class="feature-item">
+                    <h3>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 6px; color: var(--color-accent);"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        Practical Skill Building
+                    </h3>
+                    <p>Project-driven activities encouraging computational thinking and problem solving.</p>
+                </div>
+            </div>
+        </div>
+        <div class="column-media grid-media">
+            <img src="{{ url_for('static', filename='images/services/ai.jpg') }}" alt="AI lab session with students">
+            <img src="{{ url_for('static', filename='images/services/robotics.jpg') }}"
+                alt="Students assembling a robot">
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="section-heading">
+            <h2>Core Services</h2>
+            <p>Comprehensive STEM programs and lab setup solutions designed for educational institutions.</p>
+        </div>
+        {% set icon_map = {
+        "artificial-intelligence": "ai",
+        "robotics": "robotics",
+        "coding-programming": "coding",
+        "electronics-designing": "electronics",
+        "drone-technology": "drone",
+        "web-designing": "web",
+        "atl-lab-setup-training": "atl",
+        "competitions-workshops": "workshop"
+        } %}
+        <div class="card-grid">
+            {% for service in services %}
+            <article class="card service-card">
+                <div class="service-card-icon">
+                    <img src="{{ url_for('static', filename='images/services/' ~ icon_map[service.slug] ~ '.jpg') }}"
+                        alt="{{ service.name }} icon">
+                </div>
+                <h3>{{ service.name }}</h3>
+                <p>{{ service.short_description }}</p>
+                <a href="{{ url_for('service_detail', slug=service.slug) }}" class="card-link">
+                    Learn more
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+            {% endfor %}
+        </div>
+        <div class="center" style="margin-top: 2.5rem;">
+            <a href="{{ url_for('services') }}" class="btn btn-outline">View All Services &rarr;</a>
+        </div>
+    </div>
+</section>
+
+<section class="section section-light">
+    <div class="container highlight-strip">
+        <div class="highlight-text">
+            <h2>Ready to activate your ATL or STEM lab?</h2>
+            <p>Share your institution's goals and we'll design a customized roadmap for your campus.</p>
+        </div>
+        <div class="highlight-action">
+            <a href="{{ url_for('contact') }}" class="btn btn-primary">Contact Us Today &rarr;</a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

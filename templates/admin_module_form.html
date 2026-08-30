@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Module | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_courses') }}">Course Management</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_course_detail', course_id=course.id) }}">{{ course.title }}</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ action }} Module</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>{{ action }} Module</h1>
+                <p style="font-size: 1.05rem; max-width: 600px; color: var(--color-text-muted);">
+                    Course: <strong>{{ course.title }}</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div style="max-width: 650px; margin: 0 auto;">
+            {% if error %}
+            <div class="alert alert-error" style="margin-bottom: 1.5rem;">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <div class="card profile-form-card">
+                <h2 style="font-size: 1.3rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem;">
+                    Module Details
+                </h2>
+
+                <form method="post" class="profile-form">
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="title" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Module Title <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <input type="text" 
+                               id="title" 
+                               name="title" 
+                               class="form-control" 
+                               value="{{ request.form.get('title', module.title if module else '') }}" 
+                               required 
+                               placeholder="e.g. Introduction to Drones">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="description" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Description
+                        </label>
+                        <textarea id="description" 
+                                  name="description" 
+                                  class="form-control" 
+                                  rows="3" 
+                                  placeholder="Overview of topics covered in this module...">{{ request.form.get('description', module.description if module else '') }}</textarea>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="sequence" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Sequence / Display Order
+                        </label>
+                        <input type="number" 
+                               id="sequence" 
+                               name="sequence" 
+                               class="form-control" 
+                               value="{{ request.form.get('sequence', module.sequence if module else 1) }}" 
+                               min="1" 
+                               max="99">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.75rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" 
+                                   name="is_active" 
+                                   value="1" 
+                                   {% if request.form.get('is_active') or (module and module.is_active) or (not module) %}checked{% endif %}>
+                            <span style="font-weight: 600;">Active Module</span>
+                        </label>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button type="submit" class="btn btn-primary">Save Module &rarr;</button>
+                        <a href="{{ url_for('admin_course_detail', course_id=course.id) }}" class="btn btn-outline">&larr; Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

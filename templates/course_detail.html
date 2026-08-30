@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if not_found %}Course Not Found | airodrone{% else %}{{ course.title }} | airodrone{% endif %}
+{% endblock %}
+
+{% block meta_description %}
+{% if not_found %}The requested course could not be found.{% else %}Master {{ course.title }} with Airodrone. {{ (course.short_description or course.description)[:150] }}...{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if not_found %}
+<section class="section">
+    <div class="container text-center" style="padding: 4rem 0;">
+        <h1>Course Not Found</h1>
+        <p>Sorry, the course you requested does not exist or has been removed.</p>
+        <a href="{{ url_for('courses') }}" class="btn btn-primary">Back to Courses</a>
+    </div>
+</section>
+{% else %}
+
+<!-- Course Detail Hero Section -->
+<section class="page-hero">
+    <div class="container">
+        <!-- Breadcrumb Navigation -->
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('courses') }}">Courses</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ course.title }}</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 1rem;">
+            <div>
+                <div class="course-meta-pills" style="margin-bottom: 1rem;">
+                    <span class="course-badge-v2">{{ course.level or 'Beginner' }}</span>
+                    {% if course.grade and grades and course.grade in grades %}
+                    <span class="course-stat-pill" style="background: #e0f2fe; color: #0284c7; font-weight: 700;">
+                        Grade {{ course.grade }} &bull; {{ grades[course.grade].classes }}
+                    </span>
+                    {% elif course.grade %}
+                    <span class="course-stat-pill" style="background: #e0f2fe; color: #0284c7; font-weight: 700;">
+                        Grade {{ course.grade }}
+                    </span>
+                    {% endif %}
+                    <span class="course-stat-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> {{ total_modules }} Modules
+                    </span>
+                    <span class="course-stat-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg> {{ total_videos }} Lessons
+                    </span>
+                    {% if course.estimated_duration %}
+                    <span class="course-stat-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> {{ course.estimated_duration }}
+                    </span>
+                    {% endif %}
+                </div>
+                <h1>{{ course.title }}</h1>
+                <p style="font-size: 1.15rem; max-width: 650px; color: var(--color-text-muted);">
+                    {{ course.short_description or course.description[:200] }}
+                </p>
+                <div style="margin-top: 1.75rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    {% if is_enrolled and next_video_id %}
+                    <a href="{{ url_for('video_player', course_slug=course.slug, video_id=next_video_id) }}" class="btn btn-primary">
+                        {% if current_user.is_authenticated and has_any_progress_in_course %}
+                            Continue Learning &rarr;
+                        {% else %}
+                            Start Learning &rarr;
+                        {% endif %}
+                    </a>
+                    {% elif not current_user.is_authenticated %}
+                    <a href="{{ url_for('login', next=request.path) }}" class="btn btn-primary">
+                        Login to Access Course &rarr;
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                        Back to Dashboard &rarr;
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('courses') }}" class="btn btn-secondary">&larr; All Courses</a>
+                </div>
+            </div>
+            <div class="page-hero-media">
+                {% if course.image %}
+                <img src="{{ url_for('static', filename=course.image) }}" 
+                     alt="{{ course.title }} banner" 
+                     class="hero-img-glow"
+                     onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/services/drone.jpg') }}';">
+                {% else %}
+                <img src="{{ url_for('static', filename='images/services/drone.jpg') }}" 
+                     alt="{{ course.title }} fallback banner" 
+                     class="hero-img-glow">
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Course Main Content & Sidebar Grid -->
+<section class="section">
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 1.5rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="course-detail-layout">
+            <!-- Left Main Column: Course Info & Protected Content -->
+            <div class="course-detail-main">
+
+                <!-- Course Description Card -->
+                <div class="card" style="padding: 1.75rem; margin-bottom: 2rem;">
+                    <h2 style="font-size: 1.35rem; margin-bottom: 0.75rem;">About This Course</h2>
+                    <p style="font-size: 1rem; line-height: 1.65; color: var(--color-text); margin: 0; white-space: pre-line;">{{ course.description }}</p>
+                </div>
+
+                <!-- Learning Outcomes Card -->
+                {% if learning_outcomes_list %}
+                <div class="card" style="padding: 1.75rem; margin-bottom: 2rem;">
+                    <h2 style="font-size: 1.35rem; margin-bottom: 1rem;">What You'll Learn</h2>
+                    <ul style="list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.85rem;">
+                        {% for item in learning_outcomes_list %}
+                        <li style="display: flex; align-items: flex-start; gap: 0.65rem; font-size: 0.95rem; line-height: 1.45;">
+                            <span style="color: #16a34a; font-weight: bold; font-size: 1.1rem; flex-shrink: 0;">✓</span>
+                            <span>{{ item }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- Course Benefits Card -->
+                {% if course_benefits_list %}
+                <div class="card" style="padding: 1.75rem; margin-bottom: 2rem;">
+                    <h2 style="font-size: 1.35rem; margin-bottom: 1rem;">Course Benefits</h2>
+                    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+                        {% for item in course_benefits_list %}
+                        <li style="display: flex; align-items: flex-start; gap: 0.65rem; font-size: 0.95rem; line-height: 1.45;">
+                            <span style="color: var(--color-accent); font-weight: bold; flex-shrink: 0;">&bull;</span>
+                            <span>{{ item }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if is_enrolled %}
+                <!-- ENROLLED STUDENT VIEW: Student Progress & Certificate Card -->
+                {% if current_user.is_authenticated and not current_user.is_admin() %}
+                <div class="course-certificate-card" style="margin-bottom: 2.5rem;">
+                    <div class="cert-card-header">
+                        <div>
+                            <h3 style="margin-bottom: 0.25rem;">Your Progress</h3>
+                            <p style="margin: 0; color: var(--color-text-muted); font-size: 0.9rem;">
+                                {{ completed_videos_count }} of {{ total_videos }} lessons completed ({{ course_completion_pct }}% verified)
+                            </p>
+                        </div>
+                        <div class="cert-card-pct-badge">
+                            {{ course_completion_pct }}%
+                        </div>
+                    </div>
+                    
+                    <div class="player-progress-track" style="margin: 1.25rem 0;">
+                        <div class="player-progress-fill" style="width: {{ course_completion_pct }}%;"></div>
+                    </div>
+
+                    <div class="cert-card-actions">
+                        {% if certificate_info %}
+                        <div class="cert-status-box cert-status-issued">
+                            <span class="cert-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></span>
+                            <div>
+                                <strong>✓ Certificate Issued</strong>
+                                <p style="margin:0; font-size:0.85rem;">Certificate ID: <code>{{ certificate_info.certificate_id }}</code> &bull; Issued: {{ certificate_info.issued_at }}</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <a href="{{ url_for('view_certificate', certificate_id=certificate_info.certificate_id) }}" class="btn btn-outline btn-sm">View Certificate</a>
+                            <a href="{{ url_for('download_certificate_pdf', certificate_id=certificate_info.certificate_id) }}" class="btn btn-primary btn-sm">Download PDF &darr;</a>
+                        </div>
+                        {% elif course_completion_pct >= 75.0 %}
+                        <div class="cert-status-box cert-status-available">
+                            <span class="cert-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></span>
+                            <div>
+                                <strong>Certificate Available!</strong>
+                                <p style="margin:0; font-size:0.85rem;">You have achieved {{ course_completion_pct }}% verified completion (>= 75% threshold).</p>
+                            </div>
+                        </div>
+                        <form method="post" action="{{ url_for('generate_course_certificate', course_slug=course.slug) }}">
+                            <button type="submit" class="btn btn-primary">Generate Certificate &rarr;</button>
+                        </form>
+                        {% else %}
+                        <div class="cert-status-box cert-status-locked">
+                            <span class="cert-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+                            <div>
+                                <strong>Certificate Locked</strong>
+                                <p style="margin:0; font-size:0.85rem;">Complete at least 75% of total course video duration to earn your certificate (Current: {{ course_completion_pct }}%).</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Course Content Accordion (Enrolled / Admin) -->
+                <div class="section-heading-left" style="margin-bottom: 1.5rem;">
+                    <h2>Course Content</h2>
+                    <p style="color: var(--color-text-muted);">Explore course modules and click lessons to watch.</p>
+                </div>
+
+                {% if modules %}
+                <div class="curriculum-accordion-group">
+                    {% for module in modules %}
+                    <div class="accordion-module-card">
+                        <button type="button" 
+                                class="accordion-trigger" 
+                                aria-expanded="{% if loop.first %}true{% else %}false{% endif %}" 
+                                aria-controls="module-panel-{{ module.id }}">
+                            <div class="accordion-trigger-left">
+                                <span class="module-number-badge">{{ "%02d" % module.sequence }}</span>
+                                <div style="text-align: left;">
+                                    <h3 class="accordion-module-title">{{ module.title }}</h3>
+                                    {% if module.description %}
+                                    <p class="accordion-module-subtext">{{ module.description }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="accordion-trigger-right">
+                                <span class="accordion-lesson-count">{{ module.videos|length }} Lessons</span>
+                                <svg class="accordion-chevron" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </button>
+
+                        <div id="module-panel-{{ module.id }}" 
+                             class="accordion-panel" 
+                             {% if not loop.first %}hidden{% endif %}>
+                            {% if module.videos %}
+                            <div class="accordion-video-list">
+                                {% for video in module.videos %}
+                                <a href="{{ url_for('video_player', course_slug=course.slug, video_id=video.id) }}" class="accordion-video-item video-item-available">
+                                    <div class="accordion-video-left">
+                                        <div class="accordion-play-icon">
+                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M8 5v14l11-7z"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h4 class="accordion-video-title">{{ video.title }}</h4>
+                                            {% if video.description %}
+                                            <p class="accordion-video-desc">{{ video.description }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="accordion-video-right">
+                                        <span class="video-duration-pill">{{ video.duration or '10:00' }}</span>
+                                        {% if current_user.is_authenticated and video.progress %}
+                                            {% if video.progress.completed %}
+                                                <span class="progress-badge progress-badge-completed">&check; Completed</span>
+                                            {% elif video.progress.completion_percentage > 0 %}
+                                                <span class="progress-badge progress-badge-in-progress">{{ video.progress.completion_percentage|round|int }}% Watched</span>
+                                            {% else %}
+                                                <span class="progress-badge progress-badge-not-started">Not Started</span>
+                                            {% endif %}
+                                        {% endif %}
+                                        <span class="btn btn-primary btn-sm">
+                                            Watch Video &rarr;
+                                        </span>
+                                    </div>
+                                </a>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div style="padding: 1rem; color: var(--color-text-muted); font-size: 0.9rem;">
+                                Lessons coming soon.
+                            </div>
+                            {% endif %}
+
+                            <!-- Optional Module Quiz Section -->
+                            {% if module.quiz %}
+                            <div class="module-quiz-block" style="margin-top: 1.25rem; padding: 1rem 1.25rem; background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md);">
+                                {% if module.quiz_status %}
+                                    {% if module.quiz_status.passed %}
+                                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                                            <div>
+                                                <span class="badge-status badge-active" style="font-size: 0.85rem;">✓ Quiz Passed (Highest Score: {{ module.quiz_status.highest_score }}%)</span>
+                                                <p style="margin: 0.3rem 0 0 0; font-size: 0.85rem; color: var(--color-text-muted);">
+                                                    Quiz: <strong>{{ module.quiz.title }}</strong> &bull; Completed in {{ module.quiz_status.attempts_used }} attempt(s)
+                                                </p>
+                                            </div>
+                                            <a href="{{ url_for('student_quiz_result', course_slug=course.slug, module_id=module.id, attempt_id=module.quiz_status.latest_attempt_id) }}" class="btn btn-outline btn-sm">
+                                                Review Quiz &rarr;
+                                            </a>
+                                        </div>
+                                    {% elif module.quiz_status.attempts_remaining > 0 %}
+                                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                                            <div>
+                                                <h4 style="margin: 0 0 0.25rem 0; font-size: 0.95rem;">Module Quiz: {{ module.quiz.title }}</h4>
+                                                <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">
+                                                    {{ module.quiz.total_questions }} Questions &bull; Passing Score: {{ module.quiz.passing_score }}% &bull; {{ module.quiz_status.attempts_remaining }} attempt(s) remaining
+                                                </p>
+                                            </div>
+                                            <a href="{{ url_for('student_quiz_overview', course_slug=course.slug, module_id=module.id) }}" class="btn btn-primary btn-sm">
+                                                {% if module.quiz_status.attempts_used > 0 %}Retry Quiz &rarr;{% else %}Take Quiz &rarr;{% endif %}
+                                            </a>
+                                        </div>
+                                    {% else %}
+                                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                                            <div>
+                                                <span class="badge-status badge-inactive" style="font-size: 0.85rem;">Maximum attempts reached (5/5)</span>
+                                                <p style="margin: 0.3rem 0 0 0; font-size: 0.85rem; color: var(--color-text-muted);">
+                                                    Highest Score: {{ module.quiz_status.highest_score }}% (Required: {{ module.quiz.passing_score }}%)
+                                                </p>
+                                            </div>
+                                            {% if module.quiz_status.latest_attempt_id %}
+                                            <a href="{{ url_for('student_quiz_result', course_slug=course.slug, module_id=module.id, attempt_id=module.quiz_status.latest_attempt_id) }}" class="btn btn-outline btn-sm">
+                                                View Results &rarr;
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% else %}
+                                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                                        <div>
+                                            <h4 style="margin: 0 0 0.25rem 0; font-size: 0.95rem;">Module Quiz: {{ module.quiz.title }}</h4>
+                                            <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">
+                                                {{ module.quiz.total_questions }} Questions &bull; Passing Score: {{ module.quiz.passing_score }}% &bull; Max 5 Attempts
+                                            </p>
+                                        </div>
+                                        <a href="{{ url_for('student_quiz_overview', course_slug=course.slug, module_id=module.id) }}" class="btn btn-primary btn-sm">
+                                            Take Quiz &rarr;
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+
+                            <!-- Optional Module Project Section -->
+                            {% if module.project %}
+                            <div class="module-project-block" style="margin-top: 0.75rem; padding: 1rem 1.25rem; background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                                    <div>
+                                        <h4 style="margin: 0 0 0.25rem 0; font-size: 0.95rem;">
+                                            📁 Module Project: {{ module.project.title }}
+                                        </h4>
+                                        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">
+                                            Max Marks: {{ module.project.max_marks }}
+                                            {% if module.project.deadline %}&bull; Deadline: {{ module.project.deadline }}{% endif %}
+                                        </p>
+                                        {% if module.project_submission %}
+                                            <div style="margin-top: 0.4rem;">
+                                                {% if module.project_submission.status == 'evaluated' %}
+                                                    <span class="badge-status badge-active" style="font-size: 0.85rem;">✓ Evaluated: {{ module.project_submission.marks }}/{{ module.project.max_marks }} Marks</span>
+                                                {% else %}
+                                                    <span class="badge-status badge-info" style="font-size: 0.85rem; background: #e0f2fe; color: #0369a1;">⏳ Submitted (Pending Evaluation)</span>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <a href="{{ url_for('student_project_view', course_slug=course.slug, module_id=module.id) }}" class="btn btn-primary btn-sm">
+                                            {% if module.project_submission %}View Project Submission &rarr;{% else %}Submit Project &rarr;{% endif %}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <p>This course is being prepared. Lessons will be available soon.</p>
+                </div>
+                {% endif %}
+
+                {% else %}
+                <!-- UNENROLLED / LOGGED-OUT VIEW: Protected Content Notice Box -->
+                <div class="card" style="padding: 2rem; border: 1px solid var(--color-border); border-left: 4px solid var(--color-accent); margin-bottom: 2rem; background: var(--color-bg-subtle);">
+                    <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                        <div style="font-size: 1.8rem; line-height: 1;" aria-hidden="true">🔒</div>
+                        <div>
+                            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.25rem;">Course Content</h3>
+                            <p style="margin: 0 0 1rem 0; color: var(--color-text-muted); font-size: 0.95rem;">
+                                Modules, lessons, videos, quizzes and progress tracking are available to enrolled students.
+                            </p>
+                            
+                            {% if not current_user.is_authenticated %}
+                            <p style="margin: 0 0 1.25rem 0; font-size: 0.9rem; color: var(--color-text);">
+                                Course access is provided by your administrator. Please log in using the credentials provided to you.
+                            </p>
+                            <a href="{{ url_for('login', next=request.path) }}" class="btn btn-primary">
+                                Login to Access Course &rarr;
+                            </a>
+                            {% else %}
+                            <p style="margin: 0 0 1.25rem 0; font-size: 0.9rem; color: var(--color-text);">
+                                Course access has not been assigned to your account. Please contact your administrator if you believe you should have access.
+                            </p>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                                Back to Dashboard
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Sidebar Column: Course Summary -->
+            <div class="course-detail-sidebar">
+                <div class="course-summary-card">
+                    <h3>Course Information</h3>
+                    
+                    <div class="summary-info-list">
+                        <div class="summary-info-item">
+                            <span class="summary-label">Grade</span>
+                            <span class="summary-val">
+                                Grade {{ course.grade }}{% if course.grade and grades and course.grade in grades %} &bull; {{ grades[course.grade].classes }}{% endif %}
+                            </span>
+                        </div>
+                        <div class="summary-info-item">
+                            <span class="summary-label">Level</span>
+                            <span class="summary-val">{{ course.level or 'Beginner' }}</span>
+                        </div>
+                        <div class="summary-info-item">
+                            <span class="summary-label">Modules</span>
+                            <span class="summary-val">{{ total_modules }} Modules</span>
+                        </div>
+                        <div class="summary-info-item">
+                            <span class="summary-label">Lessons</span>
+                            <span class="summary-val">{{ total_videos }} Lessons</span>
+                        </div>
+                        {% if course.estimated_duration %}
+                        <div class="summary-info-item">
+                            <span class="summary-label">Duration</span>
+                            <span class="summary-val">{{ course.estimated_duration }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="summary-info-item">
+                            <span class="summary-label">Certificate</span>
+                            <span class="summary-val">
+                                {% if certificate_info %}
+                                <strong style="color: #16a34a;">✓ Issued</strong>
+                                {% elif course_completion_pct >= 75.0 %}
+                                <strong style="color: var(--color-accent);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 2px;"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> Available</strong>
+                                {% else %}
+                                <span style="color: var(--color-text-muted);">{{ course.certificate_description or '75% Verified Completion Required' }}</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% if is_enrolled and current_user.is_authenticated and not current_user.is_admin() %}
+                        <div class="summary-info-item">
+                            <span class="summary-label">Progress</span>
+                            <span class="summary-val"><strong>{{ course_completion_pct }}%</strong></span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if is_enrolled and current_user.is_authenticated and not current_user.is_admin() %}
+                    <div class="player-progress-track" style="margin: 1rem 0 1.25rem 0;">
+                        <div class="player-progress-fill" style="width: {{ course_completion_pct }}%;"></div>
+                    </div>
+                    {% endif %}
+
+                    {% if is_enrolled and next_video_id %}
+                    <a href="{{ url_for('video_player', course_slug=course.slug, video_id=next_video_id) }}" class="btn btn-primary btn-block">
+                        {% if current_user.is_authenticated and has_any_progress_in_course %}
+                            Continue Learning &rarr;
+                        {% else %}
+                            Start Learning &rarr;
+                        {% endif %}
+                    </a>
+                    {% elif not current_user.is_authenticated %}
+                    <a href="{{ url_for('login', next=request.path) }}" class="btn btn-primary btn-block">
+                        Login to Access Course &rarr;
+                    </a>
+                    {% elif not is_enrolled %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-block">
+                        Back to Dashboard
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Coming Soon Modal / Notice Script -->
+<script>
+function showVideoNotice(videoTitle) {
+    openComingSoonModal(videoTitle);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var triggers = document.querySelectorAll('.accordion-trigger');
+    triggers.forEach(function(trigger) {
+        trigger.addEventListener('click', function() {
+            var expanded = this.getAttribute('aria-expanded') === 'true';
+            var panelId = this.getAttribute('aria-controls');
+            var panel = document.getElementById(panelId);
+            
+            if (expanded) {
+                this.setAttribute('aria-expanded', 'false');
+                if (panel) panel.setAttribute('hidden', '');
+            } else {
+                this.setAttribute('aria-expanded', 'true');
+                if (panel) panel.removeAttribute('hidden');
+            }
+        });
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

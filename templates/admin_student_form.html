@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}{% if edit_mode %}Edit Student — {{ student.name }}{% else %}Create Student Account{% endif %} | airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <h1>Admin &mdash; {% if edit_mode %}Edit Student Account{% else %}Create Student Account{% endif %}</h1>
+            <p>{% if edit_mode %}Update student profile details and account status{% else %}Manually register a new student account{% endif %}</p>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container" style="max-width: 650px; margin: 0 auto;">
+        {% if error %}
+        <div class="alert alert-error" style="margin-bottom: 1.5rem;">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}" style="margin-bottom: 1.5rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="card profile-form-card" style="padding: 2rem;">
+            <form method="post" action="{% if edit_mode %}{{ url_for('admin_user_edit', user_id=student.id) }}{% else %}{{ url_for('admin_user_new') }}{% endif %}">
+                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div>
+                        <label for="name" style="display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.9rem;">Full Name *</label>
+                        <input type="text" id="name" name="name" class="form-input" required value="{{ student.name if edit_mode else (form_data.name if form_data else '') }}" placeholder="e.g. Om Yadav">
+                    </div>
+
+                    <div>
+                        <label for="father_name" style="display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.9rem;">Father's Name</label>
+                        <input type="text" id="father_name" name="father_name" class="form-input" value="{{ student.father_name if edit_mode else (form_data.father_name if form_data else '') }}" placeholder="e.g. Ramesh Yadav">
+                    </div>
+
+                    <div>
+                        <label for="email" style="display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.9rem;">Email Address *</label>
+                        <input type="email" id="email" name="email" class="form-input" required value="{{ student.email if edit_mode else (form_data.email if form_data else '') }}" placeholder="e.g. student@school.edu">
+                    </div>
+
+                    <div>
+                        <label for="student_class" style="display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.9rem;">Student Class (Determines Educational Grade 1–5)</label>
+                        <select id="student_class" name="student_class" class="form-input">
+                            <option value="">-- Select Student Class --</option>
+                            {% set current_cls = student.student_class if edit_mode else (form_data.student_class if form_data else '') %}
+                            <optgroup label="Grade 1 (Classes 1–2)">
+                                <option value="1" {% if current_cls == '1' or current_cls == 'Class 1' %}selected{% endif %}>Class 1 (Grade 1)</option>
+                                <option value="2" {% if current_cls == '2' or current_cls == 'Class 2' %}selected{% endif %}>Class 2 (Grade 1)</option>
+                            </optgroup>
+                            <optgroup label="Grade 2 (Classes 3–5)">
+                                <option value="3" {% if current_cls == '3' or current_cls == 'Class 3' %}selected{% endif %}>Class 3 (Grade 2)</option>
+                                <option value="4" {% if current_cls == '4' or current_cls == 'Class 4' %}selected{% endif %}>Class 4 (Grade 2)</option>
+                                <option value="5" {% if current_cls == '5' or current_cls == 'Class 5' %}selected{% endif %}>Class 5 (Grade 2)</option>
+                            </optgroup>
+                            <optgroup label="Grade 3 (Classes 6–8)">
+                                <option value="6" {% if current_cls == '6' or current_cls == 'Class 6' %}selected{% endif %}>Class 6 (Grade 3)</option>
+                                <option value="7" {% if current_cls == '7' or current_cls == 'Class 7' %}selected{% endif %}>Class 7 (Grade 3)</option>
+                                <option value="8" {% if current_cls == '8' or current_cls == 'Class 8' %}selected{% endif %}>Class 8 (Grade 3)</option>
+                            </optgroup>
+                            <optgroup label="Grade 4 (Classes 9–10)">
+                                <option value="9" {% if current_cls == '9' or current_cls == 'Class 9' %}selected{% endif %}>Class 9 (Grade 4)</option>
+                                <option value="10" {% if current_cls == '10' or current_cls == 'Class 10' %}selected{% endif %}>Class 10 (Grade 4)</option>
+                            </optgroup>
+                            <optgroup label="Grade 5 (Classes 11–12)">
+                                <option value="11" {% if current_cls == '11' or current_cls == 'Class 11' %}selected{% endif %}>Class 11 (Grade 5)</option>
+                                <option value="12" {% if current_cls == '12' or current_cls == 'Class 12' %}selected{% endif %}>Class 12 (Grade 5)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="phone" style="display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.9rem;">Phone Number</label>
+                        <input type="text" id="phone" name="phone" class="form-input" value="{{ student.phone if edit_mode else (form_data.phone if form_data else '') }}" placeholder="e.g. 9876543210">
+                    </div>
+
+                    {% if not edit_mode %}
+                    <div>
+                        <label for="password" style="display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.9rem;">Temporary Password *</label>
+                        <input type="text" id="password" name="password" class="form-input" required value="{{ form_data.password if form_data else '' }}" placeholder="Temporary password for first login (min 6 chars)">
+                    </div>
+                    {% endif %}
+
+                    <div>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.95rem;">
+                            <input type="checkbox" name="is_active" value="1" {% if edit_mode %}{% if student.is_active %}checked{% endif %}{% else %}checked{% endif %}>
+                            <span>Active Account (Student can log in and access assigned courses)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem; align-items: center;">
+                    <button type="submit" class="btn btn-primary btn-md">
+                        {% if edit_mode %}Save Changes{% else %}Create Student Account{% endif %} &rarr;
+                    </button>
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-outline">&larr; Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

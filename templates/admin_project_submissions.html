@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Submissions: {{ project.title }} | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_courses') }}">Course Management</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_course_detail', course_id=project.course_id) }}">{{ project.course_title }}</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Project Submissions</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>📁 Project Submissions</h1>
+                <p style="font-size: 1.05rem; max-width: 600px; color: var(--color-text-muted);">
+                    Project: <strong>{{ project.title }}</strong> &bull; Course: <strong>{{ project.course_title }}</strong> &bull; Max Marks: <strong>{{ project.max_marks }}</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 1.5rem;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+            <a href="{{ url_for('admin_course_detail', course_id=project.course_id) }}" class="btn btn-outline">&larr; Back to Course</a>
+            <a href="{{ url_for('admin_edit_project', project_id=project.id) }}" class="btn btn-secondary">Edit Project Details</a>
+        </div>
+
+        {% if submissions %}
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Class / Grade</th>
+                        <th>Submitted At</th>
+                        <th>Files / Text</th>
+                        <th>Status</th>
+                        <th>Marks</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sub in submissions %}
+                    <tr>
+                        <td>
+                            <strong>{{ sub.student_name }}</strong>
+                            <br><span style="font-size: 0.8rem; color: var(--color-text-muted);">{{ sub.student_email }}</span>
+                        </td>
+                        <td>
+                            {% if sub.student_class %}
+                            Class {{ sub.student_class }}
+                            {% else %}
+                            <span style="color: var(--color-text-muted);">&mdash;</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ sub.submitted_at }}</td>
+                        <td>
+                            {% if sub.submission_file %}
+                            <a href="{{ url_for('download_project_submission_file', submission_id=sub.id) }}" class="btn btn-secondary btn-sm" style="margin-bottom: 0.3rem; display: inline-block;">
+                                📥 File ({{ sub.submission_file }})
+                            </a>
+                            {% endif %}
+                            {% if sub.submission_text %}
+                            <div style="font-size: 0.825rem; color: var(--color-text); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                "{{ sub.submission_text }}"
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if sub.status == 'evaluated' %}
+                            <span class="badge-status badge-active">✓ Evaluated</span>
+                            {% else %}
+                            <span class="badge-status badge-info" style="background: #e0f2fe; color: #0369a1;">⏳ Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if sub.status == 'evaluated' %}
+                            <strong>{{ sub.marks }} / {{ project.max_marks }}</strong>
+                            {% else %}
+                            <span style="color: var(--color-text-muted);">&mdash;</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('admin_evaluate_submission', submission_id=sub.id) }}" class="btn btn-primary btn-sm">
+                                {% if sub.status == 'evaluated' %}Re-evaluate{% else %}Evaluate{% endif %} &rarr;
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state" style="text-align: center; padding: 3rem 1rem;">
+            <p style="font-size: 1.1rem; color: var(--color-text-muted);">No student submissions yet for this project.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

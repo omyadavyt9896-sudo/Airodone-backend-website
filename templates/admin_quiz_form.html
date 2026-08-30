@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Quiz | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_courses') }}">Course Management</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_course_detail', course_id=mod_info.course_id) }}">{{ mod_info.course_title }}</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ action }} Quiz</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>{{ action }} Module Quiz</h1>
+                <p style="font-size: 1.05rem; max-width: 600px; color: var(--color-text-muted);">
+                    Course: <strong>{{ mod_info.course_title }}</strong> &bull; Module: <strong>{{ mod_info.module_title or mod_info.title }}</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div style="max-width: 650px; margin: 0 auto;">
+            {% if error %}
+            <div class="alert alert-error" style="margin-bottom: 1.5rem;">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <div class="card profile-form-card">
+                <h2 style="font-size: 1.3rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem;">
+                    Quiz Details
+                </h2>
+
+                <form method="post" class="profile-form">
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="title" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Quiz Title <span class="required-star">*</span>
+                        </label>
+                        <input type="text" 
+                               id="title" 
+                               name="title" 
+                               class="form-control" 
+                               value="{{ request.form.get('title', quiz.title if quiz else 'Module Quiz') }}" 
+                               required 
+                               placeholder="e.g. Module 1 Knowledge Check">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="description" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Description / Instructions
+                        </label>
+                        <textarea id="description" 
+                                  name="description" 
+                                  class="form-control" 
+                                  rows="3" 
+                                  placeholder="Test your understanding of the concepts covered in this module...">{{ request.form.get('description', quiz.description if quiz else '') }}</textarea>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="passing_score" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Passing Score Percentage (%)
+                        </label>
+                        <input type="number" 
+                               id="passing_score" 
+                               name="passing_score" 
+                               class="form-control" 
+                               value="{{ request.form.get('passing_score', quiz.passing_score if quiz else 70) }}" 
+                               min="1" 
+                               max="100">
+                        <small style="display: block; margin-top: 0.35rem; color: var(--color-text-muted); font-size: 0.825rem;">
+                            Default: 70%. Students must achieve this score or higher to pass.
+                        </small>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="max_attempts" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Maximum Attempts Allowed
+                        </label>
+                        <input type="number" 
+                               id="max_attempts" 
+                               name="max_attempts" 
+                               class="form-control" 
+                               value="{{ request.form.get('max_attempts', quiz.max_attempts if quiz else 5) }}" 
+                               min="1" 
+                               max="50">
+                        <small style="display: block; margin-top: 0.35rem; color: var(--color-text-muted); font-size: 0.825rem;">
+                            Default: 5 attempts. Reaching this limit disables retries.
+                        </small>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.75rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" 
+                                   name="is_active" 
+                                   value="1" 
+                                   {% if request.form.get('is_active') or (quiz and quiz.is_active) or (not quiz) %}checked{% endif %}>
+                            <span style="font-weight: 600;">Active Quiz (Visible to Students)</span>
+                        </label>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button type="submit" class="btn btn-primary">Save Quiz &rarr;</button>
+                        <a href="{{ url_for('admin_course_detail', course_id=mod_info.course_id) }}" class="btn btn-outline">&larr; Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

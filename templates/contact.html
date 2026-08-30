@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Contact | airodrone{% endblock %}
+{% block meta_description %}Contact airodrone to discuss AI, robotics, coding, electronics, drone, web design, ATL lab
+setup, and STEM workshops for your institution.{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <h1>Contact Us</h1>
+            <p>
+                Share a few details about your institution and requirements. Our team will get in touch
+                with you to explore the best way forward.
+            </p>
+        </div>
+        <div class="page-hero-media">
+            <img src="{{ url_for('static', filename='images/contact/contact.jpg') }}"
+                alt="Contact our STEM and ATL lab consulting team">
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container contact-layout">
+        <div class="contact-form-wrapper">
+            {% if error %}
+            <div class="alert alert-error">
+                {{ error }}
+            </div>
+            {% endif %}
+            {% if success %}
+            <div class="alert alert-success">
+                Thank you for reaching out. Your message has been received and we will get back to you shortly.
+            </div>
+            {% endif %}
+
+            <form method="post" action="{{ url_for('contact') }}" class="contact-form">
+                {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="name">Full Name<span class="required">*</span></label>
+                        <input type="text" id="name" name="name" required placeholder="Enter your full name">
+                    </div>
+                    <div class="form-field">
+                        <label for="email">Email<span class="required">*</span></label>
+                        <input type="email" id="email" name="email" required placeholder="you@example.com">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="phone">Phone</label>
+                        <input type="tel" id="phone" name="phone" placeholder="+91-XXXXXXXXXX">
+                    </div>
+                    <div class="form-field">
+                        <label for="subject">Subject</label>
+                        <input type="text" id="subject" name="subject"
+                            placeholder="E.g. ATL setup, AI program, workshop">
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label for="message">Message<span class="required">*</span></label>
+                    <textarea id="message" name="message" rows="5" required
+                        placeholder="Tell us briefly about your institution, classes, and what you are looking for."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Send Message</button>
+                </div>
+            </form>
+        </div>
+        <aside class="contact-aside">
+            <h2>How We Engage</h2>
+            <p>
+                After you submit the form, our team will review your requirements and connect with you
+                within 1&ndash;2 working days to:
+            </p>
+            <ul class="checklist">
+                <li>Clarify your objectives, timelines, and constraints.</li>
+                <li>Recommend relevant programs and engagement models.</li>
+                <li>Share tentative roadmaps and next steps.</li>
+            </ul>
+            <p class="small-text">
+                We respect your time and privacy. Your details are used only to respond to your enquiry.
+            </p>
+        </aside>
+    </div>
+</section>
+{% endblock %}

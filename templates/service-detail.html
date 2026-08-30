@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if not_found %}Service Not Found | airodrone{% else %}{{ detail.title }} | airodrone{% endif %}
+{% endblock %}
+
+{% block meta_description %}
+    {% if not_found %}
+        Detailed STEM service information not found at airodrone.
+    {% else %}
+        Learn more about {{ detail.title }} by airodrone, including benefits, target audience, and program structure.
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+{% if not_found %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <h1>Service not found</h1>
+            <p>The service you are looking for is not available. Please browse our current offerings.</p>
+            <div class="hero-actions">
+                <a href="{{ url_for('services') }}" class="btn btn-primary">Back to Services</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% else %}
+{% set image_map = {
+    "artificial-intelligence": "ai",
+    "robotics": "robotics",
+    "coding-programming": "coding",
+    "electronics-designing": "electronics",
+    "drone-technology": "drone",
+    "web-designing": "web",
+    "atl-lab-setup-training": "atl",
+    "competitions-workshops": "workshop"
+} %}
+
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <h1>{{ detail.title }}</h1>
+            <p>{{ detail.hero_subtitle }}</p>
+            <div class="hero-actions">
+                <a href="{{ url_for('contact') }}" class="btn btn-primary">Contact Us</a>
+                <a href="{{ url_for('services') }}" class="btn btn-outline">Back to Services</a>
+            </div>
+        </div>
+        <div class="page-hero-media">
+            <img src="{{ url_for('static', filename='images/services/' ~ image_map[service.slug] ~ '.jpg') }}" alt="{{ detail.title }} program illustration">
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container two-column">
+        <div class="column-text">
+            <h2>Program Overview</h2>
+            <p>{{ detail.overview }}</p>
+        </div>
+        <div class="column-text">
+            <h2>Key Benefits</h2>
+            <ul class="checklist">
+                {% for benefit in detail.key_benefits %}
+                <li>{{ benefit }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="section section-light">
+    <div class="container two-column">
+        <div class="column-text">
+            <h2>Who This Is For</h2>
+            <ul class="checklist">
+                {% for audience in detail.who_for %}
+                <li>{{ audience }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="column-text">
+            <h2>Next Steps</h2>
+            <p>
+                Every institution is at a different stage in its innovation journey. We begin with a
+                short discovery conversation to understand your context, timelines, and objectives.
+            </p>
+            <p>
+                Based on this, we create a tailored engagement plan outlining program format, duration,
+                and support required for successful implementation.
+            </p>
+            <a href="{{ url_for('contact') }}" class="btn btn-primary">Start the conversation</a>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}
+
+

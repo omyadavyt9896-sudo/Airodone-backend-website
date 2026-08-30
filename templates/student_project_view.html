@@ -1,0 +1,150 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Project: {{ project.title }} — {{ course.title }} | airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <nav class="course-breadcrumb" aria-label="Breadcrumb" style="margin-bottom: 0.5rem;">
+                <a href="{{ url_for('courses') }}">Courses</a>
+                <span aria-hidden="true">&rarr;</span>
+                <a href="{{ url_for('course_detail', slug=course.slug) }}">{{ course.title }}</a>
+                <span aria-hidden="true">&rarr;</span>
+                <span class="current-breadcrumb">Module {{ "%02d" % module.sequence }} Project</span>
+            </nav>
+            <h1>📁 {{ project.title }}</h1>
+            <p style="font-size: 1.05rem; color: var(--color-text-muted);">
+                Course: <strong>{{ course.title }}</strong> &bull; Module {{ "%02d" % module.sequence }}: <strong>{{ module.title }}</strong>
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container" style="max-width: 800px; margin: 0 auto;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 1.5rem;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Project Overview Card -->
+        <div class="card" style="padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--color-border);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+                <div>
+                    <h2 style="margin: 0 0 0.4rem 0; font-size: 1.4rem;">Project Brief & Guidelines</h2>
+                    <span class="course-stat-pill" style="font-weight: 600;">Max Marks: {{ project.max_marks }}</span>
+                    {% if project.deadline %}
+                    <span class="course-stat-pill" style="color: #b45309; background: #fef3c7;">Deadline: {{ project.deadline }}</span>
+                    {% endif %}
+                </div>
+                {% if submission %}
+                    <div>
+                        {% if submission.status == 'evaluated' %}
+                            <span class="badge-status badge-active" style="font-size: 0.95rem; padding: 0.4rem 0.85rem;">
+                                ✓ Evaluated: {{ submission.marks }} / {{ project.max_marks }} Marks
+                            </span>
+                        {% else %}
+                            <span class="badge-status badge-info" style="font-size: 0.95rem; padding: 0.4rem 0.85rem; background: #e0f2fe; color: #0369a1;">
+                                ⏳ Submitted on {{ submission.submitted_at }}
+                            </span>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div style="font-size: 1rem; line-height: 1.7; color: var(--color-text); margin-bottom: 1.5rem;">
+                {{ project.description|nl2br|safe if project.description else 'Follow the instructions provided in the module lessons to complete this practical project.' }}
+            </div>
+        </div>
+
+        {% if submission and submission.status == 'evaluated' %}
+        <!-- Evaluated Feedback Card -->
+        <div class="card" style="padding: 2rem; margin-bottom: 2rem; border: 1px solid #16a34a; background: #f0fdf4;">
+            <h3 style="margin: 0 0 0.75rem 0; color: #166534; font-size: 1.2rem;">✓ Instructor Evaluation</h3>
+            <div style="margin-bottom: 1rem;">
+                <strong>Score:</strong> <span style="font-size: 1.2rem; font-weight: 700; color: #15803d;">{{ submission.marks }} / {{ project.max_marks }}</span>
+                {% if submission.evaluated_at %}
+                <span style="font-size: 0.85rem; color: var(--color-text-muted); margin-left: 0.75rem;">Evaluated on {{ submission.evaluated_at }}</span>
+                {% endif %}
+            </div>
+            {% if submission.feedback %}
+            <div style="background: #fff; padding: 1.25rem; border-radius: var(--radius-md, 8px); border: 1px solid #bbf7d0;">
+                <strong>Feedback:</strong>
+                <p style="margin: 0.5rem 0 0 0; color: var(--color-text); line-height: 1.6;">{{ submission.feedback|nl2br|safe }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Submission Form Card -->
+        <div class="card profile-form-card" style="padding: 2rem;">
+            <h3 style="font-size: 1.25rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
+                {% if submission %}Your Submission{% else %}Submit Project Work{% endif %}
+            </h3>
+
+            {% if submission and submission.status == 'evaluated' %}
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.35rem; color: var(--color-text-muted);">Submitted Text / Notes:</label>
+                    <div style="padding: 1rem; background: var(--color-bg-alt); border-radius: var(--radius-md, 8px);">
+                        {{ submission.submission_text|nl2br|safe if submission.submission_text else 'No text notes submitted.' }}
+                    </div>
+                </div>
+
+                {% if submission.submission_file %}
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.35rem; color: var(--color-text-muted);">Submitted File:</label>
+                    <a href="{{ url_for('download_project_submission_file', submission_id=submission.id) }}" class="btn btn-secondary btn-sm">
+                        📥 Download Submitted File ({{ submission.submission_file }})
+                    </a>
+                </div>
+                {% endif %}
+
+                <div style="margin-top: 1.5rem;">
+                    <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-primary">&larr; Back to Course</a>
+                </div>
+
+            {% else %}
+                <form method="post" enctype="multipart/form-data">
+                    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        <div>
+                            <label for="submission_text" style="display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.95rem;">
+                                Submission Text / Project Summary / Github or Drive Link
+                            </label>
+                            <textarea id="submission_text" 
+                                      name="submission_text" 
+                                      rows="5" 
+                                      class="form-control" 
+                                      placeholder="Explain your project findings, code approach, or paste repository/document links...">{{ submission.submission_text if submission else '' }}</textarea>
+                        </div>
+
+                        <div>
+                            <label for="submission_file" style="display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.95rem;">
+                                Project File Attachment (PDF, ZIP, DOCX, Code Files, Images up to 50MB)
+                            </label>
+                            <input type="file" id="submission_file" name="submission_file" class="form-control">
+                            {% if submission and submission.submission_file %}
+                            <small style="display: block; margin-top: 0.4rem; color: #16a34a; font-weight: 600;">
+                                Current attached file: {{ submission.submission_file }} (Upload a new file to replace)
+                            </small>
+                            {% endif %}
+                        </div>
+
+                        <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1rem;">
+                            <button type="submit" class="btn btn-primary">
+                                {% if submission %}Update Submission{% else %}Submit Project Work{% endif %} &rarr;
+                            </button>
+                            <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-outline">&larr; Back to Course</a>
+                        </div>
+                    </div>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

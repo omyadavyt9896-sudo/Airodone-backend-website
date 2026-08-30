@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Services | airodrone{% endblock %}
+{% block meta_description %}Explore airodrone's services including AI, Robotics, Coding, Electronics, Drone Technology, Web Designing, ATL lab setup, and STEM competitions & workshops.{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <h1>Services</h1>
+            <p>
+                A complete portfolio of STEM and innovation services for schools, colleges, and training
+                institutions. Choose the right combination to match your goals and timeline.
+            </p>
+        </div>
+        <div class="page-hero-media">
+            <img src="{{ url_for('static', filename='images/services/atl.jpg') }}" alt="STEM services and innovation programs illustration">
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="section-heading">
+            <h2>What We Offer</h2>
+            <p>Eight core service lines designed to build and scale innovation capacity in your institution.</p>
+        </div>
+        {% set icon_map = {
+            "artificial-intelligence": "ai",
+            "robotics": "robotics",
+            "coding-programming": "coding",
+            "electronics-designing": "electronics",
+            "drone-technology": "drone",
+            "web-designing": "web",
+            "atl-lab-setup-training": "atl",
+            "competitions-workshops": "workshop"
+        } %}
+        <div class="card-grid card-grid-4">
+            {% for service in services %}
+            <article class="card service-card">
+                <div class="service-card-icon">
+                    <img src="{{ url_for('static', filename='images/services/' ~ icon_map[service.slug] ~ '.jpg') }}"
+                         alt="{{ service.name }} icon">
+                </div>
+                <h3>{{ service.name }}</h3>
+                <p>{{ service.short_description }}</p>
+                <a href="{{ url_for('service_detail', slug=service.slug) }}" class="card-link">
+                    View details
+                    <span aria-hidden="true">→</span>
+                </a>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="section section-light">
+    <div class="container highlight-strip">
+        <div class="highlight-text">
+            <h2>Need a custom combination of services?</h2>
+            <p>We can design integrated multi-year programs that grow with your students and school.</p>
+        </div>
+        <div class="highlight-action">
+            <a href="{{ url_for('contact') }}" class="btn btn-primary">Request a proposal</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+

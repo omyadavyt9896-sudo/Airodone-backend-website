@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}{% if show_grades %}Admin — Educational Grade Courses | airodrone{% else %}Admin — Grade {{ selected_grade }} ({{ grade_info.classes }}) Courses | airodrone{% endif %}{% endblock %}
+{% block meta_description %}Manage STEM courses, modules, quizzes, and project contents across educational grades on Airodrone.{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            {% if show_grades %}
+            <span class="current-breadcrumb">Course Management</span>
+            {% else %}
+            <a href="{{ url_for('admin_courses') }}">Course Management</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Grade {{ selected_grade }} ({{ grade_info.classes }})</span>
+            {% endif %}
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                {% if not show_grades %}
+                <div style="margin-bottom: 0.75rem;">
+                    <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                        &larr; Back to All Grades
+                    </a>
+                </div>
+                {% endif %}
+
+                <h1>
+                    {% if show_grades %}
+                    Admin &mdash; Course Management
+                    {% else %}
+                    Grade {{ selected_grade }} &mdash; {{ grade_info.name }}
+                    {% endif %}
+                </h1>
+                <p style="font-size: 1.1rem; max-width: 650px; color: var(--color-text-muted);">
+                    {% if show_grades %}
+                    Select an Educational Grade pathway below to manage its courses, curriculum modules, uploaded video lessons, quizzes, and practical projects.
+                    {% else %}
+                    Targeted for {{ grade_info.classes }}. {{ grade_info.description }}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 2rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% if show_grades %}
+        <!-- STEP 1: Top-Level 5 Educational Grade Cards -->
+        <div class="admin-action-bar">
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <a href="{{ url_for('admin_add_course') }}" class="btn btn-primary">
+                    + Add New Course
+                </a>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="{{ url_for('admin_users') }}" class="btn btn-outline btn-sm">Manage Users</a>
+                <a href="{{ url_for('admin_contacts') }}" class="btn btn-outline btn-sm">View Contacts</a>
+                <a href="{{ url_for('admin') }}" class="btn btn-outline btn-sm">Admin Home</a>
+            </div>
+        </div>
+
+        <div class="card-grid card-grid-3">
+            {% for g in grades %}
+            <article class="card course-card-v2" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div class="course-card-body-v2" style="padding: 2rem 1.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <span class="course-badge-v2" style="position: static; background: var(--color-primary-light, #e0f2fe); color: var(--color-primary, #0284c7); font-weight: 700; padding: 0.35rem 0.75rem; border-radius: 9999px;">
+                            Grade {{ g.grade_id }}
+                        </span>
+                        <span style="font-size: 0.85rem; color: var(--color-text-muted); font-weight: 600;">
+                            {{ g.total_courses }} {{ 'Course' if g.total_courses == 1 else 'Courses' }} ({{ g.active_courses }} Active)
+                        </span>
+                    </div>
+
+                    <h3 class="course-card-title-v2" style="font-size: 1.35rem; margin-bottom: 0.35rem;">
+                        {{ g.name }}
+                    </h3>
+                    <div style="color: var(--color-primary, #0284c7); font-weight: 600; font-size: 0.95rem; margin-bottom: 0.75rem;">
+                        {{ g.classes }}
+                    </div>
+                    <p class="course-card-desc-v2" style="margin-bottom: 1.5rem; color: var(--color-text-muted);">
+                        {{ g.description }}
+                    </p>
+
+                    <div class="course-card-footer-v2" style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--color-border, #e2e8f0);">
+                        <a href="{{ url_for('admin_courses', grade=g.grade_id) }}" class="btn btn-primary btn-block">
+                            Manage Grade {{ g.grade_id }} Courses &rarr;
+                        </a>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        <!-- STEP 2: Courses Inside Selected Grade -->
+        <div class="admin-action-bar">
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <a href="{{ url_for('admin_add_course', grade=selected_grade) }}" class="btn btn-primary">
+                    + Add Course to Grade {{ selected_grade }}
+                </a>
+                <a href="{{ url_for('admin_courses') }}" class="btn btn-outline">
+                    &larr; Switch Grade
+                </a>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="{{ url_for('admin_users') }}" class="btn btn-outline btn-sm">Manage Users</a>
+                <a href="{{ url_for('admin') }}" class="btn btn-outline btn-sm">Admin Home</a>
+            </div>
+        </div>
+
+        {% if courses %}
+        <div class="card-grid card-grid-3">
+            {% for course in courses %}
+            <article class="card admin-course-card-v2" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div class="admin-card-header-v2">
+                    <span class="course-badge-v2" style="position: static;">Grade {{ course.grade }} &bull; {{ course.level or 'All Levels' }}</span>
+                    <span class="badge-status {{ 'badge-active' if course.is_active else 'badge-inactive' }}">
+                        {{ 'Active' if course.is_active else 'Inactive' }}
+                    </span>
+                </div>
+                
+                <h3 style="font-size: 1.3rem; margin: 1rem 0 0.5rem 0; color: var(--color-text);">{{ course.title }}</h3>
+                <p style="font-size: 0.9rem; color: var(--color-text-muted); line-height: 1.5; flex: 1; margin-bottom: 1.25rem;">
+                    {{ course.short_description or (course.description[:120] + '...' if course.description else 'No description available.') }}
+                </p>
+
+                <div class="course-meta-v2" style="margin-bottom: 1.25rem;">
+                    <span class="course-meta-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> {{ course.total_modules }} Modules
+                    </span>
+                    <span class="course-meta-pill">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg> {{ course.total_videos }} Videos
+                    </span>
+                </div>
+
+                <div style="margin-top: auto; display: flex; gap: 0.5rem;">
+                    <a href="{{ url_for('admin_course_detail', course_id=course.id) }}" class="btn btn-primary btn-block">
+                        Manage Course &rarr;
+                    </a>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="text-align: center; padding: 3.5rem 1rem;">
+            <p style="font-size: 1.15rem; color: var(--color-text-muted); margin-bottom: 1rem;">
+                No courses found in Grade {{ selected_grade }} ({{ grade_info.classes }}).
+            </p>
+            <a href="{{ url_for('admin_add_course', grade=selected_grade) }}" class="btn btn-primary">
+                + Add First Course to Grade {{ selected_grade }}
+            </a>
+        </div>
+        {% endif %}
+
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

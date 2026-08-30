@@ -1,0 +1,442 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Course | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_courses') }}">Course Management</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ action }} Course</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>{{ action }} STEM Course</h1>
+                <p style="font-size: 1.05rem; max-width: 620px; color: var(--color-text-muted);">
+                    Configure course identity, educational grade pathway, thumbnail artwork, curriculum details, and publishing status.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div style="max-width: 820px; margin: 0 auto;">
+            {% if error %}
+            <div class="alert alert-error" style="margin-bottom: 1.75rem;">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data" class="profile-form" id="courseForm">
+                <!-- SECTION 1: Course Information -->
+                <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
+                        <span style="font-weight: 700; font-size: 1.15rem; color: var(--color-primary, #2563eb);">1.</span>
+                        <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Course Information</h2>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="title" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Course Title <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <input type="text" 
+                               id="title" 
+                               name="title" 
+                               class="form-control" 
+                               value="{{ request.form.get('title', course.title if course else '') }}" 
+                               required 
+                               placeholder="e.g. Artificial Intelligence & Robotics">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem;">
+                        <div class="form-group">
+                            <label for="slug" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                                URL Slug <span style="color: var(--color-text-muted); font-size: 0.85rem; font-weight: normal;">(Optional, auto-generated)</span>
+                            </label>
+                            <input type="text" 
+                                   id="slug" 
+                                   name="slug" 
+                                   class="form-control" 
+                                   value="{{ request.form.get('slug', course.slug if course else '') }}" 
+                                   placeholder="e.g. artificial-intelligence">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="level" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                                Target Skill Level
+                            </label>
+                            <select id="level" name="level" class="form-control">
+                                {% set current_lvl = request.form.get('level', course.level if course else 'Beginner') %}
+                                <option value="Beginner" {% if current_lvl == 'Beginner' %}selected{% endif %}>Beginner</option>
+                                <option value="Intermediate" {% if current_lvl == 'Intermediate' %}selected{% endif %}>Intermediate</option>
+                                <option value="Advanced" {% if current_lvl == 'Advanced' %}selected{% endif %}>Advanced</option>
+                                <option value="All Levels" {% if current_lvl == 'All Levels' %}selected{% endif %}>All Levels</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: Educational Grade Selection -->
+                <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
+                        <span style="font-weight: 700; font-size: 1.15rem; color: var(--color-primary, #2563eb);">2.</span>
+                        <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Educational Grade <span style="color: var(--color-error);">*</span></h2>
+                    </div>
+                    <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">
+                        Select the single educational grade level this course is authored for.
+                    </p>
+
+                    {% set current_grd = request.form.get('grade', course.grade if course else default_grade|default(1))|int %}
+                    <input type="hidden" name="grade" id="selectedGradeInput" value="{{ current_grd }}">
+
+                    <div class="grade-selection-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;">
+                        {% for g_id in [1, 2, 3, 4, 5] %}
+                        <div class="grade-select-card {% if current_grd == g_id %}selected{% endif %}" 
+                             data-grade="{{ g_id }}" 
+                             data-classes="{{ grades[g_id].classes }}" 
+                             data-name="{{ grades[g_id].name }}"
+                             onclick="handleGradeSelect({{ g_id }}, '{{ grades[g_id].classes }}', '{{ grades[g_id].name }}')"
+                             role="button"
+                             tabindex="0"
+                             aria-checked="{{ 'true' if current_grd == g_id else 'false' }}">
+                            <div class="grade-select-indicator">
+                                <span class="grade-select-check">&check;</span>
+                            </div>
+                            <div class="grade-select-title">{{ grades[g_id].name }}</div>
+                            <div class="grade-select-classes">{{ grades[g_id].classes }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div id="gradeConfirmNotice" class="grade-confirmation-box" style="padding: 0.75rem 1rem; background: var(--color-bg-subtle, #f0fdf4); border: 1px solid #bbf7d0; border-radius: var(--radius-md, 8px); font-size: 0.9rem; color: #166534;">
+                        <strong>&check; {{ grades[current_grd].name }} selected:</strong> This course will be available to students in {{ grades[current_grd].classes }}.
+                    </div>
+                </div>
+
+                <!-- SECTION 3: Course Thumbnail -->
+                <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
+                        <span style="font-weight: 700; font-size: 1.15rem; color: var(--color-primary, #2563eb);">3.</span>
+                        <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Course Thumbnail <span style="color: var(--color-error);">*</span></h2>
+                    </div>
+
+                    <!-- Hidden path input for fallback/edit -->
+                    <input type="hidden" name="image" id="courseImageFallback" value="{{ request.form.get('image', course.image if course else 'images/services/drone.jpg') }}">
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; align-items: start;">
+                        <!-- Upload Controls -->
+                        <div>
+                            <label class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                                Upload Thumbnail Image
+                            </label>
+                            <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 0.75rem;">
+                                Upload a clear cover image for catalogue cards and course hero.
+                            </p>
+
+                            <div style="position: relative; margin-bottom: 0.75rem;">
+                                <input type="file" 
+                                       id="thumbnailFileInput" 
+                                       name="thumbnail_file" 
+                                       accept="image/jpeg,image/png,image/webp,image/jpg" 
+                                       onchange="handleThumbnailPreview(this)" 
+                                       style="display: none;">
+                                <button type="button" 
+                                        onclick="document.getElementById('thumbnailFileInput').click()" 
+                                        class="btn btn-outline btn-md" 
+                                        style="display: inline-flex; align-items: center; gap: 0.5rem; width: 100%; justify-content: center; border-style: dashed; border-width: 2px; padding: 0.9rem;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                    <span id="uploadButtonText">{% if course and course.image %}Replace Thumbnail Image{% else %}Choose Image File{% endif %}</span>
+                                </button>
+                            </div>
+
+                            <div id="thumbnailClientError" class="alert alert-error" style="display: none; font-size: 0.85rem; padding: 0.5rem 0.75rem; margin-top: 0.5rem;"></div>
+
+                            <div style="font-size: 0.8rem; color: var(--color-text-muted); line-height: 1.5; margin-top: 0.5rem;">
+                                &bull; Formats: <strong>JPG, JPEG, PNG, WEBP</strong><br>
+                                &bull; Recommended Aspect Ratio: <strong>16:9</strong> (e.g. 1280&times;720)<br>
+                                &bull; Max File Size: <strong>5 MB</strong>
+                            </div>
+                        </div>
+
+                        <!-- Live Preview Box -->
+                        <div>
+                            <label class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                                Thumbnail Preview
+                            </label>
+                            <div class="thumbnail-preview-frame" style="width: 100%; aspect-ratio: 16/9; background: #0f172a; border-radius: var(--radius-md, 8px); overflow: hidden; border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: center; position: relative;">
+                                {% if course and course.image %}
+                                    <img id="thumbnailPreviewImg" 
+                                         src="{{ url_for('static', filename=course.image) }}" 
+                                         alt="Course thumbnail preview" 
+                                         style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                                {% else %}
+                                    <img id="thumbnailPreviewImg" 
+                                         src="{{ url_for('static', filename='images/services/drone.jpg') }}" 
+                                         alt="Course thumbnail preview" 
+                                         style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                                {% endif %}
+                                <div id="previewOverlayBadge" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.7); color: #fff; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px;">
+                                    16:9 Preview
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 4: Public Course Information -->
+                <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
+                        <span style="font-weight: 700; font-size: 1.15rem; color: var(--color-primary, #2563eb);">4.</span>
+                        <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Public Course Information</h2>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="short_description" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Short Description <span style="color: var(--color-text-muted); font-size: 0.85rem; font-weight: normal;">(Used on catalogue course cards)</span>
+                        </label>
+                        <textarea id="short_description" 
+                                  name="short_description" 
+                                  class="form-control" 
+                                  rows="2" 
+                                  placeholder="Brief summary for catalogue card preview...">{{ request.form.get('short_description', course.short_description if course else '') }}</textarea>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="description" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Full Description <span style="color: var(--color-error);">*</span> <span style="color: var(--color-text-muted); font-size: 0.85rem; font-weight: normal;">(Used on public course detail page)</span>
+                        </label>
+                        <textarea id="description" 
+                                  name="description" 
+                                  class="form-control" 
+                                  rows="5" 
+                                  required 
+                                  placeholder="Detailed course overview, learning approach, and curriculum description...">{{ request.form.get('description', course.description if course else '') }}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="estimated_duration" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Estimated Duration
+                        </label>
+                        <input type="text" 
+                               id="estimated_duration" 
+                               name="estimated_duration" 
+                               class="form-control" 
+                               value="{{ request.form.get('estimated_duration', course.estimated_duration if course else '') }}" 
+                               placeholder="e.g. 12 Hours of Hands-on Learning">
+                    </div>
+                </div>
+
+                <!-- SECTION 5: Additional Curriculum Information -->
+                <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
+                        <span style="font-weight: 700; font-size: 1.15rem; color: var(--color-primary, #2563eb);">5.</span>
+                        <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Curriculum Details &amp; Certificate</h2>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="learning_outcomes" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            What Students Will Learn <span style="color: var(--color-text-muted); font-size: 0.85rem; font-weight: normal;">(One learning outcome per line)</span>
+                        </label>
+                        <textarea id="learning_outcomes" 
+                                  name="learning_outcomes" 
+                                  class="form-control" 
+                                  rows="4" 
+                                  placeholder="AI Fundamentals & Neural Networks&#10;Computer Vision & Model Deployment&#10;Hands-on Python & Robotics Projects">{{ request.form.get('learning_outcomes', course.learning_outcomes if course else '') }}</textarea>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label for="course_benefits" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Course Benefits <span style="color: var(--color-text-muted); font-size: 0.85rem; font-weight: normal;">(One practical benefit per line)</span>
+                        </label>
+                        <textarea id="course_benefits" 
+                                  name="course_benefits" 
+                                  class="form-control" 
+                                  rows="3" 
+                                  placeholder="Instructor-guided STEM curriculum&#10;Verified completion certificate for portfolio&#10;Practical hands-on hardware & coding experience">{{ request.form.get('course_benefits', course.course_benefits if course else '') }}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="certificate_description" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Certificate Description / Requirement
+                        </label>
+                        <input type="text" 
+                               id="certificate_description" 
+                               name="certificate_description" 
+                               class="form-control" 
+                               value="{{ request.form.get('certificate_description', course.certificate_description if course else '') }}" 
+                               placeholder="e.g. Earn an official Airodrone Certificate upon 75% verified course completion.">
+                    </div>
+                </div>
+
+                <!-- SECTION 6: Publishing Status -->
+                <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
+                        <span style="font-weight: 700; font-size: 1.15rem; color: var(--color-primary, #2563eb);">6.</span>
+                        <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Publishing Status</h2>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer;">
+                            <input type="checkbox" 
+                                   name="is_active" 
+                                   value="1" 
+                                   style="width: 1.15rem; height: 1.15rem;"
+                                   {% if request.form.get('is_active') or (course and course.is_active) or (not course) %}checked{% endif %}>
+                            <span style="font-weight: 600; font-size: 0.95rem;">Active (Published &amp; Visible in Grade Catalogue)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- SECTION 7: Actions -->
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; align-items: center;">
+                    <button type="submit" class="btn btn-primary btn-md">
+                        {% if action == 'Create' %}Create Course &rarr;{% else %}Save Changes &rarr;{% endif %}
+                    </button>
+                    {% if course %}
+                    <a href="{{ url_for('admin_course_detail', course_id=course.id) }}" class="btn btn-outline">&larr; Cancel</a>
+                    {% else %}
+                    <a href="{{ url_for('admin_courses') }}" class="btn btn-outline">&larr; Cancel</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<style>
+/* Grade Selection Card Styles */
+.grade-select-card {
+    border: 2px solid var(--color-border, #e2e8f0);
+    border-radius: var(--radius-md, 8px);
+    padding: 0.85rem 0.65rem;
+    text-align: center;
+    background: var(--color-bg-card, #ffffff);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    position: relative;
+}
+
+.grade-select-card:hover {
+    border-color: var(--color-primary, #2563eb);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+}
+
+.grade-select-card.selected {
+    border-color: var(--color-primary, #2563eb);
+    background: #eff6ff;
+    box-shadow: 0 0 0 1px var(--color-primary, #2563eb);
+}
+
+.grade-select-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--color-border, #cbd5e1);
+    margin: 0 auto 0.4rem auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    transition: all 0.2s ease;
+}
+
+.grade-select-card.selected .grade-select-indicator {
+    background: var(--color-primary, #2563eb);
+    border-color: var(--color-primary, #2563eb);
+}
+
+.grade-select-check {
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: none;
+}
+
+.grade-select-card.selected .grade-select-check {
+    display: block;
+}
+
+.grade-select-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--color-text, #0f172a);
+    margin-bottom: 0.15rem;
+}
+
+.grade-select-card.selected .grade-select-title {
+    color: var(--color-primary, #2563eb);
+}
+
+.grade-select-classes {
+    font-size: 0.8rem;
+    color: var(--color-text-muted, #64748b);
+}
+</style>
+
+<script>
+function handleGradeSelect(gradeNum, classesText, gradeName) {
+    var input = document.getElementById("selectedGradeInput");
+    if (input) input.value = gradeNum;
+
+    document.querySelectorAll(".grade-select-card").forEach(function(card) {
+        if (card.getAttribute("data-grade") === String(gradeNum)) {
+            card.classList.add("selected");
+            card.setAttribute("aria-checked", "true");
+        } else {
+            card.classList.remove("selected");
+            card.setAttribute("aria-checked", "false");
+        }
+    });
+
+    var notice = document.getElementById("gradeConfirmNotice");
+    if (notice) {
+        notice.innerHTML = '<strong>&check; ' + gradeName + ' selected:</strong> This course will be available to students in ' + classesText + '.';
+    }
+}
+
+function handleThumbnailPreview(input) {
+    var previewImg = document.getElementById("thumbnailPreviewImg");
+    var errorBox = document.getElementById("thumbnailClientError");
+    var btnText = document.getElementById("uploadButtonText");
+    if (errorBox) errorBox.style.display = "none";
+
+    if (input.files && input.files[0]) {
+        var file = input.files[0];
+        var allowedExts = ["jpg", "jpeg", "png", "webp"];
+        var ext = file.name.split('.').pop().toLowerCase();
+
+        if (allowedExts.indexOf(ext) === -1) {
+            if (errorBox) {
+                errorBox.innerText = "Unsupported file type (." + ext + "). Please select a JPG, JPEG, PNG, or WEBP image.";
+                errorBox.style.display = "block";
+            }
+            input.value = "";
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            if (errorBox) {
+                errorBox.innerText = "Image file is too large (" + (file.size / (1024*1024)).toFixed(1) + " MB). Maximum allowed size is 5 MB.";
+                errorBox.style.display = "block";
+            }
+            input.value = "";
+            return;
+        }
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            if (previewImg) previewImg.src = e.target.result;
+            if (btnText) btnText.textContent = "Replace Selected: " + file.name;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+</script>
+{% endblock %}

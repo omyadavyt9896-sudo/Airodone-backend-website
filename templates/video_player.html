@@ -1,0 +1,440 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if not_found %}Video Not Found | airodrone{% else %}{{ video.title }} — {{ course.title }} | airodrone{% endif %}
+{% endblock %}
+
+{% block meta_description %}
+{% if not_found %}The requested video could not be found.{% else %}Watch {{ video.title }} in {{ course.title }} on Airodrone.{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if not_found %}
+<section class="section">
+    <div class="container text-center" style="padding: 4rem 0;">
+        <h1>Video Not Found</h1>
+        <p>Sorry, the video you requested does not exist, is inactive, or has been moved.</p>
+        <a href="{{ url_for('courses') }}" class="btn btn-primary">Back to Courses</a>
+    </div>
+</section>
+{% else %}
+
+<section class="section" style="padding-top: 1.75rem;">
+    <div class="container">
+        <!-- Breadcrumb Navigation -->
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('courses') }}">Courses</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('course_detail', slug=course.slug) }}">{{ course.title }}</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ video.title }}</span>
+        </nav>
+
+        <!-- Toast Notification for Anti-Fast-Forward -->
+        <div id="antiSeekToast" class="anti-seek-toast" style="display: none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span id="antiSeekToastText">Please watch the video before skipping ahead.</span>
+        </div>
+
+        <div class="video-player-layout-v2">
+            <!-- Main Video Column -->
+            <div class="video-main-column-v2">
+                <!-- Video Header Wrap -->
+                <div class="video-header-wrap-v2">
+                    <span class="hero-tagline-pill" style="font-size: 0.75rem;">
+                        Module {{ "%02d" % video.module_sequence }}: {{ video.module_title }}
+                    </span>
+                    <h1 style="font-size: 1.85rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">{{ video.title }}</h1>
+                </div>
+
+                <!-- Player Progress Bar Header -->
+                {% if video.video_file %}
+                <div class="player-progress-bar-wrap">
+                    <div class="player-progress-header">
+                        <span id="progressText" class="progress-text-label">
+                            Progress: {{ video_progress.completion_percentage|round|int if video_progress else 0 }}%
+                        </span>
+                        <span id="completedBadge" class="progress-badge progress-badge-completed" style="display: {{ 'inline-block' if video_progress and video_progress.completed else 'none' }};">
+                            &check; Video Completed
+                        </span>
+                    </div>
+                    <div class="player-progress-track">
+                        <div id="playerProgressFill" class="player-progress-fill" style="width: {{ video_progress.completion_percentage if video_progress else 0 }}%;"></div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Responsive HTML5 Video Stream Container -->
+                {% if video.video_file %}
+                <div class="video-player-container-v2" style="position: relative; background: #000; border-radius: var(--radius-lg, 12px); overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);">
+                    <video id="nativeVideoPlayer"
+                           controls
+                           controlsList="nodownload"
+                           preload="metadata"
+                           style="width: 100%; height: auto; max-height: 70vh; display: block; margin: 0 auto; outline: none;"
+                           src="{{ url_for('stream_course_video', video_id=video.id) }}">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+                
+                <!-- Playback Speed Control Bar -->
+                <div class="video-speed-control-bar" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; padding: 0.6rem 1rem; background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: 0.85rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <span style="font-weight: 600; color: var(--color-text-muted);">⚡ Playback Speed:</span>
+                        <div id="speedButtonGroup" class="speed-btn-group" style="display: flex; gap: 0.35rem; align-items: center;">
+                            <button type="button" class="speed-btn" data-speed="0.5">0.5x</button>
+                            <button type="button" class="speed-btn" data-speed="0.75">0.75x</button>
+                            <button type="button" class="speed-btn active" data-speed="1.0">1x</button>
+                            <button type="button" class="speed-btn" data-speed="1.25">1.25x</button>
+                            <button type="button" class="speed-btn speed-btn-restricted" data-speed="1.5" style="display: {{ 'inline-block' if video_progress and video_progress.completed else 'none' }};">1.5x</button>
+                            <button type="button" class="speed-btn speed-btn-restricted" data-speed="2.0" style="display: {{ 'inline-block' if video_progress and video_progress.completed else 'none' }};">2x</button>
+                        </div>
+                    </div>
+                    <div id="speedNotice" style="color: var(--color-text-muted); font-size: 0.8rem;">
+                        {% if not video_progress or not video_progress.completed %}
+                            <span>Max 1.25x on first watch</span>
+                        {% else %}
+                            <span style="color: #16a34a; font-weight: 500;">✓ Completed — Normal seeking unlocked</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="video-placeholder-banner">
+                    <div class="video-placeholder-content">
+                        <div class="video-placeholder-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                        </div>
+                        <h3>Video Coming Soon</h3>
+                        <p>The video content for <strong>{{ video.title }}</strong> is currently being uploaded or processed. Check back soon!</p>
+                        <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-outline" style="margin-top: 1rem;">Back to Course Overview</a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Lesson Info & Metadata Box -->
+                <div class="video-details-box-v2">
+                    <h3>About this Lesson</h3>
+                    {% if video.description %}
+                    <p style="color: var(--color-text-muted); font-size: 0.95rem; line-height: 1.6;">{{ video.description }}</p>
+                    {% else %}
+                    <p class="text-muted" style="font-size: 0.9rem;">No additional description provided for this lesson video.</p>
+                    {% endif %}
+                    <div class="video-meta-pills" style="margin-top: 1rem;">
+                        <span class="course-stat-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Duration: {{ video.duration or '10:00' }}</span>
+                        <span class="course-stat-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Course: {{ course.title }}</span>
+                    </div>
+                </div>
+
+                <!-- Playlist Previous / Next Navigation Controls -->
+                <div class="video-nav-controls-v2">
+                    {% if prev_video %}
+                    <a href="{{ url_for('video_player', course_slug=course.slug, video_id=prev_video.id) }}" class="btn btn-outline">
+                        &larr; Previous: {{ prev_video.title }}
+                    </a>
+                    {% else %}
+                    <span></span>
+                    {% endif %}
+
+                    {% if next_video %}
+                    <a href="{{ url_for('video_player', course_slug=course.slug, video_id=next_video.id) }}" class="btn btn-primary">
+                        Next: {{ next_video.title }} &rarr;
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-primary">
+                        Course Overview &rarr;
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Curriculum Sidebar Column -->
+            <div class="video-sidebar-column-v2">
+                <div class="video-sidebar-card-v2">
+                    <div class="video-sidebar-header-v2">
+                        <h3>Course Content</h3>
+                        <p style="margin: 0; color: var(--color-text-muted); font-size: 0.85rem;">{{ course.title }}</p>
+                    </div>
+
+                    <div class="sidebar-curriculum-list-v2">
+                        {% for mod in modules %}
+                        <div class="sidebar-module-v2">
+                            <div class="sidebar-module-header-v2">
+                                <strong>Mod {{ "%02d" % mod.sequence }}: {{ mod.title }}</strong>
+                            </div>
+                            <div class="sidebar-video-list-v2">
+                                <!-- Videos -->
+                                {% for v in mod.videos %}
+                                <a href="{{ url_for('video_player', course_slug=course.slug, video_id=v.id) }}" 
+                                   class="sidebar-video-item-v2 {% if v.id == video.id %}active{% endif %}">
+                                    <div class="sidebar-video-left-v2">
+                                        <span class="sidebar-video-status-icon">
+                                            {% if v.id == video.id %}
+                                                ▶
+                                            {% elif v.progress and v.progress.completed %}
+                                                ✓
+                                            {% elif v.progress and v.progress.completion_percentage > 0 %}
+                                                ◐
+                                            {% else %}
+                                                ○
+                                            {% endif %}
+                                        </span>
+                                        <span class="sidebar-video-title-v2">{{ v.title }}</span>
+                                    </div>
+                                    <div class="sidebar-video-right-v2">
+                                        {% if v.progress and v.progress.completed %}
+                                            <span class="cert-pill cert-pill-issued">✓</span>
+                                        {% endif %}
+                                        <span class="sidebar-video-duration-v2">{{ v.duration or '10:00' }}</span>
+                                    </div>
+                                </a>
+                                {% endfor %}
+
+                                <!-- Optional Quiz Item in Module -->
+                                {% if mod.quiz %}
+                                <a href="{% if mod.quiz_status and mod.quiz_status.latest_attempt_id %}{{ url_for('student_quiz_result', course_slug=course.slug, module_id=mod.id, attempt_id=mod.quiz_status.latest_attempt_id) }}{% else %}{{ url_for('student_quiz_overview', course_slug=course.slug, module_id=mod.id) }}{% endif %}"
+                                   class="sidebar-video-item-v2 sidebar-quiz-item" style="border-left: 3px solid var(--color-primary, #2563eb);">
+                                    <div class="sidebar-video-left-v2">
+                                        <span class="sidebar-video-status-icon" style="font-size: 0.95rem;">📝</span>
+                                        <span class="sidebar-video-title-v2">Quiz: {{ mod.quiz.title }}</span>
+                                    </div>
+                                    <div class="sidebar-video-right-v2">
+                                        {% if mod.quiz_status and mod.quiz_status.passed %}
+                                            <span class="cert-pill cert-pill-issued">✓ Passed</span>
+                                        {% elif mod.quiz_status and mod.quiz_status.attempts_used > 0 %}
+                                            <span class="sidebar-video-duration-v2" style="background: #fef3c7; color: #92400e;">{{ mod.quiz_status.highest_score }}%</span>
+                                        {% else %}
+                                            <span class="sidebar-video-duration-v2">{{ mod.quiz.passing_score }}% Pass</span>
+                                        {% endif %}
+                                    </div>
+                                </a>
+                                {% endif %}
+
+                                <!-- Optional Project Item in Module -->
+                                {% if mod.project %}
+                                <a href="{{ url_for('student_project_view', course_slug=course.slug, module_id=mod.id) }}"
+                                   class="sidebar-video-item-v2 sidebar-project-item" style="border-left: 3px solid var(--color-accent, #0ea5e9);">
+                                    <div class="sidebar-video-left-v2">
+                                        <span class="sidebar-video-status-icon" style="font-size: 0.95rem;">📁</span>
+                                        <span class="sidebar-video-title-v2">Project: {{ mod.project.title }}</span>
+                                    </div>
+                                    <div class="sidebar-video-right-v2">
+                                        {% if mod.project_submission and mod.project_submission.status == 'evaluated' %}
+                                            <span class="cert-pill cert-pill-issued">✓ {{ mod.project_submission.marks }}/{{ mod.project.max_marks }}</span>
+                                        {% elif mod.project_submission and mod.project_submission.status == 'submitted' %}
+                                            <span class="sidebar-video-duration-v2" style="background: #e0f2fe; color: #0369a1;">Submitted</span>
+                                        {% else %}
+                                            <span class="sidebar-video-duration-v2">{{ mod.project.max_marks }} Pts</span>
+                                        {% endif %}
+                                    </div>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.speed-btn {
+    padding: 0.25rem 0.55rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm, 4px);
+    background: var(--color-bg-card, #fff);
+    color: var(--color-text);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+.speed-btn:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+.speed-btn.active {
+    background: var(--color-accent, #2563eb);
+    color: #fff;
+    border-color: var(--color-accent, #2563eb);
+    font-weight: 600;
+}
+</style>
+
+{% if video.video_file %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var videoId = {{ video.id }};
+    var furthestWatched = {{ video_progress.watched_seconds if video_progress else 0.0 }};
+    var isCompleted = {{ 'true' if video_progress and video_progress.completed else 'false' }};
+    var videoEl = document.getElementById("nativeVideoPlayer");
+    var progressText = document.getElementById("progressText");
+    var progressFill = document.getElementById("playerProgressFill");
+    var completedBadge = document.getElementById("completedBadge");
+    var antiSeekToast = document.getElementById("antiSeekToast");
+    var speedNotice = document.getElementById("speedNotice");
+    var speedButtons = document.querySelectorAll(".speed-btn");
+    var restrictedSpeedButtons = document.querySelectorAll(".speed-btn-restricted");
+    
+    var lastSyncTime = 0;
+    var toastTimeout = null;
+    var hasResumed = false;
+
+    function showToast(msg) {
+        if (!antiSeekToast) return;
+        var textNode = document.getElementById("antiSeekToastText");
+        if (textNode && msg) {
+            textNode.textContent = msg;
+        }
+        antiSeekToast.style.display = "block";
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(function() {
+            antiSeekToast.style.display = "none";
+        }, 3500);
+    }
+
+    function unlockCompletedFeatures() {
+        isCompleted = true;
+        if (completedBadge) completedBadge.style.display = "inline-block";
+        if (speedNotice) {
+            speedNotice.innerHTML = '<span style="color: #16a34a; font-weight: 500;">✓ Completed — Normal seeking unlocked</span>';
+        }
+        restrictedSpeedButtons.forEach(function(btn) {
+            btn.style.display = "inline-block";
+        });
+    }
+
+    // Playback Speed Button Controls
+    speedButtons.forEach(function(btn) {
+        btn.addEventListener("click", function() {
+            var speed = parseFloat(this.getAttribute("data-speed"));
+            if (!isCompleted && speed > 1.25) {
+                showToast("Maximum playback speed is 1.25x on first watch.");
+                return;
+            }
+            if (videoEl) {
+                videoEl.playbackRate = speed;
+            }
+            speedButtons.forEach(function(b) { b.classList.remove("active"); });
+            this.classList.add("active");
+        });
+    });
+
+    if (videoEl) {
+        // Enforce maximum playback speed = 1.25x while incomplete (catches console/native changes)
+        videoEl.addEventListener("ratechange", function() {
+            if (!isCompleted && videoEl.playbackRate > 1.25) {
+                videoEl.playbackRate = 1.25;
+                showToast("Maximum playback speed is 1.25x on first watch.");
+                speedButtons.forEach(function(b) {
+                    if (b.getAttribute("data-speed") === "1.25") b.classList.add("active");
+                    else b.classList.remove("active");
+                });
+            }
+        });
+
+        // Auto-resume from furthest position
+        videoEl.addEventListener("loadedmetadata", function() {
+            if (!isCompleted && furthestWatched > 3 && !hasResumed) {
+                hasResumed = true;
+                if (furthestWatched < videoEl.duration) {
+                    videoEl.currentTime = furthestWatched;
+                }
+            }
+        });
+
+        // Anti-Fast-Forward Protection
+        function checkAntiSeek() {
+            if (!isCompleted) {
+                // Allow backward seeking; block forward skipping beyond furthestWatched + 1 second tolerance
+                if (videoEl.currentTime > furthestWatched + 1.0) {
+                    videoEl.currentTime = furthestWatched;
+                    showToast("Please watch the video before skipping ahead.");
+                }
+            }
+        }
+
+        videoEl.addEventListener("seeking", checkAntiSeek);
+        videoEl.addEventListener("seeked", checkAntiSeek);
+
+        // Progress Tracking & Heartbeat
+        videoEl.addEventListener("timeupdate", function() {
+            var curTime = videoEl.currentTime;
+            var duration = videoEl.duration || 600;
+
+            if (!isCompleted) {
+                // Legitimate playback advancement
+                if (curTime > furthestWatched && curTime <= furthestWatched + 1.5) {
+                    furthestWatched = curTime;
+                } else if (curTime > furthestWatched + 1.5) {
+                    // Block forward jump attempt
+                    videoEl.currentTime = furthestWatched;
+                    showToast("Please watch the video before skipping ahead.");
+                    return;
+                }
+            } else {
+                furthestWatched = Math.max(furthestWatched, curTime);
+            }
+
+            var pct = Math.min(100, Math.round((furthestWatched / duration) * 100));
+            if (progressText) progressText.innerText = "Progress: " + pct + "%";
+            if (progressFill) progressFill.style.width = pct + "%";
+
+            // Sync with backend every 5 seconds
+            var now = Date.now();
+            if (now - lastSyncTime > 5000) {
+                lastSyncTime = now;
+                sendProgressUpdate("timeupdate", furthestWatched, duration);
+            }
+        });
+
+        // Video Completion
+        videoEl.addEventListener("ended", function() {
+            var duration = videoEl.duration || 600;
+            furthestWatched = duration;
+            if (progressText) progressText.innerText = "Progress: 100%";
+            if (progressFill) progressFill.style.width = "100%";
+            unlockCompletedFeatures();
+            sendProgressUpdate("ended", duration, duration);
+        });
+    }
+
+    function sendProgressUpdate(event, watchedSec, durSec) {
+        fetch("/courses/video/" + videoId + "/progress", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                watched_seconds: watchedSec,
+                duration_seconds: durSec,
+                event: event
+            })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data && data.success && data.progress && data.progress.completed) {
+                unlockCompletedFeatures();
+            }
+        })
+        .catch(function(err) {
+            console.log('Progress sync note:', err);
+        });
+    }
+
+    window.addEventListener('beforeunload', function() {
+        if (videoEl && videoEl.duration) {
+            var dur = videoEl.duration;
+            navigator.sendBeacon('/courses/video/' + videoId + '/progress', JSON.stringify({
+                watched_seconds: furthestWatched,
+                duration_seconds: dur,
+                event: 'unload'
+            }));
+        }
+    });
+});
+</script>
+{% endif %}
+{% endif %}
+{% endblock %}

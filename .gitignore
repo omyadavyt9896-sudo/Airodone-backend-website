@@ -1,13 +1,92 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
-*.db
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment variables & secrets
 .env
+.env.*
+!.env.example
+
+# Local SQLite / MySQL / PostgreSQL dumps and databases
+*.db
+*.sqlite
+*.sqlite3
 *.sql
 *.dump
 *.backup
 *_backup.json
+instance/
+
+# Application Uploads & Dynamic User Media (Keep directories via .gitkeep if needed)
+uploads/
+!uploads/.gitkeep
+static/uploads/
+!static/uploads/.gitkeep
+
+# Unit test / coverage
+.coverage
+.coverage.*
+.pytest_cache/
+htmlcov/
+nosetests.xml
+coverage.xml
+
+# Logs
 *.log
-.venv/
-env/
-.idea/
+*.log.*
+
+# IDEs & Editor configs
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Node / frontend build (if any)
+node_modules/
+npm-debug.log*

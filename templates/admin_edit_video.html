@@ -1,77 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}Edit Video — {{ video.title }} | Admin | airodrone{% endblock %}
-{% block meta_description %}Admin form to edit course video details and YouTube video ID.{% endblock %}
+{% block title %}Edit Video Lesson | Admin airodrone{% endblock %}
 
 {% block content %}
-<section class="page-hero">
-    <div class="container page-hero-inner">
-        <div>
-            <h1>Edit Course Video</h1>
-            <p>
-                Update video metadata and configure the YouTube Unlisted Video ID for <strong>{{ video.course_title }} &rarr; {{ video.module_title }}</strong>.
-            </p>
-        </div>
-    </div>
-</section>
-
-<section class="section">
-    <div class="container" style="max-width: 800px;">
-        <div style="margin-bottom: 2rem;">
-            <a href="{{ url_for('admin_courses') }}" class="btn btn-outline">&larr; Back to Admin Course Management</a>
-        </div>
-
-        {% if error %}
-        <div class="alert alert-error" style="margin-bottom: 1.5rem;">
-            {{ error }}
-        </div>
-        {% endif %}
-
-        <div class="card" style="padding: 2rem;">
-            <form method="POST" action="{{ url_for('admin_edit_video', video_id=video.id) }}">
-                <div class="form-group" style="margin-bottom: 1.5rem;">
-                    <label for="course_info" style="font-weight: 600;">Course & Module Context</label>
-                    <input type="text" id="course_info" class="form-control" value="{{ video.course_title }} / {{ video.module_title }}" disabled style="background: var(--color-bg-alt);">
-                </div>
-
-                <div class="form-group" style="margin-bottom: 1.5rem;">
-                    <label for="title" style="font-weight: 600;">Video Title <span style="color: var(--color-danger);">*</span></label>
-                    <input type="text" id="title" name="title" class="form-control" value="{{ video.title }}" required>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 1.5rem;">
-                    <label for="description" style="font-weight: 600;">Video Description</label>
-                    <textarea id="description" name="description" class="form-control" rows="4">{{ video.description or '' }}</textarea>
-                </div>
-
-                <div class="form-row" style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
-                    <div style="flex: 1; min-width: 200px;">
-                        <label for="duration" style="font-weight: 600;">Duration (e.g. 12:45)</label>
-                        <input type="text" id="duration" name="duration" class="form-control" value="{{ video.duration or '10:00' }}">
-                    </div>
-
-                    <div style="flex: 2; min-width: 280px;">
-                        <label for="youtube_video_id" style="font-weight: 600;">YouTube Video ID (Unlisted)</label>
-                        <input type="text" id="youtube_video_id" name="youtube_video_id" class="form-control" value="{{ video.youtube_video_id or '' }}" placeholder="e.g. dQw4w9WgXcQ or https://youtu.be/...">
-                        <small style="color: var(--color-text-muted); display: block; margin-top: 0.35rem;">
-                            Enter an 11-character YouTube video ID or paste a YouTube URL. Leave empty if video is coming soon.
-                        </small>
-                    </div>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 2rem;">
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500;">
-                        <input type="checkbox" name="is_active" value="1" {% if video.is_active %}checked{% endif %}>
-                        Active (Visible to students in curriculum)
-                    </label>
-                </div>
-
-                <div style="display: flex; gap: 1rem;">
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                    <a href="{{ url_for('admin_courses') }}" class="btn btn-outline">Cancel</a>
-                </div>
-            </form>
-        </div>
-    </div>
-</section>
+{% include "admin_video_form.html" %}
 {% endblock %}

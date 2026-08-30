@@ -122,8 +122,8 @@ class Phase77AccessControlTestCase(unittest.TestCase):
         if not vid:
             cur.execute(
                 """
-                INSERT INTO course_videos (module_id, title, description, sequence, duration, youtube_video_id, is_active, created_at, updated_at)
-                VALUES (%s, 'Video 1: Lift & Drag', 'Understanding aerodynamics', 1, 300, 'dQw4w9WgXcQ', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00')
+                INSERT INTO course_videos (module_id, title, description, sequence, duration, video_file, is_active, created_at, updated_at)
+                VALUES (%s, 'Video 1: Lift & Drag', 'Understanding aerodynamics', 1, '05:00', 'test_lesson_1.mp4', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00')
                 """,
                 (mod_id,),
             )

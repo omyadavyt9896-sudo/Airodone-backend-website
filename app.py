@@ -358,17 +358,38 @@ def add_column_if_not_exists(cur, table, column, col_type):
         cur.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {col_type};")
     elif db_type == "sqlite":
         try:
-            cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type};")
+            cur.execute(f"PRAGMA table_info({table});")
+            rows = cur.fetchall()
+            existing_cols = [row["name"] if isinstance(row, dict) else row[1] for row in rows]
+            if column not in existing_cols:
+                cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type};")
         except Exception:
-            pass
+            try:
+                cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type};")
+            except Exception:
+                pass
     elif db_type == "mysql":
         try:
-            cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type};")
+            cur.execute(
+                "SELECT COUNT(*) as cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = %s",
+                (table, column)
+            )
+            res = cur.fetchone()
+            cnt = res["cnt"] if (isinstance(res, dict) and "cnt" in res) else (res[0] if res else 0)
+            if cnt == 0:
+                cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type};")
         except Exception as e:
             if "1060" in str(e) or "duplicate" in str(e).lower():
                 pass
             else:
-                raise e
+                # Direct ALTER attempt fallback in case information_schema permissions are restricted
+                try:
+                    cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type};")
+                except Exception as e2:
+                    if "1060" in str(e2) or "duplicate" in str(e2).lower():
+                        pass
+                    else:
+                        raise e2
 
 def create_index_if_not_exists(cur, index_name, table, columns):
     """Safely create database index if it does not already exist across PostgreSQL, MySQL, and SQLite."""
@@ -378,12 +399,42 @@ def create_index_if_not_exists(cur, index_name, table, columns):
         cur.execute(f"CREATE INDEX IF NOT EXISTS {index_name} ON {table} ({cols_str});")
     elif db_type == "mysql":
         try:
-            cur.execute(f"CREATE INDEX {index_name} ON {table} ({cols_str});")
+            cur.execute(
+                "SELECT COUNT(*) as cnt FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND INDEX_NAME = %s",
+                (table, index_name)
+            )
+            res = cur.fetchone()
+            cnt = res["cnt"] if (isinstance(res, dict) and "cnt" in res) else (res[0] if res else 0)
+            if cnt == 0:
+                cur.execute(f"CREATE INDEX {index_name} ON {table} ({cols_str});")
         except Exception as e:
             if "1061" in str(e) or "duplicate" in str(e).lower():
                 pass
             else:
-                raise e
+                try:
+                    cur.execute(f"CREATE INDEX {index_name} ON {table} ({cols_str});")
+                except Exception as e2:
+                    if "1061" in str(e2) or "duplicate" in str(e2).lower():
+                        pass
+                    else:
+                        raise e2
+
+_db_initialized = False
+
+def ensure_db_initialized():
+    """Idempotently ensure database schema is initialized and migrated across all supported databases."""
+    global _db_initialized
+    if not _db_initialized:
+        try:
+            init_db()
+            _db_initialized = True
+        except Exception as e:
+            app.logger.warning(f"Database initialization / schema migration notice: {e}")
+
+@app.before_request
+def auto_init_db_before_request():
+    """Ensure database tables and schema migrations have executed before serving requests."""
+    ensure_db_initialized()
 
 def init_db():
     """Create database tables if they do not exist and seed initial courses."""
@@ -467,6 +518,9 @@ def init_db():
         )
         """
     )
+    add_column_if_not_exists(cur, "course_enrollments", "is_active", "INTEGER NOT NULL DEFAULT 1")
+    add_column_if_not_exists(cur, "course_enrollments", "assigned_at", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "course_enrollments", "assigned_by", "INTEGER DEFAULT NULL")
 
     # Create modules table
     cur.execute(
@@ -483,6 +537,9 @@ def init_db():
         )
         """
     )
+    add_column_if_not_exists(cur, "modules", "description", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "modules", "sequence", "INTEGER NOT NULL DEFAULT 1")
+    add_column_if_not_exists(cur, "modules", "is_active", "INTEGER NOT NULL DEFAULT 1")
 
     # Create course_videos table
     cur.execute(
@@ -505,6 +562,9 @@ def init_db():
     # Ensure video_file and youtube_video_id columns exist if table was created previously
     add_column_if_not_exists(cur, "course_videos", "video_file", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "course_videos", "youtube_video_id", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "course_videos", "duration", "VARCHAR(50) DEFAULT '10:00'")
+    add_column_if_not_exists(cur, "course_videos", "sequence", "INTEGER NOT NULL DEFAULT 1")
+    add_column_if_not_exists(cur, "course_videos", "is_active", "INTEGER NOT NULL DEFAULT 1")
 
     # Create video_progress table
     cur.execute(
@@ -526,6 +586,11 @@ def init_db():
         )
         """
     )
+    add_column_if_not_exists(cur, "video_progress", "watched_seconds", "FLOAT NOT NULL DEFAULT 0.0")
+    add_column_if_not_exists(cur, "video_progress", "duration_seconds", "FLOAT NOT NULL DEFAULT 0.0")
+    add_column_if_not_exists(cur, "video_progress", "completion_percentage", "FLOAT NOT NULL DEFAULT 0.0")
+    add_column_if_not_exists(cur, "video_progress", "completed", "BOOLEAN NOT NULL DEFAULT FALSE")
+    add_column_if_not_exists(cur, "video_progress", "completed_at", "TEXT DEFAULT NULL")
 
     # Create certificates table
     cur.execute(
@@ -544,6 +609,10 @@ def init_db():
         )
         """
     )
+    add_column_if_not_exists(cur, "certificates", "student_name", "VARCHAR(255) DEFAULT NULL")
+    add_column_if_not_exists(cur, "certificates", "course_name", "VARCHAR(255) DEFAULT NULL")
+    add_column_if_not_exists(cur, "certificates", "completion_percentage", "FLOAT NOT NULL DEFAULT 0.0")
+    add_column_if_not_exists(cur, "certificates", "issued_at", "TEXT DEFAULT NULL")
 
     # Create quizzes table
     cur.execute(

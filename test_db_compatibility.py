@@ -180,5 +180,108 @@ class MultiDatabaseCompatibilityTestCase(unittest.TestCase):
         for idx in expected_indexes:
             self.assertIn(idx, indexes, f"Index '{idx}' missing from database schema.")
 
+    def test_07_legacy_users_table_migration_without_student_class(self):
+        """Verify that a legacy database with users table missing student_class is safely migrated without data loss and login succeeds."""
+        import sqlite3
+        from werkzeug.security import generate_password_hash
+
+        legacy_fd, legacy_db_path = tempfile.mkstemp(suffix=".db")
+        os.close(legacy_fd)
+
+        try:
+            # 1. Directly create old legacy users table WITHOUT student_class, father_name, phone
+            raw_conn = sqlite3.connect(legacy_db_path)
+            raw_cur = raw_conn.cursor()
+            raw_cur.execute("""
+                CREATE TABLE users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    role TEXT NOT NULL DEFAULT 'user',
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL
+                )
+            """)
+            raw_cur.execute("""
+                INSERT INTO users (name, email, password_hash, role, is_active, created_at)
+                VALUES ('Legacy Student', 'legacy@airodrone.com', ?, 'user', 1, '2026-01-01 10:00:00')
+            """, (generate_password_hash("legacyPass123"),))
+            raw_conn.commit()
+            raw_conn.close()
+
+            # 2. Configure app to point to this legacy database
+            app.config["DATABASE_URL"] = f"sqlite:///{legacy_db_path}"
+            app_module._db_initialized = False
+
+            # 3. Trigger init_db / migration
+            with app.app_context():
+                init_db()
+
+            # 4. Verify student_class column now exists
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("PRAGMA table_info(users);")
+            columns = [row["name"] for row in cur.fetchall()]
+            self.assertIn("student_class", columns)
+            self.assertIn("father_name", columns)
+            self.assertIn("phone", columns)
+
+            # 5. Verify existing legacy user is preserved
+            cur.execute(
+                "SELECT id, name, email, password_hash, role, is_active, father_name, phone, student_class FROM users WHERE email = %s",
+                ("legacy@airodrone.com",)
+            )
+            user_row = cur.fetchone()
+            self.assertIsNotNone(user_row)
+            self.assertEqual(user_row["name"], "Legacy Student")
+            self.assertEqual(user_row["email"], "legacy@airodrone.com")
+            self.assertIsNone(user_row["student_class"])
+
+            # 6. Verify login user loader works with this migrated record
+            user_obj = load_user(user_row["id"])
+            self.assertIsNotNone(user_obj)
+            self.assertEqual(user_obj.email, "legacy@airodrone.com")
+            self.assertIsNone(user_obj.student_class)
+            self.assertIsNone(user_obj.grade)
+
+            cur.close()
+            conn.close()
+
+            # 7. Verify running init_db a second time is 100% idempotent
+            with app.app_context():
+                init_db()
+
+        finally:
+            try:
+                os.unlink(legacy_db_path)
+            except OSError:
+                pass
+            # Restore testing DATABASE_URL
+            app.config["DATABASE_URL"] = f"sqlite:///{self.db_path}"
+            app_module._db_initialized = False
+
+    def test_08_mysql_add_column_idempotent_simulation(self):
+        """Verify add_column_if_not_exists gracefully handles duplicate column notices in MySQL mode."""
+        class MockMySQLCursor:
+            def execute(self, query, params=None):
+                if "information_schema" in query:
+                    self._last_result = {"cnt": 1}
+                elif "ALTER TABLE" in query:
+                    raise Exception("(1060, \"Duplicate column name 'student_class'\")")
+            def fetchone(self):
+                return getattr(self, "_last_result", {"cnt": 0})
+            def close(self):
+                pass
+
+        app.config["DATABASE_URL"] = "mysql://user:pass@localhost:3306/airodrone"
+        mock_cur = MockMySQLCursor()
+        # Should not raise exception
+        app_module.add_column_if_not_exists(mock_cur, "users", "student_class", "VARCHAR(50) DEFAULT NULL")
+
+        # Restore testing DATABASE_URL
+        app.config["DATABASE_URL"] = f"sqlite:///{self.db_path}"
+        app_module._db_initialized = False
+
 if __name__ == "__main__":
     unittest.main()

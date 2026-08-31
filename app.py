@@ -3248,6 +3248,249 @@ def admin_user_courses(user_id):
     )
 
 
+def format_seconds_display(secs):
+    """Format seconds float/int to MM:SS or HH:MM:SS string."""
+    if not secs or secs < 0:
+        return "0:00"
+    secs = int(round(secs))
+    hours = secs // 3600
+    minutes = (secs % 3600) // 60
+    seconds = secs % 60
+    if hours > 0:
+        return f"{hours}:{minutes:02d}:{seconds:02d}"
+    return f"{minutes}:{seconds:02d}"
+
+
+def format_datetime_display(dt_str):
+    """Format date/time string to human-readable 'DD Mon YYYY, HH:MM AM/PM'."""
+    if not dt_str:
+        return None
+    try:
+        dt_str_clean = str(dt_str).replace("T", " ").split(".")[0]
+        dt = datetime.strptime(dt_str_clean, "%Y-%m-%d %H:%M:%S")
+        return dt.strftime("%d %b %Y, %I:%M %p")
+    except Exception:
+        return str(dt_str)
+
+
+@app.route("/admin/users/<int:user_id>/progress")
+@admin_required
+def admin_student_progress(user_id):
+    """
+    Admin Learning Progress Dashboard for a specific student.
+    Aggregates overall progress, enrolled course progress, module progress, and individual video status.
+    Protected by @admin_required.
+    """
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute(
+        "SELECT id, name, email, father_name, phone, student_class, role, is_active FROM users WHERE id = %s",
+        (user_id,)
+    )
+    student = cur.fetchone()
+
+    if not student:
+        cur.close()
+        conn.close()
+        flash("Student account not found.", "error")
+        return redirect(url_for("admin_users"))
+
+    student_grade = get_grade_from_class(student.get("student_class"))
+    student["grade"] = student_grade
+    student["grade_info"] = GRADES.get(student_grade) if student_grade else None
+
+    # Fetch active enrolled courses for this student
+    cur.execute(
+        """
+        SELECT c.id, c.title, c.slug, c.level, c.grade, c.short_description, c.image
+        FROM courses c
+        JOIN course_enrollments e ON e.course_id = c.id
+        WHERE e.user_id = %s AND e.is_active = 1 AND c.is_active = 1
+        ORDER BY c.grade ASC, c.title ASC
+        """,
+        (user_id,)
+    )
+    enrolled_courses = cur.fetchall()
+
+    course_ids = [c["id"] for c in enrolled_courses]
+    module_videos = []
+    if course_ids:
+        placeholders = ",".join(["%s"] * len(course_ids))
+        cur.execute(
+            f"""
+            SELECT m.id AS module_id, m.course_id, m.title AS module_title, m.sequence AS module_sequence,
+                   v.id AS video_id, v.title AS video_title, v.sequence AS video_sequence, v.duration AS video_duration
+            FROM modules m
+            JOIN course_videos v ON v.module_id = m.id AND v.is_active = 1
+            WHERE m.course_id IN ({placeholders}) AND m.is_active = 1
+            ORDER BY m.sequence ASC, v.sequence ASC, v.id ASC
+            """,
+            tuple(course_ids)
+        )
+        module_videos = cur.fetchall()
+
+    all_video_ids = [row["video_id"] for row in module_videos]
+    progress_by_video = {}
+    if all_video_ids:
+        vp_placeholders = ",".join(["%s"] * len(all_video_ids))
+        cur.execute(
+            f"""
+            SELECT vp.video_id, vp.watched_seconds, vp.duration_seconds, vp.completion_percentage,
+                   vp.completed, vp.last_watched_at, vp.completed_at
+            FROM video_progress vp
+            WHERE vp.user_id = %s AND vp.video_id IN ({vp_placeholders})
+            """,
+            tuple([user_id] + all_video_ids)
+        )
+        for vp in cur.fetchall():
+            progress_by_video[vp["video_id"]] = vp
+
+    cur.close()
+    conn.close()
+
+    # Organize videos into modules by course
+    modules_by_course = {c["id"]: {} for c in enrolled_courses}
+    for row in module_videos:
+        c_id = row["course_id"]
+        m_id = row["module_id"]
+        if c_id not in modules_by_course:
+            modules_by_course[c_id] = {}
+        if m_id not in modules_by_course[c_id]:
+            modules_by_course[c_id][m_id] = {
+                "id": m_id,
+                "title": row["module_title"],
+                "sequence": row["module_sequence"],
+                "videos": [],
+            }
+
+        v_id = row["video_id"]
+        vp = progress_by_video.get(v_id)
+        completed = bool(vp and (vp.get("completed") == 1 or vp.get("completed") is True))
+        watched_sec = float(vp.get("watched_seconds") or 0.0) if vp else 0.0
+        parsed_dur = parse_duration_seconds(row.get("video_duration"))
+        dur_sec = float(vp.get("duration_seconds") or 0.0) if (vp and vp.get("duration_seconds")) else parsed_dur
+        if dur_sec <= 0:
+            dur_sec = parsed_dur
+
+        if completed:
+            comp_pct = 100.0
+            status = "COMPLETED"
+        elif watched_sec > 0:
+            raw_pct = float(vp.get("completion_percentage") or 0.0) if vp else 0.0
+            comp_pct = round(min(100.0, max(0.0, raw_pct)), 1)
+            status = "IN PROGRESS"
+        else:
+            comp_pct = 0.0
+            status = "NOT STARTED"
+
+        raw_last_act = (vp.get("completed_at") or vp.get("last_watched_at")) if vp else None
+        last_activity_display = format_datetime_display(raw_last_act) if raw_last_act else None
+        completed_at_display = format_datetime_display(vp.get("completed_at")) if (vp and vp.get("completed_at")) else None
+
+        video_data = {
+            "id": v_id,
+            "title": row["video_title"],
+            "sequence": row["video_sequence"],
+            "duration": row["video_duration"],
+            "duration_seconds": dur_sec,
+            "watched_seconds": watched_sec,
+            "watched_display": format_seconds_display(watched_sec),
+            "duration_display": format_seconds_display(dur_sec),
+            "completion_percentage": comp_pct,
+            "completed": completed,
+            "status": status,
+            "last_activity_raw": raw_last_act,
+            "last_activity_display": last_activity_display,
+            "completed_at_display": completed_at_display,
+        }
+        modules_by_course[c_id][m_id]["videos"].append(video_data)
+
+    # Process course metrics
+    processed_courses = []
+    total_active_lessons_all = 0
+    total_completed_lessons_all = 0
+    total_percentage_sum_all = 0.0
+
+    for c in enrolled_courses:
+        c_id = c["id"]
+        course_grade_info = GRADES.get(c.get("grade"))
+        c["grade_info"] = course_grade_info
+
+        course_modules = list(modules_by_course.get(c_id, {}).values())
+        course_modules.sort(key=lambda m: m["sequence"])
+
+        all_course_videos = []
+        for mod in course_modules:
+            mod_videos = mod["videos"]
+            mod_videos.sort(key=lambda v: v["sequence"])
+            mod["total_videos"] = len(mod_videos)
+            mod["completed_videos"] = sum(1 for v in mod_videos if v["completed"])
+            if mod["total_videos"] > 0:
+                mod["progress_percentage"] = round(sum(v["completion_percentage"] for v in mod_videos) / mod["total_videos"], 1)
+            else:
+                mod["progress_percentage"] = 0.0
+            all_course_videos.extend(mod_videos)
+
+        course_total_videos = len(all_course_videos)
+        course_completed_videos = sum(1 for v in all_course_videos if v["completed"])
+        if course_total_videos > 0:
+            course_pct = round(sum(v["completion_percentage"] for v in all_course_videos) / course_total_videos, 1)
+        else:
+            course_pct = 0.0
+
+        # Course status
+        if course_total_videos > 0 and course_completed_videos == course_total_videos:
+            course_status = "COMPLETED"
+        elif any(v["completion_percentage"] > 0 or v["status"] != "NOT STARTED" for v in all_course_videos):
+            course_status = "IN PROGRESS"
+        else:
+            course_status = "NOT STARTED"
+
+        # Latest activity for the course
+        course_activities = [v["last_activity_raw"] for v in all_course_videos if v["last_activity_raw"]]
+        latest_activity_raw = max(course_activities) if course_activities else None
+        latest_activity_display = format_datetime_display(latest_activity_raw) if latest_activity_raw else "Never started"
+
+        c["modules"] = course_modules
+        c["all_videos"] = all_course_videos
+        c["total_videos"] = course_total_videos
+        c["completed_videos"] = course_completed_videos
+        c["progress_percentage"] = course_pct
+        c["status"] = course_status
+        c["latest_activity_display"] = latest_activity_display
+        processed_courses.append(c)
+
+        total_active_lessons_all += course_total_videos
+        total_completed_lessons_all += course_completed_videos
+        total_percentage_sum_all += sum(v["completion_percentage"] for v in all_course_videos)
+
+    total_enrolled = len(processed_courses)
+    total_completed = sum(1 for c in processed_courses if c["status"] == "COMPLETED")
+    total_in_progress = sum(1 for c in processed_courses if c["status"] == "IN PROGRESS")
+
+    if total_active_lessons_all > 0:
+        overall_progress = round(total_percentage_sum_all / total_active_lessons_all, 1)
+    else:
+        overall_progress = 0.0
+
+    summary = {
+        "enrolled_courses": total_enrolled,
+        "completed_courses": total_completed,
+        "in_progress_courses": total_in_progress,
+        "total_active_lessons": total_active_lessons_all,
+        "total_completed_lessons": total_completed_lessons_all,
+        "overall_progress": overall_progress,
+    }
+
+    return render_template(
+        "admin_student_progress.html",
+        active_page="admin",
+        student=student,
+        courses=processed_courses,
+        summary=summary,
+    )
+
+
 @app.route("/admin/users/<int:user_id>/courses/assign", methods=["POST"])
 @admin_required
 def admin_user_assign_course(user_id):

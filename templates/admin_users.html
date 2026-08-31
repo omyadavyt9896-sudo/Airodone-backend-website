@@ -96,6 +96,9 @@
                         <td>
                             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
                                 {% if u.role != 'admin' %}
+                                <a href="{{ url_for('admin_student_progress', user_id=u.id) }}" class="btn btn-secondary btn-sm">
+                                    Progress
+                                </a>
                                 <a href="{{ url_for('admin_user_courses', user_id=u.id) }}" class="btn btn-primary btn-sm">
                                     Courses
                                 </a>

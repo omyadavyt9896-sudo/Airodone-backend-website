@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+
+{% block title %}Student Learning Progress - {{ student.name }} - Admin - Airodrone{% endblock %}
+
+{% block content %}
+<div class="admin-page-container" style="max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem;">
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="Breadcrumb" style="margin-bottom: 1.5rem;">
+        <ol style="display: flex; gap: 0.5rem; list-style: none; padding: 0; margin: 0; font-size: 0.875rem; color: var(--color-text-muted);">
+            <li><a href="{{ url_for('admin') }}" style="color: var(--color-primary, #0284c7); text-decoration: none;">Admin</a></li>
+            <li>&rsaquo;</li>
+            <li><a href="{{ url_for('admin_users') }}" style="color: var(--color-primary, #0284c7); text-decoration: none;">Student Accounts</a></li>
+            <li>&rsaquo;</li>
+            <li><span>{{ student.name }}</span></li>
+            <li>&rsaquo;</li>
+            <li aria-current="page" style="color: var(--color-text); font-weight: 600;">Learning Progress</li>
+        </ol>
+    </nav>
+
+    <!-- Top Action Buttons -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.75rem;">
+        <a href="{{ url_for('admin_users') }}" class="btn btn-outline btn-sm">
+            &larr; Back to Student List
+        </a>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{{ url_for('admin_user_courses', user_id=student.id) }}" class="btn btn-outline btn-sm">
+                Manage Course Allocations
+            </a>
+            <a href="{{ url_for('admin_user_edit', user_id=student.id) }}" class="btn btn-outline btn-sm">
+                Edit Student Profile
+            </a>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 1.75rem;">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Student Profile Header Card -->
+    <div class="card profile-form-card" style="margin-bottom: 2rem; padding: 1.75rem; border-left: 4px solid var(--color-primary, #0284c7);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.25rem;">
+            <div>
+                <span style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted);">
+                    Student Learning Overview
+                </span>
+                <h1 style="font-size: 1.6rem; margin: 0.25rem 0 0.4rem 0; color: var(--color-text);">{{ student.name }}</h1>
+                <div style="font-size: 0.95rem; color: var(--color-text-muted); margin-bottom: 0.85rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                    <span><strong>Email:</strong> <a href="mailto:{{ student.email }}" style="color: inherit;">{{ student.email }}</a></span>
+                    {% if student.phone %}<span>&bull; <strong>Phone:</strong> {{ student.phone }}</span>{% endif %}
+                    {% if student.father_name %}<span>&bull; <strong>Father:</strong> {{ student.father_name }}</span>{% endif %}
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                    {% if student.student_class %}
+                    <span class="course-stat-pill" style="background: #e0f2fe; color: #0284c7; font-weight: 700; font-size: 0.875rem;">
+                        Class {{ student.student_class }}
+                    </span>
+                    {% if student.grade %}
+                    <span class="course-stat-pill" style="background: #f0fdf4; color: #166534; font-weight: 700; font-size: 0.875rem;">
+                        Grade {{ student.grade }} &bull; {{ student.grade_info.classes if student.grade_info else '' }}
+                    </span>
+                    {% endif %}
+                    {% else %}
+                    <span class="course-stat-pill" style="background: #fef3c7; color: #b45309; font-weight: 600; font-size: 0.875rem;">
+                        Class: Not Specified
+                    </span>
+                    {% endif %}
+
+                    <span class="badge-status {{ 'badge-active' if student.is_active else 'badge-inactive' }}" style="font-size: 0.85rem;">
+                        Account: {{ 'Active' if student.is_active else 'Inactive' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Metrics Cards Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 2.25rem;">
+        <!-- Card 1: Courses Enrolled -->
+        <div class="card" style="padding: 1.4rem; border-radius: var(--radius-md, 8px); background: #ffffff; border: 1px solid var(--color-border); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--color-text-muted); letter-spacing: 0.05em;">
+                Courses Enrolled
+            </div>
+            <div style="font-size: 2rem; font-weight: 800; color: var(--color-text); margin: 0.35rem 0;">
+                {{ summary.enrolled_courses }}
+            </div>
+            <div style="font-size: 0.85rem; color: var(--color-text-muted);">
+                Active enrolled courses
+            </div>
+        </div>
+
+        <!-- Card 2: Courses Completed -->
+        <div class="card" style="padding: 1.4rem; border-radius: var(--radius-md, 8px); background: #ffffff; border: 1px solid var(--color-border); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: #166534; letter-spacing: 0.05em;">
+                Completed
+            </div>
+            <div style="font-size: 2rem; font-weight: 800; color: #16a34a; margin: 0.35rem 0;">
+                {{ summary.completed_courses }}
+            </div>
+            <div style="font-size: 0.85rem; color: var(--color-text-muted);">
+                100% video-complete
+            </div>
+        </div>
+
+        <!-- Card 3: Courses In Progress -->
+        <div class="card" style="padding: 1.4rem; border-radius: var(--radius-md, 8px); background: #ffffff; border: 1px solid var(--color-border); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: #0284c7; letter-spacing: 0.05em;">
+                In Progress
+            </div>
+            <div style="font-size: 2rem; font-weight: 800; color: #0284c7; margin: 0.35rem 0;">
+                {{ summary.in_progress_courses }}
+            </div>
+            <div style="font-size: 0.85rem; color: var(--color-text-muted);">
+                Partially completed courses
+            </div>
+        </div>
+
+        <!-- Card 4: Overall Progress -->
+        <div class="card" style="padding: 1.4rem; border-radius: var(--radius-md, 8px); background: #ffffff; border: 1px solid var(--color-border); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--color-text-muted); letter-spacing: 0.05em;">
+                Overall Progress
+            </div>
+            <div style="font-size: 2rem; font-weight: 800; color: var(--color-primary, #0284c7); margin: 0.35rem 0;">
+                {{ summary.overall_progress }}%
+            </div>
+            <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; margin-top: 0.4rem;">
+                <div style="width: {{ summary.overall_progress }}%; height: 100%; background: linear-gradient(90deg, #0284c7, #38bdf8); border-radius: 9999px; transition: width 0.4s ease;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION: COURSE PROGRESS LIST -->
+    <div style="margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <div>
+                <h2 style="font-size: 1.35rem; margin: 0; color: var(--color-text);">
+                    Enrolled Courses Progress
+                </h2>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.875rem; color: var(--color-text-muted);">
+                    Detailed breakdown of modules and video lessons for each assigned course.
+                </p>
+            </div>
+            <span class="course-stat-pill" style="font-weight: 700; background: #f0fdf4; color: #166534;">
+                {{ courses|length }} Course{% if courses|length != 1 %}s{% endif %}
+            </span>
+        </div>
+
+        {% if not courses %}
+        <!-- Empty State: No Enrolled Courses -->
+        <div class="card" style="padding: 3.5rem 2rem; text-align: center; border: 2px dashed var(--color-border); border-radius: var(--radius-md, 8px);">
+            <div style="font-size: 2.5rem; margin-bottom: 0.75rem; color: var(--color-text-muted);">📚</div>
+            <h3 style="font-size: 1.2rem; color: var(--color-text); margin: 0 0 0.5rem 0;">No Enrolled Courses</h3>
+            <p style="font-size: 0.95rem; color: var(--color-text-muted); max-width: 460px; margin: 0 auto 1.5rem auto;">
+                No courses are currently assigned to this student. Assign educational courses from their grade to begin tracking learning progress.
+            </p>
+            <a href="{{ url_for('admin_user_courses', user_id=student.id) }}" class="btn btn-primary">
+                Allocate Courses to Student &rarr;
+            </a>
+        </div>
+        {% else %}
+        <!-- List of Courses -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            {% for c in courses %}
+            <div class="card" style="padding: 1.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-md, 8px); background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+                
+                <!-- Course Main Header Row -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.25rem; margin-bottom: 1.25rem;">
+                    <div style="display: flex; gap: 1.25rem; align-items: flex-start; flex: 1; min-width: 280px;">
+                        {% if c.image %}
+                        <img src="{{ url_for('static', filename=c.image) }}" alt="{{ c.title }}" style="width: 80px; height: 56px; object-fit: cover; border-radius: var(--radius-sm, 6px); border: 1px solid var(--color-border); flex-shrink: 0;" onerror="this.style.display='none';">
+                        {% endif %}
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.35rem;">
+                                <h3 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">{{ c.title }}</h3>
+                                {% if c.grade %}
+                                <span class="course-badge-v2" style="position: static; font-size: 0.75rem; padding: 0.2rem 0.55rem;">
+                                    Grade {{ c.grade }}{% if c.grade_info %} &bull; {{ c.grade_info.classes }}{% endif %}
+                                </span>
+                                {% endif %}
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.85rem; font-size: 0.85rem; color: var(--color-text-muted); flex-wrap: wrap;">
+                                <span><strong>Level:</strong> {{ c.level or 'Beginner' }}</span>
+                                <span>&bull;</span>
+                                <span><strong>Lessons:</strong> {{ c.completed_videos }} / {{ c.total_videos }} completed</span>
+                                <span>&bull;</span>
+                                <span><strong>Last activity:</strong> {{ c.latest_activity_display }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                        {% if c.status == 'COMPLETED' %}
+                        <span class="badge-status" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 700; font-size: 0.85rem; padding: 0.35rem 0.75rem; border-radius: 9999px;">
+                            ✓ Completed
+                        </span>
+                        {% elif c.status == 'IN PROGRESS' %}
+                        <span class="badge-status" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 700; font-size: 0.85rem; padding: 0.35rem 0.75rem; border-radius: 9999px;">
+                            ● In Progress
+                        </span>
+                        {% else %}
+                        <span class="badge-status" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-weight: 600; font-size: 0.85rem; padding: 0.35rem 0.75rem; border-radius: 9999px;">
+                            ○ Not Started
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Course Progress Bar -->
+                <div style="margin-bottom: 1.25rem; background: var(--color-bg-subtle, #f8fafc); padding: 1rem 1.25rem; border-radius: var(--radius-sm, 6px); border: 1px solid var(--color-border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--color-text);">Course Completion</span>
+                        <strong style="font-size: 1rem; color: var(--color-primary, #0284c7);">{{ c.progress_percentage }}%</strong>
+                    </div>
+                    <div style="width: 100%; height: 10px; background: #e2e8f0; border-radius: 9999px; overflow: hidden;" role="progressbar" aria-valuenow="{{ c.progress_percentage }}" aria-valuemin="0" aria-valuemax="100" aria-label="Course completion for {{ c.title }}">
+                        <div style="width: {{ c.progress_percentage }}%; height: 100%; background: {% if c.progress_percentage == 100 %}#16a34a{% else %}linear-gradient(90deg, #0284c7, #38bdf8){% endif %}; border-radius: 9999px; transition: width 0.4s ease;"></div>
+                    </div>
+                </div>
+
+                <!-- Module & Lesson Toggle Button -->
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <button type="button" class="btn btn-outline btn-sm toggle-modules-btn" data-target="course-modules-{{ c.id }}" aria-expanded="false" aria-controls="course-modules-{{ c.id }}" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                        <span class="toggle-icon">&#9654;</span>
+                        <span class="toggle-text">View Modules &amp; Lessons ({{ c.modules|length }} module{% if c.modules|length != 1 %}s{% endif %}, {{ c.total_videos }} lesson{% if c.total_videos != 1 %}s{% endif %})</span>
+                    </button>
+                    <a href="{{ url_for('course_detail', slug=c.slug) }}" target="_blank" rel="noopener" style="font-size: 0.825rem; color: var(--color-primary, #0284c7); text-decoration: none;">
+                        Open Course Page &nearr;
+                    </a>
+                </div>
+
+                <!-- Expandable Modules Breakdown Drawer -->
+                <div id="course-modules-{{ c.id }}" class="modules-drawer" style="display: none; margin-top: 1.25rem; border-top: 1px dashed var(--color-border); padding-top: 1.25rem;">
+                    {% if not c.modules %}
+                    <div style="padding: 1.5rem; text-align: center; background: var(--color-bg-subtle, #f8fafc); border-radius: var(--radius-sm, 6px); color: var(--color-text-muted); font-size: 0.9rem;">
+                        No curriculum modules or lessons created yet for this course.
+                    </div>
+                    {% else %}
+                    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                        {% for mod in c.modules %}
+                        <div style="background: var(--color-bg-subtle, #f8fafc); border: 1px solid var(--color-border); border-radius: var(--radius-sm, 6px); padding: 1.15rem;">
+                            <!-- Module Header -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                <div>
+                                    <strong style="font-size: 1rem; color: var(--color-text);">
+                                        Module {{ loop.index }}: {{ mod.title }}
+                                    </strong>
+                                    <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.15rem;">
+                                        {{ mod.completed_videos }} / {{ mod.total_videos }} lessons completed &bull; {{ mod.progress_percentage }}% module progress
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.6rem; min-width: 140px;">
+                                    <div style="flex: 1; height: 6px; background: #e2e8f0; border-radius: 9999px; overflow: hidden;">
+                                        <div style="width: {{ mod.progress_percentage }}%; height: 100%; background: {% if mod.progress_percentage == 100 %}#16a34a{% else %}#0284c7{% endif %}; border-radius: 9999px;"></div>
+                                    </div>
+                                    <span style="font-size: 0.8rem; font-weight: 700; color: var(--color-text);">{{ mod.progress_percentage }}%</span>
+                                </div>
+                            </div>
+
+                            <!-- Module Videos Table / List -->
+                            {% if not mod.videos %}
+                            <div style="font-size: 0.85rem; color: var(--color-text-muted); padding: 0.5rem 0;">
+                                No active video lessons in this module.
+                            </div>
+                            {% else %}
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem;">
+                                {% for v in mod.videos %}
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.85rem; background: #ffffff; border: 1px solid var(--color-border); border-radius: var(--radius-sm, 4px); flex-wrap: wrap; gap: 0.75rem;">
+                                    <!-- Video Info -->
+                                    <div style="display: flex; align-items: center; gap: 0.65rem; flex: 1; min-width: 220px;">
+                                        <span style="font-size: 0.9rem; color: {% if v.status == 'COMPLETED' %}#16a34a{% elif v.status == 'IN PROGRESS' %}#0284c7{% else %}#94a3b8{% endif %};">
+                                            {% if v.status == 'COMPLETED' %}&#10004;{% elif v.status == 'IN PROGRESS' %}&#9654;{% else %}&#9675;{% endif %}
+                                        </span>
+                                        <div>
+                                            <div style="font-size: 0.9rem; font-weight: 600; color: var(--color-text);">
+                                                {{ v.title }}
+                                            </div>
+                                            <div style="font-size: 0.775rem; color: var(--color-text-muted);">
+                                                Duration: {{ v.duration_display }}
+                                                {% if v.watched_seconds > 0 %}
+                                                &bull; Watched: {{ v.watched_display }} / {{ v.duration_display }}
+                                                {% endif %}
+                                                {% if v.completed_at_display %}
+                                                &bull; Completed: {{ v.completed_at_display }}
+                                                {% elif v.last_activity_display %}
+                                                &bull; Last watched: {{ v.last_activity_display }}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Video Progress & Status Badge -->
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div style="display: flex; align-items: center; gap: 0.5rem; min-width: 110px;">
+                                            <div style="flex: 1; height: 6px; background: #e2e8f0; border-radius: 9999px; overflow: hidden;">
+                                                <div style="width: {{ v.completion_percentage }}%; height: 100%; background: {% if v.status == 'COMPLETED' %}#16a34a{% else %}#0284c7{% endif %}; border-radius: 9999px;"></div>
+                                            </div>
+                                            <span style="font-size: 0.8rem; font-weight: 700; color: var(--color-text); min-width: 36px; text-align: right;">{{ v.completion_percentage }}%</span>
+                                        </div>
+
+                                        <div style="min-width: 100px; text-align: right;">
+                                            {% if v.status == 'COMPLETED' %}
+                                            <span class="badge-status" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 9999px;">
+                                                Completed
+                                            </span>
+                                            {% elif v.status == 'IN PROGRESS' %}
+                                            <span class="badge-status" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 9999px;">
+                                                In Progress
+                                            </span>
+                                            {% else %}
+                                            <span class="badge-status" style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 9999px;">
+                                                Not Started
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Accordion Toggle for Module Breakdown
+    const toggleButtons = document.querySelectorAll(".toggle-modules-btn");
+    toggleButtons.forEach(function(btn) {
+        btn.addEventListener("click", function() {
+            const targetId = this.getAttribute("data-target");
+            const drawer = document.getElementById(targetId);
+            const icon = this.querySelector(".toggle-icon");
+            const isExpanded = this.getAttribute("aria-expanded") === "true";
+
+            if (isExpanded) {
+                drawer.style.display = "none";
+                this.setAttribute("aria-expanded", "false");
+                if (icon) icon.innerHTML = "&#9654;"; // Right pointer
+            } else {
+                drawer.style.display = "block";
+                this.setAttribute("aria-expanded", "true");
+                if (icon) icon.innerHTML = "&#9660;"; // Down pointer
+            }
+        });
+    });
+});
+</script>
+
+<style>
+@media (prefers-reduced-motion: reduce) {
+    .card, .modules-drawer, .btn, div[role="progressbar"] > div {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+</style>
+{% endblock %}

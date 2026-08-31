@@ -80,9 +80,12 @@
                     </div>
                 </div>
 
-                <div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <a href="{{ url_for('admin_student_progress', user_id=student.id) }}" class="btn btn-primary btn-sm">
+                        View Learning Progress &rarr;
+                    </a>
                     <a href="{{ url_for('admin_user_edit', user_id=student.id) }}" class="btn btn-secondary btn-sm">
-                        Edit Student Profile
+                        Edit Profile
                     </a>
                 </div>
             </div>

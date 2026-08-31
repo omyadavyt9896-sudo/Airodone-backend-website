@@ -36,6 +36,10 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key-change-i
 # Ensure DATABASE_URL is set in your environment
 app.config["DATABASE_URL"] = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/airodrone")
 
+# Upload file size limit (default 500 MB to support large educational lesson videos)
+MAX_UPLOAD_MB = int(os.environ.get("HOSTINGER_MAX_VIDEO_SIZE_MB", 500))
+app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
+
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -59,6 +63,11 @@ def google_verification():
     return send_from_directory(app.root_path, 'googlef2b0a301d69fdec5.html', mimetype='text/html')
 
 
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    max_mb = app.config.get("MAX_CONTENT_LENGTH", 500 * 1024 * 1024) // (1024 * 1024)
+    flash(f"The uploaded file is too large. Maximum allowed upload size is {max_mb} MB.", "error")
+    return redirect(request.referrer or url_for("admin_courses"))
 
 
 # ---------- Grade & Class System ----------
@@ -315,6 +324,10 @@ def create_raw_db_connection():
             password=password,
             database=parsed.path.lstrip("/"),
             cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=20,
+            read_timeout=60,
+            write_timeout=60,
+            charset="utf8mb4",
             autocommit=True
         )
     elif "sqlite" in db_url.lower():
@@ -330,15 +343,54 @@ def create_raw_db_connection():
         conn.row_factory = sqlite3.Row
         return SQLiteConnWrapper(conn)
 
+def ping_or_reconnect_db(conn=None):
+    """
+    Ensure the provided or active database connection is alive and healthy.
+    If connection has gone away (e.g. following a lengthy file upload or SFTP transfer),
+    safely pings or re-establishes the connection.
+    """
+    if conn is None:
+        return get_db_connection()
+    raw = getattr(conn, "_raw_conn", conn)
+    if hasattr(raw, "ping"):
+        try:
+            raw.ping(reconnect=True)
+            return conn
+        except Exception as e:
+            app.logger.warning(f"Database connection ping failed ({e}); re-establishing fresh connection.")
+            if has_request_context():
+                try:
+                    raw.close()
+                except Exception:
+                    pass
+                g.raw_db = create_raw_db_connection()
+                return RequestConnProxy(g.raw_db)
+            else:
+                return create_raw_db_connection()
+    return conn
+
 def get_db_connection():
     """
     Obtain database connection.
-    If within a Flask request context, reuses g.raw_db for the request duration.
+    If within a Flask request context, reuses g.raw_db for the request duration,
+    verifying connection liveness with ping(reconnect=True) for MySQL.
     Otherwise (standalone / CLI / tests), creates and returns a standalone connection.
     """
     if has_request_context():
         if "raw_db" not in g or g.raw_db is None:
             g.raw_db = create_raw_db_connection()
+        else:
+            raw = g.raw_db
+            if hasattr(raw, "ping"):
+                try:
+                    raw.ping(reconnect=True)
+                except Exception as ping_err:
+                    app.logger.warning(f"MySQL ping failed ({ping_err}); reconnecting fresh socket.")
+                    try:
+                        raw.close()
+                    except Exception:
+                        pass
+                    g.raw_db = create_raw_db_connection()
         return RequestConnProxy(g.raw_db)
     return create_raw_db_connection()
 
@@ -4160,10 +4212,10 @@ def admin_add_video(module_id):
         (module_id,),
     )
     mod_info = cur.fetchone()
+    cur.close()
+    conn.close()
 
     if not mod_info:
-        cur.close()
-        conn.close()
         flash("Module not found.", "error")
         return redirect(url_for("admin_courses"))
 
@@ -4178,11 +4230,17 @@ def admin_add_video(module_id):
             sequence = 1
         is_active = 1 if request.form.get("is_active") else 0
 
+        if not title:
+            error = "Video title is required."
+
         video_filename = None
-        if "video_file" in request.files:
+        uploaded_new_path = None
+
+        if not error and "video_file" in request.files:
             file = request.files["video_file"]
             if file and file.filename:
                 if allowed_file(file.filename, ALLOWED_VIDEO_EXTENSIONS):
+                    # Save video to persistent storage (can take 30-120s+ for large videos)
                     success, stored_path, err = storage.save_video(
                         file,
                         course_id=mod_info["course_id"],
@@ -4191,32 +4249,60 @@ def admin_add_video(module_id):
                     )
                     if success:
                         video_filename = stored_path
+                        uploaded_new_path = stored_path
                     else:
                         error = f"Video upload failed: {err}"
                 else:
                     error = f"Invalid video file format. Allowed formats: {', '.join(sorted(ALLOWED_VIDEO_EXTENSIONS))}"
 
-        if not title:
-            error = "Video title is required."
-
         if not error:
-            now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-            cur.execute(
-                """
-                INSERT INTO course_videos (module_id, title, description, sequence, duration, video_file, is_active, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """,
-                (module_id, title, description, sequence, duration, video_filename, is_active, now_str, now_str),
-            )
-            conn.commit()
-            cur.close()
-            conn.close()
+            db_conn = None
+            db_cur = None
+            try:
+                # Re-obtain/verify healthy DB connection after long file upload/transfer
+                db_conn = get_db_connection()
+                ping_or_reconnect_db(db_conn)
+                db_cur = get_db_cursor(db_conn)
 
-            flash(f"Video '{title}' added successfully!", "success")
-            return redirect(url_for("admin_course_detail", course_id=mod_info["course_id"]))
+                now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                db_cur.execute(
+                    """
+                    INSERT INTO course_videos (module_id, title, description, sequence, duration, video_file, is_active, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (module_id, title, description, sequence, duration, video_filename, is_active, now_str, now_str),
+                )
+                db_conn.commit()
+                db_cur.close()
+                db_conn.close()
 
-    cur.close()
-    conn.close()
+                flash(f"Video '{title}' added successfully!", "success")
+                return redirect(url_for("admin_course_detail", course_id=mod_info["course_id"]))
+
+            except Exception as db_err:
+                app.logger.error(f"Database error saving video '{title}': {db_err}", exc_info=True)
+                if db_conn:
+                    try:
+                        db_conn.rollback()
+                    except Exception:
+                        pass
+                    try:
+                        if db_cur:
+                            db_cur.close()
+                        db_conn.close()
+                    except Exception:
+                        pass
+
+                # Clean up newly uploaded orphan file if DB insert failed
+                if uploaded_new_path:
+                    try:
+                        app.logger.info(f"Cleaning up orphan video file after DB failure: {uploaded_new_path}")
+                        storage.delete_video(uploaded_new_path)
+                    except Exception as cleanup_err:
+                        app.logger.warning(f"Failed to cleanup orphan video {uploaded_new_path}: {cleanup_err}")
+
+                error = f"Database error saving video record: {str(db_err)}"
+
     return render_template("admin_video_form.html", active_page="admin", action="Add", mod_info=mod_info, error=error)
 
 
@@ -4239,10 +4325,10 @@ def admin_edit_video(video_id):
         (video_id,),
     )
     video = cur.fetchone()
+    cur.close()
+    conn.close()
 
     if not video:
-        cur.close()
-        conn.close()
         flash("Video not found.", "error")
         return redirect(url_for("admin_courses"))
 
@@ -4257,11 +4343,14 @@ def admin_edit_video(video_id):
             sequence = 1
         is_active = 1 if request.form.get("is_active") else 0
 
+        if not title:
+            error = "Video title is required."
+
         old_video_filename = video.get("video_file")
         video_filename = old_video_filename
-        uploaded_new_file = False
+        uploaded_new_path = None
 
-        if "video_file" in request.files:
+        if not error and "video_file" in request.files:
             file = request.files["video_file"]
             if file and file.filename:
                 if allowed_file(file.filename, ALLOWED_VIDEO_EXTENSIONS):
@@ -4273,41 +4362,67 @@ def admin_edit_video(video_id):
                     )
                     if success:
                         video_filename = stored_path
-                        uploaded_new_file = True
+                        uploaded_new_path = stored_path
                     else:
                         error = f"Video replacement failed: {err}"
                 else:
                     error = f"Invalid video file format. Allowed formats: {', '.join(sorted(ALLOWED_VIDEO_EXTENSIONS))}"
 
-        if not title:
-            error = "Video title is required."
-
         if not error:
-            now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-            cur.execute(
-                """
-                UPDATE course_videos
-                SET title = %s, description = %s, sequence = %s, duration = %s, video_file = %s, is_active = %s, updated_at = %s
-                WHERE id = %s
-                """,
-                (title, description, sequence, duration, video_filename, is_active, now_str, video_id),
-            )
-            conn.commit()
-            cur.close()
-            conn.close()
+            db_conn = None
+            db_cur = None
+            try:
+                # Re-obtain/verify healthy DB connection after long file upload/transfer
+                db_conn = get_db_connection()
+                ping_or_reconnect_db(db_conn)
+                db_cur = get_db_cursor(db_conn)
 
-            # Safely clean up old video only after DB update committed and only if replaced
-            if uploaded_new_file and old_video_filename and old_video_filename != video_filename:
-                try:
-                    storage.delete_video(old_video_filename)
-                except Exception as del_err:
-                    app.logger.warning(f"Could not delete replaced video file {old_video_filename}: {del_err}")
+                now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                db_cur.execute(
+                    """
+                    UPDATE course_videos
+                    SET title = %s, description = %s, sequence = %s, duration = %s, video_file = %s, is_active = %s, updated_at = %s
+                    WHERE id = %s
+                    """,
+                    (title, description, sequence, duration, video_filename, is_active, now_str, video_id),
+                )
+                db_conn.commit()
+                db_cur.close()
+                db_conn.close()
 
-            flash(f"Video '{title}' updated successfully!", "success")
-            return redirect(url_for("admin_course_detail", course_id=video["course_id"]))
+                # Safely clean up old video only after DB update committed and only if replaced
+                if uploaded_new_path and old_video_filename and old_video_filename != video_filename:
+                    try:
+                        storage.delete_video(old_video_filename)
+                    except Exception as del_err:
+                        app.logger.warning(f"Could not delete replaced video file {old_video_filename}: {del_err}")
 
-    cur.close()
-    conn.close()
+                flash(f"Video '{title}' updated successfully!", "success")
+                return redirect(url_for("admin_course_detail", course_id=video["course_id"]))
+
+            except Exception as db_err:
+                app.logger.error(f"Database error updating video '{title}': {db_err}", exc_info=True)
+                if db_conn:
+                    try:
+                        db_conn.rollback()
+                    except Exception:
+                        pass
+                    try:
+                        if db_cur:
+                            db_cur.close()
+                        db_conn.close()
+                    except Exception:
+                        pass
+
+                # Clean up newly uploaded orphan file if DB update failed
+                if uploaded_new_path:
+                    try:
+                        app.logger.info(f"Cleaning up orphan video file after DB failure: {uploaded_new_path}")
+                        storage.delete_video(uploaded_new_path)
+                    except Exception as cleanup_err:
+                        app.logger.warning(f"Failed to cleanup orphan video {uploaded_new_path}: {cleanup_err}")
+
+                error = f"Database error updating video record: {str(db_err)}"
 
     return render_template("admin_video_form.html", active_page="admin", action="Edit", video=video, mod_info={"module_title": video["module_title"], "course_title": video["course_title"], "course_id": video["course_id"]}, error=error)
 

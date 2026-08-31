@@ -12,3 +12,4 @@ itsdangerous>=2.1.2
 psycopg2-binary>=2.9.9
 PyMySQL>=1.1.0
 reportlab>=4.0.0
+paramiko>=3.3.0

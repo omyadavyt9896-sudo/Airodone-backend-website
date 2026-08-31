@@ -14,6 +14,7 @@ from reportlab.lib import colors
 from reportlab.pdfgen import canvas
 
 import urllib.parse
+import storage
 
 try:
     from dotenv import load_dotenv
@@ -2216,7 +2217,7 @@ def video_player(course_slug, video_id):
 def stream_course_video(video_id):
     """
     Protected video streaming endpoint with HTTP 206 Partial Content Range support.
-    Enforces can_access_course. Video files are kept outside the public static directory.
+    Enforces can_access_course. Video files are streamed via pluggable storage backend.
     """
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -2243,27 +2244,51 @@ def stream_course_video(video_id):
     if not video_file:
         abort(404)
 
-    if os.path.isabs(video_file):
-        file_path = video_file
-    else:
-        file_path = os.path.join(VIDEO_UPLOAD_FOLDER, video_file)
+    # Check existence on active storage backend or local fallback
+    if not storage.video_exists(video_file):
+        # Fallback check on local static / upload directory
+        if not os.path.exists(video_file) and not os.path.exists(os.path.join(VIDEO_UPLOAD_FOLDER, video_file)):
+            alt_static = os.path.join(app.static_folder, video_file)
+            if not os.path.exists(alt_static):
+                abort(404)
 
-    if not os.path.exists(file_path):
-        alt_path = os.path.join(app.static_folder, video_file)
-        if os.path.exists(alt_path):
-            file_path = alt_path
-        else:
-            abort(404)
-
-    ext = file_path.rsplit('.', 1)[-1].lower() if '.' in file_path else 'mp4'
-    mimetypes = {'mp4': 'video/mp4', 'webm': 'video/webm', 'mov': 'video/quicktime', 'mkv': 'video/x-matroska', 'm4v': 'video/mp4'}
+    ext = video_file.rsplit('.', 1)[-1].lower() if '.' in video_file else 'mp4'
+    mimetypes = {
+        'mp4': 'video/mp4',
+        'webm': 'video/webm',
+        'mov': 'video/quicktime',
+        'mkv': 'video/x-matroska',
+        'm4v': 'video/mp4',
+    }
     mimetype = mimetypes.get(ext, 'video/mp4')
 
-    range_header = request.headers.get('Range', None)
-    if not range_header:
-        return send_file(file_path, mimetype=mimetype)
+    file_size = storage.get_video_size(video_file)
+    if file_size is None:
+        # Fallback to local getsize
+        if os.path.exists(video_file):
+            file_size = os.path.getsize(video_file)
+        elif os.path.exists(os.path.join(VIDEO_UPLOAD_FOLDER, video_file)):
+            file_size = os.path.getsize(os.path.join(VIDEO_UPLOAD_FOLDER, video_file))
+        else:
+            file_size = 0
 
-    file_size = os.path.getsize(file_path)
+    range_header = request.headers.get('Range', None)
+    from flask import Response
+
+    if not range_header:
+        # Full content stream (200 OK)
+        rv = Response(
+            storage.open_video_stream(video_file, start_byte=0, length=file_size),
+            200,
+            mimetype=mimetype,
+            direct_passthrough=True,
+        )
+        rv.headers.add('Accept-Ranges', 'bytes')
+        if file_size:
+            rv.headers.add('Content-Length', str(file_size))
+        return rv
+
+    # Parse byte range header (e.g. "bytes=0-1048575")
     byte1, byte2 = 0, None
     m = re.search(r'(\d+)-(\d*)', range_header)
     if m:
@@ -2272,22 +2297,19 @@ def stream_course_video(video_id):
         if g2:
             byte2 = int(g2)
 
-    if byte1 >= file_size:
+    if file_size and byte1 >= file_size:
         return "", 416
 
-    length = file_size - byte1
-    if byte2 is not None and byte2 < file_size:
+    length = file_size - byte1 if file_size else None
+    if byte2 is not None and file_size and byte2 < file_size:
         length = byte2 - byte1 + 1
 
-    with open(file_path, 'rb') as f:
-        f.seek(byte1)
-        data = f.read(length)
-
-    from flask import Response
-    rv = Response(data, 206, mimetype=mimetype, direct_passthrough=True)
-    rv.headers.add('Content-Range', f'bytes {byte1}-{byte1 + len(data) - 1}/{file_size}')
+    stream_gen = storage.open_video_stream(video_file, start_byte=byte1, length=length)
+    rv = Response(stream_gen, 206, mimetype=mimetype, direct_passthrough=True)
+    if file_size and length is not None:
+        rv.headers.add('Content-Range', f'bytes {byte1}-{byte1 + length - 1}/{file_size}')
+        rv.headers.add('Content-Length', str(length))
     rv.headers.add('Accept-Ranges', 'bytes')
-    rv.headers.add('Content-Length', str(len(data)))
     return rv
 
 
@@ -3918,14 +3940,16 @@ def admin_add_video(module_id):
             file = request.files["video_file"]
             if file and file.filename:
                 if allowed_file(file.filename, ALLOWED_VIDEO_EXTENSIONS):
-                    try:
-                        from werkzeug.utils import secure_filename
-                        orig_name = secure_filename(file.filename) or "video.mp4"
-                        unique_name = f"vid_{module_id}_{int(datetime.utcnow().timestamp())}_{orig_name}"
-                        file.save(os.path.join(VIDEO_UPLOAD_FOLDER, unique_name))
-                        video_filename = unique_name
-                    except Exception as e:
-                        error = f"Error saving uploaded video file: {e}"
+                    success, stored_path, err = storage.save_video(
+                        file,
+                        course_id=mod_info["course_id"],
+                        module_id=module_id,
+                        original_filename=file.filename,
+                    )
+                    if success:
+                        video_filename = stored_path
+                    else:
+                        error = f"Video upload failed: {err}"
                 else:
                     error = f"Invalid video file format. Allowed formats: {', '.join(sorted(ALLOWED_VIDEO_EXTENSIONS))}"
 
@@ -3990,19 +4014,25 @@ def admin_edit_video(video_id):
             sequence = 1
         is_active = 1 if request.form.get("is_active") else 0
 
-        video_filename = video.get("video_file")
+        old_video_filename = video.get("video_file")
+        video_filename = old_video_filename
+        uploaded_new_file = False
+
         if "video_file" in request.files:
             file = request.files["video_file"]
             if file and file.filename:
                 if allowed_file(file.filename, ALLOWED_VIDEO_EXTENSIONS):
-                    try:
-                        from werkzeug.utils import secure_filename
-                        orig_name = secure_filename(file.filename) or "video.mp4"
-                        unique_name = f"vid_{video['module_id']}_{int(datetime.utcnow().timestamp())}_{orig_name}"
-                        file.save(os.path.join(VIDEO_UPLOAD_FOLDER, unique_name))
-                        video_filename = unique_name
-                    except Exception as e:
-                        error = f"Error saving uploaded video file: {e}"
+                    success, stored_path, err = storage.save_video(
+                        file,
+                        course_id=video["course_id"],
+                        module_id=video["module_id"],
+                        original_filename=file.filename,
+                    )
+                    if success:
+                        video_filename = stored_path
+                        uploaded_new_file = True
+                    else:
+                        error = f"Video replacement failed: {err}"
                 else:
                     error = f"Invalid video file format. Allowed formats: {', '.join(sorted(ALLOWED_VIDEO_EXTENSIONS))}"
 
@@ -4022,6 +4052,14 @@ def admin_edit_video(video_id):
             conn.commit()
             cur.close()
             conn.close()
+
+            # Safely clean up old video only after DB update committed and only if replaced
+            if uploaded_new_file and old_video_filename and old_video_filename != video_filename:
+                try:
+                    storage.delete_video(old_video_filename)
+                except Exception as del_err:
+                    app.logger.warning(f"Could not delete replaced video file {old_video_filename}: {del_err}")
+
             flash(f"Video '{title}' updated successfully!", "success")
             return redirect(url_for("admin_course_detail", course_id=video["course_id"]))
 
@@ -4075,6 +4113,11 @@ def admin_delete_video(video_id):
         conn.commit()
         cur.close()
         conn.close()
+        if video.get("video_file"):
+            try:
+                storage.delete_video(video["video_file"])
+            except Exception as del_err:
+                app.logger.warning(f"Could not delete storage file {video['video_file']}: {del_err}")
         flash(f"Video '{video['title']}' deleted successfully.", "success")
 
     return redirect(url_for("admin_course_detail", course_id=course_id))

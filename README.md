@@ -26,7 +26,7 @@ project-root/
     /js
       main.js
     /images
-      /home
+      /homer
       /services
       /about
       /contact
@@ -105,9 +105,14 @@ On the first request, the SQLite database (`database.db`) and `contacts` table w
 
 ## Deployment
 
-For production:
+For production (e.g. Render / Hostinger / VPS):
 
-- Use a WSGI server such as Gunicorn or uWSGI in front of the Flask app.
+- Use Gunicorn with `--timeout 600` to support large video lesson uploads without request termination:
+
+```bash
+gunicorn --timeout 600 wsgi:application
+```
+
 - Disable debug mode in `app.py`:
 
 ```python
@@ -115,6 +120,6 @@ if __name__ == "__main__":
     app.run(debug=False)
 ```
 
-- Configure environment variables for any sensitive settings if you extend the app.
+- Configure environment variables (`DATABASE_URL`, `SECRET_KEY`, `ADMIN_DEFAULT_PASSWORD`) in your `.env` or cloud dashboard.
 
 

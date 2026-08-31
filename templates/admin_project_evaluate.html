@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 
 {% block title %}Evaluate Submission: {{ submission.student_name }} | Admin airodrone{% endblock %}
 
@@ -10,7 +10,7 @@
             <span aria-hidden="true">&rarr;</span>
             <a href="{{ url_for('admin_courses') }}">Course Management</a>
             <span aria-hidden="true">&rarr;</span>
-            <a href="{{ url_for('admin_project_submissions', project_id=project.id) }}">{{ project.title }} Submissions</a>
+            <a href="{{ url_for('admin_project_submissions', project_id=submission.project_id) }}">{{ submission.project_title }} Submissions</a>
             <span aria-hidden="true">&rarr;</span>
             <span class="current-breadcrumb">Evaluate {{ submission.student_name }}</span>
         </nav>
@@ -18,8 +18,8 @@
         <div class="page-hero-inner" style="margin-top: 0.75rem;">
             <div>
                 <h1>Evaluate Student Submission</h1>
-                <p style="font-size: 1.05rem; max-width: 600px; color: var(--color-text-muted);">
-                    Student: <strong>{{ submission.student_name }}</strong> ({{ submission.student_email }}) &bull; Project: <strong>{{ project.title }}</strong>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    Student: <strong>{{ submission.student_name }}</strong> ({{ submission.student_email }}) &bull; Project: <strong>{{ submission.project_title }}</strong>
                 </p>
             </div>
         </div>
@@ -27,24 +27,65 @@
 </section>
 
 <section class="section">
-    <div class="container" style="max-width: 750px; margin: 0 auto;">
+    <div class="container" style="max-width: 800px; margin: 0 auto;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 1.5rem;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if error %}
+        <div class="alert alert-error" style="margin-bottom: 1.5rem;">
+            {{ error }}
+        </div>
+        {% endif %}
+
         <!-- Submission Details Card -->
         <div class="card" style="padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--color-border);">
-            <h3 style="margin: 0 0 1rem 0; font-size: 1.25rem;">Student's Submission Work</h3>
-            <p style="margin: 0 0 1rem 0; font-size: 0.85rem; color: var(--color-text-muted);">Submitted at: {{ submission.submitted_at }}</p>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem;">
+                <div>
+                    <h2 style="margin: 0 0 0.35rem 0; font-size: 1.3rem;">Student Submission Work</h2>
+                    <p style="margin: 0; font-size: 0.875rem; color: var(--color-text-muted);">
+                        Submitted on: <strong>{{ submission.submitted_at }}</strong>
+                        {% if submission.student_class %} &bull; Class: <strong>{{ submission.student_class }}</strong>{% endif %}
+                    </p>
+                </div>
+                <div>
+                    {% if submission.status == 'evaluated' %}
+                    <span class="badge-status badge-active" style="font-size: 0.85rem; padding: 0.35rem 0.75rem;">
+                        ✓ Evaluated: {{ submission.marks }} / {{ submission.max_marks }} Marks
+                    </span>
+                    {% else %}
+                    <span class="badge-status badge-info" style="font-size: 0.85rem; padding: 0.35rem 0.75rem; background: #e0f2fe; color: #0369a1;">
+                        ⏳ Pending Evaluation
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if submission.project_description %}
+            <div style="margin-bottom: 1.5rem; padding: 0.85rem 1rem; background: var(--color-bg-subtle); border-left: 3px solid var(--color-primary); border-radius: 4px;">
+                <strong style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-text-muted);">Project Task Brief:</strong>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: var(--color-text);">{{ submission.project_description }}</p>
+            </div>
+            {% endif %}
 
             <div style="margin-bottom: 1.5rem;">
-                <label style="font-weight: 600; display: block; margin-bottom: 0.4rem;">Text Notes / Links:</label>
-                <div style="padding: 1rem; background: var(--color-bg-alt); border-radius: var(--radius-md, 8px); line-height: 1.6;">
+                <label style="font-weight: 600; display: block; margin-bottom: 0.4rem; font-size: 0.95rem;">Student Text Notes / Solution Links:</label>
+                <div style="padding: 1rem 1.25rem; background: var(--color-bg-alt); border: 1px solid var(--color-border); border-radius: var(--radius-md, 8px); line-height: 1.6; font-size: 0.95rem;">
                     {{ submission.submission_text|nl2br|safe if submission.submission_text else 'No text notes submitted.' }}
                 </div>
             </div>
 
             {% if submission.submission_file %}
             <div>
-                <label style="font-weight: 600; display: block; margin-bottom: 0.4rem;">Submitted File:</label>
-                <a href="{{ url_for('download_project_submission_file', submission_id=submission.id) }}" class="btn btn-secondary">
-                    📥 Download Attachment: {{ submission.submission_file }}
+                <label style="font-weight: 600; display: block; margin-bottom: 0.4rem; font-size: 0.95rem;">Uploaded Project Attachment:</label>
+                <a href="{{ url_for('download_project_submission_file', submission_id=submission.id) }}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                    📥 Download Attachment: <strong>{{ submission.submission_file }}</strong>
                 </a>
             </div>
             {% endif %}
@@ -52,24 +93,33 @@
 
         <!-- Evaluation Form Card -->
         <div class="card profile-form-card" style="padding: 2rem;">
-            <h3 style="font-size: 1.25rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
-                Grade & Feedback
-            </h3>
+            <div style="margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem;">
+                <h3 style="font-size: 1.25rem; margin: 0 0 0.25rem 0;">
+                    {% if submission.status == 'evaluated' %}Edit Grade & Feedback{% else %}Grade & Feedback{% endif %}
+                </h3>
+                <p style="margin: 0; font-size: 0.875rem; color: var(--color-text-muted);">
+                    Maximum Marks: <strong>{{ submission.max_marks }}</strong>
+                    {% if submission.evaluated_at %} &bull; Last Evaluated: <strong>{{ submission.evaluated_at }}</strong>{% endif %}
+                </p>
+            </div>
 
             <form method="post" class="profile-form">
                 <div class="form-group" style="margin-bottom: 1.25rem;">
                     <label for="marks" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
-                        Awarded Marks (out of {{ project.max_marks }}) <span style="color: var(--color-error);">*</span>
+                        Awarded Marks (out of {{ submission.max_marks }}) <span style="color: var(--color-error);">*</span>
                     </label>
                     <input type="number" 
                            id="marks" 
                            name="marks" 
                            class="form-control" 
                            min="0" 
-                           max="{{ project.max_marks }}" 
+                           max="{{ submission.max_marks }}" 
                            value="{{ submission.marks if submission.marks is not none else '' }}" 
                            required 
                            placeholder="e.g. 85">
+                    <small style="color: var(--color-text-muted); display: block; margin-top: 0.3rem;">
+                        Enter a valid score between 0 and {{ submission.max_marks }}.
+                    </small>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 1.5rem;">
@@ -79,15 +129,15 @@
                     <textarea id="feedback" 
                               name="feedback" 
                               class="form-control" 
-                              rows="4" 
-                              placeholder="Great work on the obstacle algorithm! Keep refining the sensor calibration...">{{ submission.feedback or '' }}</textarea>
+                              rows="5" 
+                              placeholder="Provide detailed feedback on project execution, code quality, or recommendations for improvement...">{{ submission.feedback or '' }}</textarea>
                 </div>
 
-                <div style="display: flex; gap: 1rem; align-items: center;">
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                     <button type="submit" class="btn btn-primary">
                         Save Evaluation &rarr;
                     </button>
-                    <a href="{{ url_for('admin_project_submissions', project_id=project.id) }}" class="btn btn-outline">&larr; Back to Submissions</a>
+                    <a href="{{ url_for('admin_project_submissions', project_id=submission.project_id) }}" class="btn btn-outline">&larr; Back to Submissions</a>
                 </div>
             </form>
         </div>

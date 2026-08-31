@@ -3918,14 +3918,16 @@ def admin_add_video(module_id):
             file = request.files["video_file"]
             if file and file.filename:
                 if allowed_file(file.filename, ALLOWED_VIDEO_EXTENSIONS):
-                    from werkzeug.utils import secure_filename
-                    orig_name = secure_filename(file.filename)
-                    ext = orig_name.rsplit(".", 1)[1].lower() if "." in orig_name else "mp4"
-                    unique_name = f"vid_{module_id}_{int(datetime.utcnow().timestamp())}_{orig_name}"
-                    file.save(os.path.join(VIDEO_UPLOAD_FOLDER, unique_name))
-                    video_filename = unique_name
+                    try:
+                        from werkzeug.utils import secure_filename
+                        orig_name = secure_filename(file.filename) or "video.mp4"
+                        unique_name = f"vid_{module_id}_{int(datetime.utcnow().timestamp())}_{orig_name}"
+                        file.save(os.path.join(VIDEO_UPLOAD_FOLDER, unique_name))
+                        video_filename = unique_name
+                    except Exception as e:
+                        error = f"Error saving uploaded video file: {e}"
                 else:
-                    error = f"Invalid video file format. Allowed: {', '.join(ALLOWED_VIDEO_EXTENSIONS)}"
+                    error = f"Invalid video file format. Allowed formats: {', '.join(sorted(ALLOWED_VIDEO_EXTENSIONS))}"
 
         if not title:
             error = "Video title is required."
@@ -3993,13 +3995,16 @@ def admin_edit_video(video_id):
             file = request.files["video_file"]
             if file and file.filename:
                 if allowed_file(file.filename, ALLOWED_VIDEO_EXTENSIONS):
-                    from werkzeug.utils import secure_filename
-                    orig_name = secure_filename(file.filename)
-                    unique_name = f"vid_{video['module_id']}_{int(datetime.utcnow().timestamp())}_{orig_name}"
-                    file.save(os.path.join(VIDEO_UPLOAD_FOLDER, unique_name))
-                    video_filename = unique_name
+                    try:
+                        from werkzeug.utils import secure_filename
+                        orig_name = secure_filename(file.filename) or "video.mp4"
+                        unique_name = f"vid_{video['module_id']}_{int(datetime.utcnow().timestamp())}_{orig_name}"
+                        file.save(os.path.join(VIDEO_UPLOAD_FOLDER, unique_name))
+                        video_filename = unique_name
+                    except Exception as e:
+                        error = f"Error saving uploaded video file: {e}"
                 else:
-                    error = f"Invalid video file format. Allowed: {', '.join(ALLOWED_VIDEO_EXTENSIONS)}"
+                    error = f"Invalid video file format. Allowed formats: {', '.join(sorted(ALLOWED_VIDEO_EXTENSIONS))}"
 
         if not title:
             error = "Video title is required."
@@ -5129,7 +5134,24 @@ def admin_project_submissions(project_id):
     cur.close()
     conn.close()
 
-    return render_template("admin_project_submissions.html", active_page="admin", project=project, submissions=submissions)
+    to_evaluate_submissions = [s for s in submissions if s.get("status") != "evaluated"]
+    evaluated_submissions = [s for s in submissions if s.get("status") == "evaluated"]
+
+    current_tab = request.args.get("tab", "to_evaluate")
+    if current_tab not in ("to_evaluate", "evaluated"):
+        current_tab = "to_evaluate"
+
+    return render_template(
+        "admin_project_submissions.html",
+        active_page="admin",
+        project=project,
+        all_submissions=submissions,
+        to_evaluate_submissions=to_evaluate_submissions,
+        evaluated_submissions=evaluated_submissions,
+        to_evaluate_count=len(to_evaluate_submissions),
+        evaluated_count=len(evaluated_submissions),
+        current_tab=current_tab,
+    )
 
 
 @app.route("/admin/submissions/<int:submission_id>/evaluate", methods=["GET", "POST"])
@@ -5182,7 +5204,7 @@ def admin_evaluate_submission(submission_id):
             cur.close()
             conn.close()
             flash(f"Submission for {sub['student_name']} evaluated successfully with {marks}/{sub['max_marks']} marks!", "success")
-            return redirect(url_for("admin_project_submissions", project_id=sub["project_id"]))
+            return redirect(url_for("admin_project_submissions", project_id=sub["project_id"], tab="evaluated"))
 
     cur.close()
     conn.close()

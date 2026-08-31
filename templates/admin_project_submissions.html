@@ -38,80 +38,158 @@
             {% endif %}
         {% endwith %}
 
-        <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+        <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
             <a href="{{ url_for('admin_course_detail', course_id=project.course_id) }}" class="btn btn-outline">&larr; Back to Course</a>
             <a href="{{ url_for('admin_edit_project', project_id=project.id) }}" class="btn btn-secondary">Edit Project Details</a>
         </div>
 
-        {% if submissions %}
-        <div class="table-wrapper">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Student</th>
-                        <th>Class / Grade</th>
-                        <th>Submitted At</th>
-                        <th>Files / Text</th>
-                        <th>Status</th>
-                        <th>Marks</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for sub in submissions %}
-                    <tr>
-                        <td>
-                            <strong>{{ sub.student_name }}</strong>
-                            <br><span style="font-size: 0.8rem; color: var(--color-text-muted);">{{ sub.student_email }}</span>
-                        </td>
-                        <td>
-                            {% if sub.student_class %}
-                            Class {{ sub.student_class }}
-                            {% else %}
-                            <span style="color: var(--color-text-muted);">&mdash;</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ sub.submitted_at }}</td>
-                        <td>
-                            {% if sub.submission_file %}
-                            <a href="{{ url_for('download_project_submission_file', submission_id=sub.id) }}" class="btn btn-secondary btn-sm" style="margin-bottom: 0.3rem; display: inline-block;">
-                                📥 File ({{ sub.submission_file }})
-                            </a>
-                            {% endif %}
-                            {% if sub.submission_text %}
-                            <div style="font-size: 0.825rem; color: var(--color-text); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                "{{ sub.submission_text }}"
-                            </div>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if sub.status == 'evaluated' %}
-                            <span class="badge-status badge-active">✓ Evaluated</span>
-                            {% else %}
-                            <span class="badge-status badge-info" style="background: #e0f2fe; color: #0369a1;">⏳ Pending</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if sub.status == 'evaluated' %}
-                            <strong>{{ sub.marks }} / {{ project.max_marks }}</strong>
-                            {% else %}
-                            <span style="color: var(--color-text-muted);">&mdash;</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="{{ url_for('admin_evaluate_submission', submission_id=sub.id) }}" class="btn btn-primary btn-sm">
-                                {% if sub.status == 'evaluated' %}Re-evaluate{% else %}Evaluate{% endif %} &rarr;
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <!-- Two Separate Submission Views: To Evaluate vs Evaluated Tabs -->
+        <div class="submissions-tab-bar" style="display: flex; gap: 0.5rem; border-bottom: 2px solid var(--color-border); margin-bottom: 1.5rem;">
+            <a href="{{ url_for('admin_project_submissions', project_id=project.id, tab='to_evaluate') }}"
+               class="btn {% if current_tab == 'to_evaluate' %}btn-primary{% else %}btn-outline{% endif %}"
+               style="border-bottom-left-radius: 0; border-bottom-right-radius: 0; font-weight: 600; padding: 0.6rem 1.25rem;">
+               ⏳ To Evaluate ({{ to_evaluate_count }})
+            </a>
+            <a href="{{ url_for('admin_project_submissions', project_id=project.id, tab='evaluated') }}"
+               class="btn {% if current_tab == 'evaluated' %}btn-primary{% else %}btn-outline{% endif %}"
+               style="border-bottom-left-radius: 0; border-bottom-right-radius: 0; font-weight: 600; padding: 0.6rem 1.25rem;">
+               ✓ Evaluated ({{ evaluated_count }})
+            </a>
         </div>
+
+        {% if current_tab == 'to_evaluate' %}
+            <!-- TAB A: TO EVALUATE -->
+            {% if to_evaluate_submissions %}
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Class / Grade</th>
+                            <th>Submitted At</th>
+                            <th>Files / Text</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sub in to_evaluate_submissions %}
+                        <tr>
+                            <td>
+                                <strong>{{ sub.student_name }}</strong>
+                                <br><span style="font-size: 0.8rem; color: var(--color-text-muted);">{{ sub.student_email }}</span>
+                            </td>
+                            <td>
+                                {% if sub.student_class %}
+                                Class {{ sub.student_class }}
+                                {% else %}
+                                <span style="color: var(--color-text-muted);">&mdash;</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ sub.submitted_at }}</td>
+                            <td>
+                                {% if sub.submission_file %}
+                                <a href="{{ url_for('download_project_submission_file', submission_id=sub.id) }}" class="btn btn-secondary btn-sm" style="margin-bottom: 0.3rem; display: inline-block;">
+                                    📥 File ({{ sub.submission_file }})
+                                </a>
+                                {% endif %}
+                                {% if sub.submission_text %}
+                                <div style="font-size: 0.825rem; color: var(--color-text); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    "{{ sub.submission_text }}"
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge-status badge-info" style="background: #e0f2fe; color: #0369a1;">Submitted</span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('admin_evaluate_submission', submission_id=sub.id) }}" class="btn btn-primary btn-sm">
+                                    Evaluate &rarr;
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="card empty-state" style="text-align: center; padding: 3.5rem 1.5rem; background: var(--color-bg-subtle);">
+                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎉</div>
+                <h3 style="margin-bottom: 0.35rem;">All Caught Up!</h3>
+                <p style="font-size: 1rem; color: var(--color-text-muted); margin: 0;">
+                    There are currently no pending submissions waiting to be evaluated for this project.
+                </p>
+            </div>
+            {% endif %}
+
         {% else %}
-        <div class="empty-state" style="text-align: center; padding: 3rem 1rem;">
-            <p style="font-size: 1.1rem; color: var(--color-text-muted);">No student submissions yet for this project.</p>
-        </div>
+            <!-- TAB B: EVALUATED -->
+            {% if evaluated_submissions %}
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Class / Grade</th>
+                            <th>Submitted At</th>
+                            <th>Marks</th>
+                            <th>Evaluated Date</th>
+                            <th>Feedback Preview</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sub in evaluated_submissions %}
+                        <tr>
+                            <td>
+                                <strong>{{ sub.student_name }}</strong>
+                                <br><span style="font-size: 0.8rem; color: var(--color-text-muted);">{{ sub.student_email }}</span>
+                            </td>
+                            <td>
+                                {% if sub.student_class %}
+                                Class {{ sub.student_class }}
+                                {% else %}
+                                <span style="color: var(--color-text-muted);">&mdash;</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ sub.submitted_at }}</td>
+                            <td>
+                                <strong style="color: #16a34a; font-size: 1.05rem;">{{ sub.marks }} / {{ project.max_marks }}</strong>
+                            </td>
+                            <td>
+                                {{ sub.evaluated_at or '—' }}
+                                {% if sub.evaluator_name %}
+                                <br><span style="font-size: 0.75rem; color: var(--color-text-muted);">by {{ sub.evaluator_name }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if sub.feedback %}
+                                <div style="font-size: 0.825rem; color: var(--color-text); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    "{{ sub.feedback }}"
+                                </div>
+                                {% else %}
+                                <span style="color: var(--color-text-muted); font-size: 0.8rem;">No feedback notes</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('admin_evaluate_submission', submission_id=sub.id) }}" class="btn btn-outline btn-sm">
+                                    View / Edit Evaluation &rarr;
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="card empty-state" style="text-align: center; padding: 3.5rem 1.5rem; background: var(--color-bg-subtle);">
+                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📋</div>
+                <h3 style="margin-bottom: 0.35rem;">No Evaluated Submissions</h3>
+                <p style="font-size: 1rem; color: var(--color-text-muted); margin: 0;">
+                    No submissions have been evaluated yet for this project.
+                </p>
+            </div>
+            {% endif %}
         {% endif %}
     </div>
 </section>

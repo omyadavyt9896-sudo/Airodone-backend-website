@@ -515,9 +515,11 @@ class LMSFinalTestCase(unittest.TestCase):
         # Admin evaluates submission
         self.login("admin@airodrone.com", "AdminPass123!")
 
-        # View submissions list
+        # 1. View submissions list - check To Evaluate tab
         res_list = self.client.get(f"/admin/projects/{self.project_id}/submissions")
         self.assertEqual(res_list.status_code, 200)
+        self.assertIn(b"To Evaluate (1)", res_list.data)
+        self.assertIn(b"Evaluated (0)", res_list.data)
         self.assertIn(b"Project Submitter", res_list.data)
 
         # Get submission id
@@ -528,11 +530,17 @@ class LMSFinalTestCase(unittest.TestCase):
         cur.close()
         conn.close()
 
-        # Submit evaluation (Grade A, Marks 95, Status evaluated)
+        # 2. Open Evaluation GET page - must NOT crash with 'project' is undefined
+        res_eval_get = self.client.get(f"/admin/submissions/{sub_id}/evaluate")
+        self.assertEqual(res_eval_get.status_code, 200)
+        self.assertIn(b"Evaluate Student Submission", res_eval_get.data)
+        self.assertIn(b"Awarded Marks", res_eval_get.data)
+        self.assertIn(b"out of 100", res_eval_get.data)
+
+        # 3. Submit evaluation (Marks 95)
         res_eval = self.client.post(
             f"/admin/submissions/{sub_id}/evaluate",
             data={
-                "status": "evaluated",
                 "marks": "95",
                 "feedback": "Outstanding aerodynamic design and simulation results.",
             },
@@ -540,6 +548,10 @@ class LMSFinalTestCase(unittest.TestCase):
         )
         self.assertEqual(res_eval.status_code, 200)
         self.assertIn(b"evaluated successfully", res_eval.data)
+        # Should now be on Evaluated tab with count 1
+        self.assertIn(b"To Evaluate (0)", res_eval.data)
+        self.assertIn(b"Evaluated (1)", res_eval.data)
+        self.assertIn(b"95 / 100", res_eval.data)
         self.logout()
 
         # Student checks project page and sees evaluation feedback and marks
@@ -1111,6 +1123,95 @@ class LMSFinalTestCase(unittest.TestCase):
         self.assertFalse(can_access_course(student_id, self.c2_id))
 
         self.logout()
+
+    def test_20_admin_video_upload_and_edit_lifecycle(self):
+        """Verify adding new video with uploaded file and editing metadata/replacing video file."""
+        self.login("admin@steroaim.com", "admin123")
+
+        # 1. Add video lesson with MP4 file
+        dummy_mp4 = io.BytesIO(b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00isommp42")
+        res_add = self.client.post(
+            f"/admin/modules/{self.m1_id}/videos/new",
+            data={
+                "title": "Aero Design Masterclass",
+                "description": "Comprehensive drone aerodynamics walkthrough.",
+                "duration": "14:20",
+                "sequence": "3",
+                "is_active": "1",
+                "video_file": (dummy_mp4, "aero_masterclass.mp4"),
+            },
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+        self.assertEqual(res_add.status_code, 200)
+        self.assertIn(b"added successfully", res_add.data)
+
+        # Verify in DB
+        conn = get_db_connection()
+        cur = get_db_cursor(conn)
+        cur.execute("SELECT id, title, duration, video_file FROM course_videos WHERE title = 'Aero Design Masterclass'")
+        vid = cur.fetchone()
+        self.assertIsNotNone(vid)
+        self.assertTrue(vid["video_file"].endswith("aero_masterclass.mp4"))
+        vid_id = vid["id"]
+        cur.close()
+        conn.close()
+
+        # 2. Edit video metadata without uploading a replacement file
+        res_edit = self.client.post(
+            f"/admin/videos/{vid_id}/edit",
+            data={
+                "title": "Aero Design Masterclass (Updated)",
+                "description": "Updated description.",
+                "duration": "15:00",
+                "sequence": "3",
+                "is_active": "1",
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(res_edit.status_code, 200)
+        self.assertIn(b"updated successfully", res_edit.data)
+
+        # Verify existing file preserved
+        conn = get_db_connection()
+        cur = get_db_cursor(conn)
+        cur.execute("SELECT title, duration, video_file FROM course_videos WHERE id = %s", (vid_id,))
+        vid_updated = cur.fetchone()
+        self.assertEqual(vid_updated["title"], "Aero Design Masterclass (Updated)")
+        self.assertEqual(vid_updated["duration"], "15:00")
+        self.assertTrue(vid_updated["video_file"].endswith("aero_masterclass.mp4"))
+        cur.close()
+        conn.close()
+
+        # 3. Edit video and upload replacement file
+        replacement_mp4 = io.BytesIO(b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00isommp42_v2")
+        res_replace = self.client.post(
+            f"/admin/videos/{vid_id}/edit",
+            data={
+                "title": "Aero Design Masterclass (Updated)",
+                "description": "Updated description.",
+                "duration": "15:00",
+                "sequence": "3",
+                "is_active": "1",
+                "video_file": (replacement_mp4, "aero_masterclass_v2.mp4"),
+            },
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+        self.assertEqual(res_replace.status_code, 200)
+        self.assertIn(b"updated successfully", res_replace.data)
+
+        # Verify new file saved in DB
+        conn = get_db_connection()
+        cur = get_db_cursor(conn)
+        cur.execute("SELECT video_file FROM course_videos WHERE id = %s", (vid_id,))
+        vid_replaced = cur.fetchone()
+        self.assertTrue(vid_replaced["video_file"].endswith("aero_masterclass_v2.mp4"))
+        cur.close()
+        conn.close()
+
+        self.logout()
+
 
 if __name__ == "__main__":
     unittest.main()

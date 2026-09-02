@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Learning Category | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_learning_categories') }}">Learning Categories</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ action }} Category</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>{{ action }} Learning Category</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    Configure category name, slug, description, image asset, display order, and publishing status.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container" style="max-width: 800px; margin: 0 auto;">
+        {% if error %}
+        <div class="alert alert-error" style="margin-bottom: 1.75rem;">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="post" class="profile-form">
+            <div class="card profile-form-card" style="padding: 1.75rem; margin-bottom: 1.75rem;">
+                <div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
+                    <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Category Details</h2>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="name" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                        Category Name <span style="color: var(--color-error);">*</span>
+                    </label>
+                    <input type="text" id="name" name="name" class="form-control" 
+                           value="{{ request.form.get('name', category.name if category else '') }}" 
+                           required placeholder="e.g. AI & Artificial Intelligence">
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem;">
+                    <div class="form-group">
+                        <label for="slug" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            URL Slug <span style="color: var(--color-text-muted); font-size: 0.85rem; font-weight: normal;">(Auto-generated if empty)</span>
+                        </label>
+                        <input type="text" id="slug" name="slug" class="form-control" 
+                               value="{{ request.form.get('slug', category.slug if category else '') }}" 
+                               placeholder="e.g. artificial-intelligence">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="display_order" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Display Order
+                        </label>
+                        <input type="number" id="display_order" name="display_order" class="form-control" min="1" max="99" 
+                               value="{{ request.form.get('display_order', category.display_order if category else 1) }}">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="description" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                        Category Description
+                    </label>
+                    <textarea id="description" name="description" class="form-control" rows="3" 
+                              placeholder="Brief summary of what students will explore in this domain.">{{ request.form.get('description', category.description if category else '') }}</textarea>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="image" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                        Thumbnail Image Path
+                    </label>
+                    <input type="text" id="image" name="image" class="form-control" 
+                           value="{{ request.form.get('image', category.image if category else 'images/services/drone.jpg') }}" 
+                           placeholder="e.g. images/services/ai.jpg">
+                    <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.35rem;">
+                        Relative static image path or uploaded course graphic.
+                    </p>
+                </div>
+
+                <div style="margin-top: 1.25rem; display: flex; align-items: center; gap: 0.75rem;">
+                    <input type="checkbox" id="is_active" name="is_active" value="1" 
+                           {% if request.form.get('is_active') or (category and category.is_active) or not category %}checked{% endif %} 
+                           style="width: 18px; height: 18px; cursor: pointer;">
+                    <label for="is_active" style="font-weight: 600; cursor: pointer; color: var(--color-text);">
+                        Active (Visible in student course catalogue)
+                    </label>
+                </div>
+
+                {% if action == 'Create' %}
+                <div style="margin-top: 1.25rem; padding: 1rem; background: var(--color-bg-subtle, #f0fdf4); border: 1px solid #bbf7d0; border-radius: var(--radius-md, 8px); display: flex; align-items: center; gap: 0.75rem;">
+                    <input type="checkbox" id="create_default_paths" name="create_default_paths" value="1" checked style="width: 18px; height: 18px; cursor: pointer;">
+                    <label for="create_default_paths" style="font-size: 0.9rem; cursor: pointer; color: #166534; font-weight: 600;">
+                        Automatically initialize Grade 1 to Grade 5 learning paths for this category
+                    </label>
+                </div>
+                {% endif %}
+            </div>
+
+            <div style="display: flex; gap: 1rem; align-items: center; justify-content: flex-end;">
+                <a href="{{ url_for('admin_learning_categories') }}" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-primary">{{ action }} Category</button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

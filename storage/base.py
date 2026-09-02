@@ -35,9 +35,46 @@ def build_video_storage_path(course_id: int, module_id: int, safe_filename: str)
     return f"videos/course_{int(course_id)}/module_{int(module_id)}/{safe_filename}"
 
 
+def build_category_image_storage_path(category_id: int, safe_filename: str) -> str:
+    """
+    Builds the standardized storage path for category images:
+    uploads/categories/<safe_filename>
+    """
+    safe_filename = os.path.basename(safe_filename)
+    return f"uploads/categories/{safe_filename}"
+
+
+
+def build_learning_path_image_storage_path(path_id: int, safe_filename: str) -> str:
+    """
+    Builds the standardized storage path for learning path artwork:
+    uploads/learning_paths/<safe_filename>
+    """
+    safe_filename = os.path.basename(safe_filename)
+    return f"uploads/learning_paths/{safe_filename}"
+
+
+def build_course_image_storage_path(course_id: int, safe_filename: str) -> str:
+    """
+    Builds the standardized storage path for course thumbnails:
+    uploads/courses/<safe_filename>
+    """
+    safe_filename = os.path.basename(safe_filename)
+    return f"uploads/courses/{safe_filename}"
+
+
+def build_catalogue_hero_image_storage_path(safe_filename: str) -> str:
+    """
+    Builds the standardized storage path for courses catalogue hero image:
+    uploads/catalogue/<safe_filename>
+    """
+    safe_filename = os.path.basename(safe_filename)
+    return f"uploads/catalogue/{safe_filename}"
+
+
 class BaseStorageBackend(ABC):
     """
-    Abstract interface for video storage operations.
+    Abstract interface for media and file storage operations.
     """
 
     @abstractmethod
@@ -117,4 +154,85 @@ class BaseStorageBackend(ABC):
         Return public or signed URL if storage supports direct serving, or None if served via stream proxy.
         """
         pass
+
+    @abstractmethod
+    def save_category_image(
+        self,
+        file_obj,
+        category_id: int,
+        original_filename: str,
+    ) -> Tuple[bool, str, Optional[str]]:
+        """Save category image to persistent storage."""
+        pass
+
+    @abstractmethod
+    def delete_category_image(self, storage_path: str) -> bool:
+        """Delete category image from persistent storage."""
+        pass
+
+    @abstractmethod
+    def category_image_exists(self, storage_path: str) -> bool:
+        """Check if category image exists in storage."""
+        pass
+
+    @abstractmethod
+    def save_learning_path_image(
+        self,
+        file_obj,
+        path_id: int,
+        original_filename: str,
+    ) -> Tuple[bool, str, Optional[str]]:
+        """Save learning path image to persistent storage."""
+        pass
+
+    @abstractmethod
+    def delete_learning_path_image(self, storage_path: str) -> bool:
+        """Delete learning path image from persistent storage."""
+        pass
+
+    @abstractmethod
+    def learning_path_image_exists(self, storage_path: str) -> bool:
+        """Check if learning path image exists in storage."""
+        pass
+
+    @abstractmethod
+    def save_course_image(
+        self,
+        file_obj,
+        course_id: int,
+        original_filename: str,
+    ) -> Tuple[bool, str, Optional[str]]:
+        """Save course thumbnail image to persistent storage."""
+        pass
+
+    @abstractmethod
+    def delete_course_image(self, storage_path: str) -> bool:
+        """Delete course thumbnail image from persistent storage."""
+        pass
+
+    @abstractmethod
+    def course_image_exists(self, storage_path: str) -> bool:
+        """Check if course thumbnail image exists in storage."""
+        pass
+
+    @abstractmethod
+    def save_catalogue_hero_image(
+        self,
+        file_obj,
+        original_filename: str,
+    ) -> Tuple[bool, str, Optional[str]]:
+        """Save courses catalogue hero image to persistent storage."""
+        pass
+
+    @abstractmethod
+    def delete_catalogue_hero_image(self, storage_path: str) -> bool:
+        """Delete courses catalogue hero image from persistent storage."""
+        pass
+
+    @abstractmethod
+    def catalogue_hero_image_exists(self, storage_path: str) -> bool:
+        """Check if courses catalogue hero image exists in storage."""
+        pass
+
+
 

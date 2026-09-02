@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Learning Path | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_learning_categories') }}">Learning Categories</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_category_learning_paths', category_id=category.id) }}">{{ category.name }}</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ action }} Path</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>{{ action }} Learning Path ({{ category.name }})</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    Configure path name, grade level alignment, URL slug, description, and status.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container" style="max-width: 800px; margin: 0 auto;">
+        {% if error %}
+        <div class="alert alert-error" style="margin-bottom: 1.75rem;">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" class="profile-form">
+            <div class="card profile-form-card" style="padding: 1.75rem; margin-bottom: 1.75rem;">
+                <div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
+                    <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Path Configuration</h2>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="name" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                        Learning Path Name <span style="color: var(--color-error);">*</span>
+                    </label>
+                    <input type="text" id="name" name="name" class="form-control" 
+                           value="{{ request.form.get('name', path.name if path else '') }}" 
+                           required placeholder="e.g. AI Engineering">
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem;">
+                    <div class="form-group">
+                        <label for="grade" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Educational Grade <span style="color: var(--color-error);">*</span>
+                        </label>
+                        <select id="grade" name="grade" class="form-control" required>
+                            {% set current_g = request.form.get('grade', path.grade if path else 1)|int %}
+                            {% for g_id, g_info in grades.items() %}
+                            <option value="{{ g_id }}" {% if current_g == g_id %}selected{% endif %}>
+                                {{ g_info.name }} ({{ g_info.classes }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="slug" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            URL Slug <span style="color: var(--color-text-muted); font-size: 0.85rem; font-weight: normal;">(Auto-generated if empty)</span>
+                        </label>
+                        <input type="text" id="slug" name="slug" class="form-control" 
+                                value="{{ request.form.get('slug', path.slug if path else '') }}" 
+                                placeholder="e.g. ai-engineering">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="display_order" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                            Display Order
+                        </label>
+                        <input type="number" id="display_order" name="display_order" class="form-control" min="1" max="99" 
+                               value="{{ request.form.get('display_order', path.display_order if path else 1) }}">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="description" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                        Path Description
+                    </label>
+                    <textarea id="description" name="description" class="form-control" rows="3" 
+                              placeholder="Brief description of the curriculum goals for this grade pathway.">{{ request.form.get('description', path.description if path else '') }}</textarea>
+                </div>
+
+                <!-- Learning Path Artwork Upload Section -->
+                <div class="form-group" style="margin-bottom: 1.5rem; padding: 1.25rem; background: var(--color-bg-subtle, #f8fafc); border-radius: 8px; border: 1px solid var(--color-border, #e2e8f0);">
+                    <label class="form-label" style="font-weight: 700; display: block; margin-bottom: 0.3rem; font-size: 1rem; color: var(--color-text);">
+                        Learning Path Artwork
+                    </label>
+                    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1rem;">
+                        Upload a thumbnail or artwork image directly from your device. Supported: <strong>JPG, JPEG, PNG, WEBP</strong> (Max: 5 MB).
+                    </p>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; align-items: start;">
+                        <!-- Upload Controls -->
+                        <div>
+                            <input type="file" id="imageFileInput" name="image_file" accept=".jpg,.jpeg,.png,.webp" style="display: none;" onchange="handlePathImagePreview(this)">
+                            
+                            <button type="button" onclick="document.getElementById('imageFileInput').click()" class="btn btn-outline btn-md" style="display: inline-flex; align-items: center; gap: 0.5rem; width: 100%; justify-content: center; border-style: dashed; border-width: 2px; padding: 0.85rem;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                <span id="pathUploadBtnText">{% if path and path.image %}Replace Path Artwork{% else %}Choose Image File{% endif %}</span>
+                            </button>
+
+                            <div id="pathFileClientError" class="alert alert-error" style="display: none; font-size: 0.85rem; padding: 0.5rem 0.75rem; margin-top: 0.5rem;"></div>
+
+                            <div id="pathSelectedFileInfo" style="display: none; margin-top: 0.5rem; font-size: 0.85rem; color: var(--color-primary, #0284c7); font-weight: 600;">
+                                <span id="pathFileName"></span> (<span id="pathFileSize"></span>)
+                            </div>
+
+                            {% if path and path.image %}
+                            <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed var(--color-border);">
+                                <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--color-error, #dc2626); font-size: 0.9rem; font-weight: 600;">
+                                    <input type="checkbox" name="remove_image" value="1" id="removeImageCheckbox" onchange="handlePathRemoveCheckbox(this)" style="cursor: pointer; width: 16px; height: 16px;">
+                                    Remove Current Image (Use generic placeholder)
+                                </label>
+                            </div>
+                            {% endif %}
+
+                            <div style="margin-top: 1rem;">
+                                <details style="font-size: 0.85rem; color: var(--color-text-muted);">
+                                    <summary style="cursor: pointer; font-weight: 600;">Or enter image URL / static path</summary>
+                                    <div style="margin-top: 0.5rem;">
+                                        <input type="text" id="image_url" name="image_url" class="form-control" 
+                                               value="{{ request.form.get('image_url', '') }}" 
+                                               placeholder="e.g. images/services/ai.jpg or https://...">
+                                    </div>
+                                </details>
+                            </div>
+                        </div>
+
+                        <!-- Image Preview Box -->
+                        <div>
+                            <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text);">
+                                Artwork Preview
+                            </div>
+                            <div id="pathPreviewFrame" style="width: 100%; height: 170px; border-radius: 8px; overflow: hidden; background: #0f172a; border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: center; position: relative;">
+                                {% set cur_img = image_url(path.image) if path else None %}
+                                {% if cur_img %}
+                                    <img id="pathPreviewImg" src="{{ cur_img }}" alt="Artwork preview" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                                    <div id="pathPreviewPlaceholder" style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
+                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                                    </div>
+                                {% else %}
+                                    <img id="pathPreviewImg" src="" alt="Artwork preview" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                                    <div id="pathPreviewPlaceholder" style="display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
+                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                                    </div>
+                                {% endif %}
+                                <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.7); color: #fff; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px;">
+                                    Preview
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1.25rem; display: flex; align-items: center; gap: 0.75rem;">
+                    <input type="checkbox" id="is_active" name="is_active" value="1" 
+                           {% if request.form.get('is_active') or (path and path.is_active) or not path %}checked{% endif %} 
+                           style="width: 18px; height: 18px; cursor: pointer;">
+                    <label for="is_active" style="font-weight: 600; cursor: pointer; color: var(--color-text);">
+                        Active (Visible in category learning paths)
+                    </label>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; align-items: center; justify-content: flex-end;">
+                <a href="{{ url_for('admin_category_learning_paths', category_id=category.id) }}" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-primary">{{ action }} Path</button>
+            </div>
+        </form>
+
+<script>
+function handlePathImagePreview(input) {
+    const errorDiv = document.getElementById('pathFileClientError');
+    const infoDiv = document.getElementById('pathSelectedFileInfo');
+    const nameSpan = document.getElementById('pathFileName');
+    const sizeSpan = document.getElementById('pathFileSize');
+    const previewImg = document.getElementById('pathPreviewImg');
+    const placeholderDiv = document.getElementById('pathPreviewPlaceholder');
+    const removeCb = document.getElementById('removeImageCheckbox');
+    
+    errorDiv.style.display = 'none';
+    errorDiv.textContent = '';
+    
+    if (removeCb) {
+        removeCb.checked = false;
+    }
+    
+    if (!input.files || !input.files[0]) {
+        return;
+    }
+    
+    const file = input.files[0];
+    const validExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+    const ext = file.name.split('.').pop().toLowerCase();
+    
+    if (!validExtensions.includes(ext)) {
+        errorDiv.textContent = 'Invalid format. Allowed formats: JPG, JPEG, PNG, WEBP.';
+        errorDiv.style.display = 'block';
+        input.value = '';
+        infoDiv.style.display = 'none';
+        return;
+    }
+    
+    const maxSize = 5 * 1024 * 1024; // 5 MB
+    if (file.size > maxSize) {
+        errorDiv.textContent = 'File is too large (' + (file.size / (1024 * 1024)).toFixed(1) + ' MB). Maximum allowed size is 5 MB.';
+        errorDiv.style.display = 'block';
+        input.value = '';
+        infoDiv.style.display = 'none';
+        return;
+    }
+    
+    nameSpan.textContent = file.name;
+    sizeSpan.textContent = (file.size / 1024).toFixed(1) + ' KB';
+    infoDiv.style.display = 'block';
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        previewImg.src = e.target.result;
+        previewImg.style.display = 'block';
+        if (placeholderDiv) placeholderDiv.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+}
+
+function handlePathRemoveCheckbox(cb) {
+    const previewImg = document.getElementById('pathPreviewImg');
+    const placeholderDiv = document.getElementById('pathPreviewPlaceholder');
+    const fileInput = document.getElementById('imageFileInput');
+    const infoDiv = document.getElementById('pathSelectedFileInfo');
+    
+    if (cb.checked) {
+        fileInput.value = '';
+        if (infoDiv) infoDiv.style.display = 'none';
+        if (previewImg) previewImg.style.display = 'none';
+        if (placeholderDiv) placeholderDiv.style.display = 'flex';
+    }
+}
+</script>
+    </div>
+</section>
+{% endblock %}

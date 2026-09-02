@@ -530,6 +530,79 @@ def init_db():
     add_column_if_not_exists(cur, "users", "phone", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "users", "student_class", "VARCHAR(50) DEFAULT NULL")
 
+    # Create learning_categories table
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS learning_categories (
+            id {pk_def},
+            name TEXT NOT NULL,
+            slug VARCHAR(255) UNIQUE NOT NULL,
+            description TEXT,
+            image TEXT,
+            display_order INTEGER NOT NULL DEFAULT 1,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    add_column_if_not_exists(cur, "learning_categories", "name", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "learning_categories", "slug", "VARCHAR(255) DEFAULT ''")
+    add_column_if_not_exists(cur, "learning_categories", "description", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "learning_categories", "image", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "learning_categories", "display_order", "INTEGER NOT NULL DEFAULT 1")
+    add_column_if_not_exists(cur, "learning_categories", "is_active", "INTEGER NOT NULL DEFAULT 1")
+
+    # Create learning_paths table
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS learning_paths (
+            id {pk_def},
+            category_id INTEGER NOT NULL REFERENCES learning_categories(id) ON DELETE CASCADE,
+            grade INTEGER NOT NULL DEFAULT 1,
+            name TEXT NOT NULL,
+            slug VARCHAR(255) NOT NULL,
+            description TEXT,
+            image TEXT,
+            display_order INTEGER NOT NULL DEFAULT 1,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    add_column_if_not_exists(cur, "learning_paths", "category_id", "INTEGER NOT NULL DEFAULT 1")
+    add_column_if_not_exists(cur, "learning_paths", "grade", "INTEGER NOT NULL DEFAULT 1")
+    add_column_if_not_exists(cur, "learning_paths", "name", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "learning_paths", "slug", "VARCHAR(255) DEFAULT ''")
+    add_column_if_not_exists(cur, "learning_paths", "description", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "learning_paths", "image", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "learning_paths", "display_order", "INTEGER NOT NULL DEFAULT 1")
+    add_column_if_not_exists(cur, "learning_paths", "is_active", "INTEGER NOT NULL DEFAULT 1")
+
+    # Create course_catalogue_settings table
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS course_catalogue_settings (
+            id {pk_def},
+            hero_badge TEXT NOT NULL DEFAULT 'STEM LEARNING DOMAINS',
+            hero_title TEXT NOT NULL DEFAULT 'Learning Categories',
+            hero_description TEXT DEFAULT 'Choose a learning domain to explore progressive educational pathways across technology, programming, AI, drones, and digital skills.',
+            hero_image TEXT DEFAULT '',
+            hero_image_alt TEXT NOT NULL DEFAULT 'Learning Categories',
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    add_column_if_not_exists(cur, "course_catalogue_settings", "hero_badge", "TEXT NOT NULL DEFAULT 'STEM LEARNING DOMAINS'")
+    add_column_if_not_exists(cur, "course_catalogue_settings", "hero_title", "TEXT NOT NULL DEFAULT 'Learning Categories'")
+    add_column_if_not_exists(cur, "course_catalogue_settings", "hero_description", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "course_catalogue_settings", "hero_image", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "course_catalogue_settings", "hero_image_alt", "TEXT NOT NULL DEFAULT 'Learning Categories'")
+    add_column_if_not_exists(cur, "course_catalogue_settings", "is_active", "INTEGER NOT NULL DEFAULT 1")
+
     # Create courses table
     cur.execute(
         f"""
@@ -541,6 +614,8 @@ def init_db():
             image TEXT,
             level TEXT DEFAULT 'All Levels',
             grade INTEGER NOT NULL DEFAULT 1,
+            category_id INTEGER REFERENCES learning_categories(id) ON DELETE SET NULL,
+            learning_path_id INTEGER REFERENCES learning_paths(id) ON DELETE SET NULL,
             is_active INTEGER NOT NULL DEFAULT 1,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
@@ -549,6 +624,8 @@ def init_db():
     )
     # Ensure public course information and grade columns exist
     add_column_if_not_exists(cur, "courses", "grade", "INTEGER DEFAULT 1")
+    add_column_if_not_exists(cur, "courses", "category_id", "INTEGER DEFAULT NULL")
+    add_column_if_not_exists(cur, "courses", "learning_path_id", "INTEGER DEFAULT NULL")
     add_column_if_not_exists(cur, "courses", "short_description", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "courses", "learning_outcomes", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "courses", "course_benefits", "TEXT DEFAULT NULL")
@@ -811,6 +888,10 @@ def init_db():
 
     # Create targeted performance indexes across PostgreSQL, MySQL, and SQLite
     create_index_if_not_exists(cur, "idx_courses_grade", "courses", ["grade"])
+    create_index_if_not_exists(cur, "idx_learning_categories_slug", "learning_categories", ["slug"])
+    create_index_if_not_exists(cur, "idx_learning_paths_category", "learning_paths", ["category_id"])
+    create_index_if_not_exists(cur, "idx_learning_paths_grade", "learning_paths", ["grade"])
+    create_index_if_not_exists(cur, "idx_courses_category_path", "courses", ["category_id", "learning_path_id"])
     create_index_if_not_exists(cur, "idx_modules_course_id", "modules", ["course_id"])
     create_index_if_not_exists(cur, "idx_course_videos_module_id", "course_videos", ["module_id"])
     create_index_if_not_exists(cur, "idx_video_progress_user_id", "video_progress", ["user_id"])
@@ -841,11 +922,151 @@ def init_db():
         conn.commit()
         print("Default admin user created: admin@steroaim.com / admin123")
 
+    # Seed initial learning categories and paths
+    seed_initial_catalogue(cur, conn)
+
+    # Seed initial catalogue hero settings
+    seed_catalogue_settings(cur, conn)
+
     # Seed initial courses if not present
     seed_initial_courses(cur, conn)
 
     cur.close()
     conn.close()
+
+
+def seed_catalogue_settings(cur, conn):
+    """Seed default /courses hero configuration if not present."""
+    cur.execute("SELECT COUNT(*) as cnt FROM course_catalogue_settings")
+    cnt = cur.fetchone()["cnt"]
+    if cnt == 0:
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute(
+            """
+            INSERT INTO course_catalogue_settings (
+                hero_badge, hero_title, hero_description, hero_image, hero_image_alt, is_active, created_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                "STEM LEARNING DOMAINS",
+                "Learning Categories",
+                "Choose a learning domain to explore progressive educational pathways across technology, programming, AI, drones, and digital skills.",
+                "",
+                "Learning Categories",
+                1,
+                now_str,
+                now_str,
+            ),
+        )
+        conn.commit()
+
+
+def seed_initial_catalogue(cur, conn):
+    """Seed default Learning Categories and Grade 1-5 Learning Paths if not present."""
+    default_categories = [
+        {
+            "name": "AI & Artificial Intelligence",
+            "slug": "artificial-intelligence",
+            "description": "Explore the fundamentals and advanced engineering of artificial intelligence, machine learning, and computer vision.",
+            "image": "images/services/ai.jpg",
+            "display_order": 1,
+            "paths": [
+                {"grade": 1, "name": "AI Discovery", "slug": "ai-discovery", "description": "Foundational awareness of intelligent systems, smart assistants, and machine perception for early learners.", "display_order": 1},
+                {"grade": 2, "name": "AI Creation", "slug": "ai-creation", "description": "Visual block-based logic, pattern recognition, and creative AI interactive projects.", "display_order": 2},
+                {"grade": 3, "name": "AI Engineering", "slug": "ai-engineering", "description": "Hands-on machine learning, neural network concepts, data analysis, and predictive models.", "display_order": 3},
+                {"grade": 4, "name": "Intelligent Systems", "slug": "intelligent-systems", "description": "Applied artificial intelligence, computer vision, natural language processing, and automation.", "display_order": 4},
+                {"grade": 5, "name": "Advanced AI", "slug": "advanced-ai", "description": "Deep learning architectures, autonomous decision systems, and cutting-edge research topics.", "display_order": 5},
+            ]
+        },
+        {
+            "name": "Coding & Programming",
+            "slug": "coding-programming",
+            "description": "Master computational thinking, algorithmic logic, Python, C++, and software development.",
+            "image": "images/services/coding.jpg",
+            "display_order": 2,
+            "paths": [
+                {"grade": 1, "name": "Coding Discovery", "slug": "coding-discovery", "description": "Logic puzzles, sequencing, and computational thinking for early beginners.", "display_order": 1},
+                {"grade": 2, "name": "Programming Basics", "slug": "programming-basics", "description": "Block programming, loops, conditions, and interactive animations.", "display_order": 2},
+                {"grade": 3, "name": "Programming Fundamentals", "slug": "programming-fundamentals", "description": "Python syntax, variables, data structures, and practical coding exercises.", "display_order": 3},
+                {"grade": 4, "name": "Advanced Programming", "slug": "advanced-programming", "description": "Object-oriented programming, algorithms, web APIs, and modular software design.", "display_order": 4},
+                {"grade": 5, "name": "Competitive Programming", "slug": "competitive-programming", "description": "Advanced algorithmic efficiency, data structures, and competitive problem solving.", "display_order": 5},
+            ]
+        },
+        {
+            "name": "Drone Technology",
+            "slug": "drone-technology",
+            "description": "Learn aerial mechanics, aerodynamics, flight physics, avionics, and autonomous navigation.",
+            "image": "images/services/drone.jpg",
+            "display_order": 3,
+            "paths": [
+                {"grade": 1, "name": "Drone Discovery", "slug": "drone-discovery", "description": "Introduction to flight, principles of aerodynamics, and aerial safety.", "display_order": 1},
+                {"grade": 2, "name": "Drone Basics", "slug": "drone-basics", "description": "Drone components, quadcopter flight physics, and remote control fundamentals.", "display_order": 2},
+                {"grade": 3, "name": "Drone Technology", "slug": "drone-technology", "description": "Sensors, motors, telemetry, gyro stabilization, and payload systems.", "display_order": 3},
+                {"grade": 4, "name": "Drone Engineering", "slug": "drone-engineering", "description": "Flight controller configuration, PID tuning, GPS navigation, and DIY assembly.", "display_order": 4},
+                {"grade": 5, "name": "Advanced Drone Systems", "slug": "advanced-drone-systems", "description": "Autonomous waypoint mission planning, swarm technology, and aerial computer vision.", "display_order": 5},
+            ]
+        },
+        {
+            "name": "Website Design",
+            "slug": "website-design",
+            "description": "Design responsive modern web applications, UI/UX interfaces, and full stack web solutions.",
+            "image": "images/services/web.jpg",
+            "display_order": 4,
+            "paths": [
+                {"grade": 1, "name": "Web Discovery", "slug": "web-discovery", "description": "Exploring the internet, digital citizenship, and how websites work.", "display_order": 1},
+                {"grade": 2, "name": "Web Basics", "slug": "web-basics", "description": "Introduction to web layouts, colors, typography, and visual webpage structure.", "display_order": 2},
+                {"grade": 3, "name": "Web Design", "slug": "web-design", "description": "Semantic HTML5, CSS3 styling, responsive layouts, and interactive elements.", "display_order": 3},
+                {"grade": 4, "name": "Full Stack Foundations", "slug": "full-stack-foundations", "description": "Modern JavaScript, client-server communication, Flask backends, and databases.", "display_order": 4},
+                {"grade": 5, "name": "Advanced Web Development", "slug": "advanced-web-development", "description": "Production web architecture, cloud deployment, authentication, and REST APIs.", "display_order": 5},
+            ]
+        }
+    ]
+
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+    for cat_data in default_categories:
+        cur.execute("SELECT id FROM learning_categories WHERE slug = %s", (cat_data["slug"],))
+        cat_row = cur.fetchone()
+        if not cat_row:
+            if get_db_type() == "postgres":
+                cur.execute(
+                    """
+                    INSERT INTO learning_categories (name, slug, description, image, display_order, is_active, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, 1, %s, %s)
+                    RETURNING id
+                    """,
+                    (cat_data["name"], cat_data["slug"], cat_data["description"], cat_data["image"], cat_data["display_order"], now_str, now_str)
+                )
+                cat_id = cur.fetchone()["id"]
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO learning_categories (name, slug, description, image, display_order, is_active, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, 1, %s, %s)
+                    """,
+                    (cat_data["name"], cat_data["slug"], cat_data["description"], cat_data["image"], cat_data["display_order"], now_str, now_str)
+                )
+                cat_id = cur.lastrowid
+                if not cat_id:
+                    cur.execute("SELECT id FROM learning_categories WHERE slug = %s", (cat_data["slug"],))
+                    cat_id = cur.fetchone()["id"]
+        else:
+            cat_id = cat_row["id"]
+
+        for path_data in cat_data["paths"]:
+            cur.execute("SELECT id FROM learning_paths WHERE category_id = %s AND slug = %s", (cat_id, path_data["slug"]))
+            p_row = cur.fetchone()
+            if not p_row:
+                cur.execute(
+                    """
+                    INSERT INTO learning_paths (category_id, grade, name, slug, description, image, display_order, is_active, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 1, %s, %s)
+                    """,
+                    (cat_id, path_data["grade"], path_data["name"], path_data["slug"], path_data["description"], cat_data["image"], path_data["display_order"], now_str, now_str)
+                )
+
+    conn.commit()
 
 
 def seed_initial_courses(cur, conn):
@@ -855,6 +1076,8 @@ def seed_initial_courses(cur, conn):
             "title": "Drone Technology",
             "slug": "drone-technology",
             "grade": 4,
+            "category_slug": "drone-technology",
+            "path_slug": "drone-engineering",
             "description": "Master aerodynamics, drone components, flight dynamics, and safety protocols for unmanned aerial vehicles.",
             "image": "images/services/drone.jpg",
             "level": "Intermediate",
@@ -891,6 +1114,8 @@ def seed_initial_courses(cur, conn):
             "title": "Artificial Intelligence",
             "slug": "artificial-intelligence",
             "grade": 5,
+            "category_slug": "artificial-intelligence",
+            "path_slug": "advanced-ai",
             "description": "Learn fundamental AI concepts, machine learning models, computer vision, and neural networks through real-world projects.",
             "image": "images/services/ai.jpg",
             "level": "Beginner to Advanced",
@@ -919,6 +1144,8 @@ def seed_initial_courses(cur, conn):
             "title": "Robotics",
             "slug": "robotics",
             "grade": 3,
+            "category_slug": "drone-technology",
+            "path_slug": "drone-technology",
             "description": "Design, build, and program autonomous robots using sensors, microcontrollers, and motor drivers.",
             "image": "images/services/robotics.jpg",
             "level": "All Levels",
@@ -947,6 +1174,8 @@ def seed_initial_courses(cur, conn):
             "title": "Coding & Programming",
             "slug": "coding-programming",
             "grade": 2,
+            "category_slug": "coding-programming",
+            "path_slug": "programming-basics",
             "description": "Build strong programming foundations in Python and JavaScript, from logic building to algorithm design.",
             "image": "images/services/coding.jpg",
             "level": "Beginner",
@@ -975,6 +1204,8 @@ def seed_initial_courses(cur, conn):
             "title": "STEM Foundations & Tinkering",
             "slug": "stem-foundations-tinkering",
             "grade": 1,
+            "category_slug": "coding-programming",
+            "path_slug": "coding-discovery",
             "description": "Fun, hands-on introduction to science, technology, engineering, and early computational thinking for young minds.",
             "image": "images/services/atl.jpg",
             "level": "Early Learner",
@@ -1004,15 +1235,30 @@ def seed_initial_courses(cur, conn):
     now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
     for course_data in initial_courses:
-        cur.execute("SELECT id, grade FROM courses WHERE slug = %s", (course_data["slug"],))
+        cur.execute("SELECT id, grade, category_id, learning_path_id FROM courses WHERE slug = %s", (course_data["slug"],))
         existing = cur.fetchone()
         grade_val = course_data.get("grade", 1)
+
+        # Lookup category_id and learning_path_id if configured
+        cat_id = None
+        path_id = None
+        if "category_slug" in course_data:
+            cur.execute("SELECT id FROM learning_categories WHERE slug = %s", (course_data["category_slug"],))
+            cat_row = cur.fetchone()
+            if cat_row:
+                cat_id = cat_row["id"]
+                if "path_slug" in course_data:
+                    cur.execute("SELECT id FROM learning_paths WHERE category_id = %s AND slug = %s", (cat_id, course_data["path_slug"]))
+                    p_row = cur.fetchone()
+                    if p_row:
+                        path_id = p_row["id"]
+
         if not existing:
             if get_db_type() == "postgres":
                 cur.execute(
                     """
-                    INSERT INTO courses (title, slug, description, image, level, grade, is_active, created_at, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, 1, %s, %s)
+                    INSERT INTO courses (title, slug, description, image, level, grade, category_id, learning_path_id, is_active, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 1, %s, %s)
                     RETURNING id
                     """,
                     (
@@ -1022,6 +1268,8 @@ def seed_initial_courses(cur, conn):
                         course_data["image"],
                         course_data["level"],
                         grade_val,
+                        cat_id,
+                        path_id,
                         now_str,
                         now_str,
                     ),
@@ -1030,8 +1278,8 @@ def seed_initial_courses(cur, conn):
             else:
                 cur.execute(
                     """
-                    INSERT INTO courses (title, slug, description, image, level, grade, is_active, created_at, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, 1, %s, %s)
+                    INSERT INTO courses (title, slug, description, image, level, grade, category_id, learning_path_id, is_active, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 1, %s, %s)
                     """,
                     (
                         course_data["title"],
@@ -1040,6 +1288,8 @@ def seed_initial_courses(cur, conn):
                         course_data["image"],
                         course_data["level"],
                         grade_val,
+                        cat_id,
+                        path_id,
                         now_str,
                         now_str,
                     ),
@@ -1109,9 +1359,13 @@ UPLOAD_FOLDER = os.path.join(app.root_path, "uploads")
 VIDEO_UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, "videos")
 PROJECT_UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, "projects")
 COURSE_IMAGE_UPLOAD_FOLDER = os.path.join(app.root_path, "static", "uploads", "courses")
+CATEGORY_IMAGE_UPLOAD_FOLDER = os.path.join(app.root_path, "static", "uploads", "categories")
+LEARNING_PATH_IMAGE_UPLOAD_FOLDER = os.path.join(app.root_path, "static", "uploads", "learning_paths")
 os.makedirs(VIDEO_UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(PROJECT_UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(COURSE_IMAGE_UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(CATEGORY_IMAGE_UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(LEARNING_PATH_IMAGE_UPLOAD_FOLDER, exist_ok=True)
 
 ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 ALLOWED_VIDEO_EXTENSIONS = {"mp4", "webm", "mov", "mkv", "m4v"}
@@ -1119,6 +1373,95 @@ ALLOWED_PROJECT_EXTENSIONS = {"zip", "pdf", "py", "docx", "doc", "txt", "png", "
 
 def allowed_file(filename, allowed_extensions):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in allowed_extensions
+
+
+def validate_uploaded_image_file(file_obj, max_size_bytes=5 * 1024 * 1024):
+    """
+    Validates uploaded image file for:
+    1. Presence and non-empty filename
+    2. Allowed extensions in {jpg, jpeg, png, webp}
+    3. Magic byte signature verification (rejecting SVG, HTML, PHP, scripts, EXE)
+    4. File size within max limit (default 5 MB)
+    """
+    if not file_obj or not file_obj.filename:
+        return False, "No image file selected."
+
+    filename = file_obj.filename.strip()
+    if not allowed_file(filename, ALLOWED_IMAGE_EXTENSIONS):
+        return False, f"Invalid image format. Allowed formats: {', '.join(sorted(ALLOWED_IMAGE_EXTENSIONS)).upper()}."
+
+    # Check file size
+    try:
+        file_obj.seek(0, os.SEEK_END)
+        size = file_obj.tell()
+        file_obj.seek(0)
+    except Exception:
+        size = 0
+
+    if size > max_size_bytes:
+        return False, f"Image file is too large ({(size / (1024 * 1024)):.1f} MB). Maximum allowed size is 5 MB."
+    if size == 0:
+        return False, "Uploaded image file is empty."
+
+    # Verify magic bytes
+    try:
+        header = file_obj.read(16)
+        file_obj.seek(0)
+    except Exception:
+        return False, "Could not read uploaded image data."
+
+    is_jpeg = header.startswith(b"\xff\xd8\xff")
+    is_png = header.startswith(b"\x89PNG\r\n\x1a\n")
+    is_webp = header.startswith(b"RIFF") and len(header) >= 12 and header[8:12] == b"WEBP"
+
+    if not (is_jpeg or is_png or is_webp):
+        return False, "Invalid image content. File signature does not match a valid JPG, PNG, or WEBP image."
+
+    return True, None
+
+
+def resolve_media_image_url(image_path):
+    """
+    Safely resolves image path/URL to browser accessible URL.
+    Supports uploaded files, static assets, local/hostinger storage, and external URLs.
+    Returns None if no image is configured.
+    """
+    if not image_path or not str(image_path).strip():
+        return None
+    img_str = str(image_path).strip().replace("\\", "/")
+    if img_str.startswith("http://") or img_str.startswith("https://"):
+        return img_str
+    if img_str.startswith("/static/"):
+        return img_str
+    if img_str.startswith("static/"):
+        return "/" + img_str
+    if img_str.startswith("uploads/") or img_str.startswith("/uploads/"):
+        return "/" + img_str.lstrip("/")
+    if img_str.startswith("images/") or img_str.startswith("/images/"):
+        clean_img = img_str.lstrip("/")
+        return url_for("static", filename=clean_img)
+    if img_str.startswith("/"):
+        return img_str
+    return url_for("static", filename=img_str)
+
+
+@app.template_filter("image_url")
+def image_url_filter(image_path):
+    return resolve_media_image_url(image_path)
+
+
+@app.template_filter("category_image_url")
+def category_image_url_filter(image_path):
+    return resolve_media_image_url(image_path)
+
+
+@app.context_processor
+def inject_media_helpers():
+    return {
+        "image_url": resolve_media_image_url,
+        "category_image_url": resolve_media_image_url,
+    }
+
 
 
 def extract_youtube_id(input_str):
@@ -1765,41 +2108,204 @@ def courses():
 
         selected_grade = request.args.get("grade", type=int)
 
-        if selected_grade is None:
-            # First view: Show 5 Grade Cards
-            grade_counts = {}
-            for g_id in [1, 2, 3, 4, 5]:
-                cur.execute("SELECT COUNT(*) AS count FROM courses WHERE grade = %s AND is_active = 1", (g_id,))
-                row = cur.fetchone()
-                grade_counts[g_id] = row["count"] if row else 0
+        if selected_grade is not None:
+            # Backward compatibility: Grade selected directly via query param
+            if selected_grade not in GRADES:
+                cur.close()
+                conn.close()
+                flash("Invalid Grade selected.", "error")
+                return redirect(url_for("courses"))
 
-            grades_data = [
-                {
-                    "grade_id": g_id,
-                    "name": GRADES[g_id]["name"],
-                    "classes": GRADES[g_id]["classes"],
-                    "description": GRADES[g_id]["description"],
-                    "course_count": grade_counts.get(g_id, 0),
-                }
-                for g_id in [1, 2, 3, 4, 5]
-            ]
+            grade_info = GRADES[selected_grade]
+
+            cur.execute(
+                """
+                SELECT c.id, c.title, c.slug, c.short_description, c.description, c.image, c.level, c.estimated_duration, c.grade, c.created_at,
+                       COUNT(DISTINCT m.id) AS total_modules,
+                       COUNT(DISTINCT v.id) AS total_videos
+                FROM courses c
+                LEFT JOIN modules m ON m.course_id = c.id AND m.is_active = 1
+                LEFT JOIN course_videos v ON v.module_id = m.id AND v.is_active = 1
+                WHERE c.is_active = 1 AND c.grade = %s
+                GROUP BY c.id, c.title, c.slug, c.short_description, c.description, c.image, c.level, c.estimated_duration, c.grade, c.created_at
+                ORDER BY c.id ASC
+                """,
+                (selected_grade,),
+            )
+            courses_list = cur.fetchall()
+
+            if current_user.is_authenticated:
+                for c in courses_list:
+                    c["is_enrolled"] = can_access_course(current_user.id, c["id"])
+                    if c["is_enrolled"] and not current_user.is_admin():
+                        comp_pct, _, _ = calculate_course_completion(current_user.id, c["id"])
+                        c["progress_pct"] = round(comp_pct, 1)
+                        cur.execute("SELECT certificate_id FROM certificates WHERE user_id = %s AND course_id = %s", (current_user.id, c["id"]))
+                        cert = cur.fetchone()
+                        c["has_certificate"] = bool(cert)
+                    else:
+                        c["progress_pct"] = 0.0
+                        c["has_certificate"] = False
+            else:
+                for c in courses_list:
+                    c["is_enrolled"] = False
+                    c["progress_pct"] = 0.0
+                    c["has_certificate"] = False
+
+            catalogue_settings = get_catalogue_settings(conn)
             cur.close()
             conn.close()
+
             return render_template(
                 "courses.html",
                 active_page="courses",
-                show_grades=True,
-                grades=grades_data,
+                show_categories=False,
+                show_grades=False,
+                selected_grade=selected_grade,
+                grade_info=grade_info,
+                courses=courses_list,
+                catalogue_settings=catalogue_settings,
             )
 
-        # Grade selected: Show courses belonging to that Grade
-        if selected_grade not in GRADES:
+        # Primary View: Learning Categories first
+        cur.execute(
+            """
+            SELECT lc.id, lc.name, lc.slug, lc.description, lc.image, lc.display_order,
+                   COUNT(DISTINCT lp.id) AS path_count,
+                   COUNT(DISTINCT c.id) AS course_count
+            FROM learning_categories lc
+            LEFT JOIN learning_paths lp ON lp.category_id = lc.id AND lp.is_active = 1
+            LEFT JOIN courses c ON c.category_id = lc.id AND c.learning_path_id = lp.id AND c.grade = lp.grade AND c.is_active = 1
+            WHERE lc.is_active = 1
+            GROUP BY lc.id, lc.name, lc.slug, lc.description, lc.image, lc.display_order
+            ORDER BY lc.display_order ASC, lc.id ASC
+            """
+        )
+        categories_list = cur.fetchall()
+
+        catalogue_settings = get_catalogue_settings(conn)
+        cur.close()
+        conn.close()
+
+        return render_template(
+            "courses.html",
+            active_page="courses",
+            show_categories=True,
+            show_grades=False,
+            categories=categories_list,
+            catalogue_settings=catalogue_settings,
+        )
+    except Exception as e:
+        app.logger.error(f"Error fetching course catalogue: {e}")
+        return render_template(
+            "courses.html",
+            active_page="courses",
+            show_categories=True,
+            show_grades=False,
+            categories=[],
+            catalogue_settings={
+                "id": 1,
+                "hero_badge": "STEM LEARNING DOMAINS",
+                "hero_title": "Learning Categories",
+                "hero_description": "Choose a learning domain to explore progressive educational pathways across technology, programming, AI, drones, and digital skills.",
+                "hero_image": "",
+                "hero_image_alt": "Learning Categories",
+                "is_active": 1,
+            },
+        )
+
+
+@app.route("/courses/category/<category_slug>")
+def category_paths(category_slug):
+    try:
+        conn = get_db_connection()
+        cur = get_db_cursor(conn)
+
+        cur.execute(
+            """
+            SELECT id, name, slug, description, image, display_order, is_active
+            FROM learning_categories
+            WHERE slug = %s AND is_active = 1
+            """,
+            (category_slug,)
+        )
+        category = cur.fetchone()
+        if not category:
             cur.close()
             conn.close()
-            flash("Invalid Grade selected.", "error")
-            return redirect(url_for("courses"))
+            abort(404)
 
-        grade_info = GRADES[selected_grade]
+        cur.execute(
+            """
+            SELECT lp.id, lp.category_id, lp.grade, lp.name, lp.slug, lp.description, lp.image, lp.display_order,
+                   COUNT(DISTINCT c.id) AS course_count
+            FROM learning_paths lp
+            LEFT JOIN courses c ON c.category_id = lp.category_id AND c.learning_path_id = lp.id AND c.grade = lp.grade AND c.is_active = 1
+            WHERE lp.category_id = %s AND lp.is_active = 1
+            GROUP BY lp.id, lp.category_id, lp.grade, lp.name, lp.slug, lp.description, lp.image, lp.display_order
+            ORDER BY lp.grade ASC, lp.display_order ASC, lp.id ASC
+            """,
+            (category["id"],)
+        )
+        paths = cur.fetchall()
+
+        for p in paths:
+            g_info = GRADES.get(p["grade"], {})
+            p["grade_name"] = g_info.get("name", f"Grade {p['grade']}")
+            p["classes"] = g_info.get("classes", "")
+
+        cur.close()
+        conn.close()
+
+        return render_template(
+            "category_paths.html",
+            active_page="courses",
+            category=category,
+            paths=paths,
+            grades=GRADES,
+        )
+    except Exception as e:
+        app.logger.error(f"Error fetching category paths for {category_slug}: {e}")
+        abort(404)
+
+
+@app.route("/courses/category/<category_slug>/<path_slug>")
+def path_courses(category_slug, path_slug):
+    try:
+        conn = get_db_connection()
+        cur = get_db_cursor(conn)
+
+        cur.execute(
+            """
+            SELECT id, name, slug, description, image, display_order
+            FROM learning_categories
+            WHERE slug = %s AND is_active = 1
+            """,
+            (category_slug,)
+        )
+        category = cur.fetchone()
+        if not category:
+            cur.close()
+            conn.close()
+            abort(404)
+
+        cur.execute(
+            """
+            SELECT id, category_id, grade, name, slug, description, image, display_order
+            FROM learning_paths
+            WHERE category_id = %s AND slug = %s AND is_active = 1
+            """,
+            (category["id"], path_slug)
+        )
+        learning_path = cur.fetchone()
+        if not learning_path:
+            cur.close()
+            conn.close()
+            abort(404)
+
+        grade_info = GRADES.get(learning_path["grade"], {})
+        learning_path["grade_name"] = grade_info.get("name", f"Grade {learning_path['grade']}")
+        learning_path["classes"] = grade_info.get("classes", "")
 
         cur.execute(
             """
@@ -1809,11 +2315,11 @@ def courses():
             FROM courses c
             LEFT JOIN modules m ON m.course_id = c.id AND m.is_active = 1
             LEFT JOIN course_videos v ON v.module_id = m.id AND v.is_active = 1
-            WHERE c.is_active = 1 AND c.grade = %s
+            WHERE c.category_id = %s AND c.learning_path_id = %s AND c.grade = %s AND c.is_active = 1
             GROUP BY c.id, c.title, c.slug, c.short_description, c.description, c.image, c.level, c.estimated_duration, c.grade, c.created_at
             ORDER BY c.id ASC
             """,
-            (selected_grade,),
+            (category["id"], learning_path["id"], learning_path["grade"]),
         )
         courses_list = cur.fetchall()
 
@@ -1837,19 +2343,18 @@ def courses():
 
         cur.close()
         conn.close()
-    except Exception as e:
-        app.logger.error(f"Error fetching courses for grade: {e}")
-        courses_list = []
-        grade_info = None
 
-    return render_template(
-        "courses.html",
-        active_page="courses",
-        show_grades=False,
-        selected_grade=selected_grade,
-        grade_info=grade_info,
-        courses=courses_list,
-    )
+        return render_template(
+            "path_courses.html",
+            active_page="courses",
+            category=category,
+            path=learning_path,
+            grade_info=grade_info,
+            courses=courses_list,
+        )
+    except Exception as e:
+        app.logger.error(f"Error fetching path courses for {category_slug}/{path_slug}: {e}")
+        abort(404)
 
 
 @app.route("/courses/grade/<int:grade_id>")
@@ -1863,17 +2368,33 @@ def course_detail(slug):
         conn = get_db_connection()
         cur = get_db_cursor(conn)
         
-        # Fetch course detail
+        # Fetch course detail with category and learning path
         cur.execute(
             """
             SELECT id, title, slug, short_description, description, image, level, grade,
-                   estimated_duration, learning_outcomes, course_benefits, certificate_description, created_at
+                   category_id, learning_path_id, estimated_duration, learning_outcomes,
+                   course_benefits, certificate_description, created_at
             FROM courses
             WHERE slug = %s AND is_active = 1
             """,
             (slug,),
         )
         course = cur.fetchone()
+        
+        if not course:
+            cur.close()
+            conn.close()
+            return render_template("course_detail.html", active_page="courses", not_found=True), 404
+
+        # Fetch category and learning path for rich breadcrumbs if configured
+        category = None
+        learning_path = None
+        if course.get("category_id"):
+            cur.execute("SELECT id, name, slug FROM learning_categories WHERE id = %s", (course["category_id"],))
+            category = cur.fetchone()
+        if course.get("learning_path_id"):
+            cur.execute("SELECT id, name, slug, grade FROM learning_paths WHERE id = %s", (course["learning_path_id"],))
+            learning_path = cur.fetchone()
         
         if not course:
             cur.close()
@@ -2055,6 +2576,8 @@ def course_detail(slug):
             "course_detail.html",
             active_page="courses",
             course=course,
+            category=category,
+            learning_path=learning_path,
             grades=GRADES,
             grade_info=grade_info,
             is_enrolled=is_enrolled,
@@ -3271,11 +3794,16 @@ def admin_user_courses(user_id):
         cur.execute(
             """
             SELECT c.id, c.title, c.slug, c.level, c.grade, c.short_description, c.description, c.image,
+                   c.category_id, c.learning_path_id,
+                   lc.name AS category_name, lc.slug AS category_slug,
+                   lp.name AS path_name, lp.slug AS path_slug,
                    e.id AS enrollment_id, e.is_active AS enrollment_active, e.assigned_at
             FROM courses c
+            LEFT JOIN learning_categories lc ON lc.id = c.category_id
+            LEFT JOIN learning_paths lp ON lp.id = c.learning_path_id
             LEFT JOIN course_enrollments e ON e.course_id = c.id AND e.user_id = %s
             WHERE c.is_active = 1 AND c.grade = %s
-            ORDER BY c.id ASC
+            ORDER BY lc.display_order ASC, lp.display_order ASC, c.id ASC
             """,
             (user_id, student_grade)
         )
@@ -3830,11 +4358,716 @@ def admin_course_detail(course_id):
     )
 
 
+# ---------- Admin Learning Category & Path Management ----------
+
+@app.route("/uploads/categories/<path:filename>")
+def serve_category_upload_image(filename):
+    for dir_path in [
+        os.path.join(app.root_path, "static", "uploads", "categories"),
+        os.path.join(app.root_path, "uploads", "categories"),
+    ]:
+        if os.path.exists(os.path.join(dir_path, filename)):
+            return send_from_directory(dir_path, filename)
+    abort(404)
+
+
+@app.route("/uploads/learning_paths/<path:filename>")
+def serve_learning_path_upload_image(filename):
+    for dir_path in [
+        os.path.join(app.root_path, "static", "uploads", "learning_paths"),
+        os.path.join(app.root_path, "uploads", "learning_paths"),
+    ]:
+        if os.path.exists(os.path.join(dir_path, filename)):
+            return send_from_directory(dir_path, filename)
+    abort(404)
+
+
+@app.route("/uploads/courses/<path:filename>")
+def serve_course_upload_image(filename):
+    for dir_path in [
+        os.path.join(app.root_path, "static", "uploads", "courses"),
+        os.path.join(app.root_path, "uploads", "courses"),
+    ]:
+        if os.path.exists(os.path.join(dir_path, filename)):
+            return send_from_directory(dir_path, filename)
+    abort(404)
+
+
+@app.route("/uploads/catalogue/<path:filename>")
+def serve_catalogue_upload_image(filename):
+    for dir_path in [
+        os.path.join(app.root_path, "static", "uploads", "catalogue"),
+        os.path.join(app.root_path, "uploads", "catalogue"),
+    ]:
+        if os.path.exists(os.path.join(dir_path, filename)):
+            return send_from_directory(dir_path, filename)
+    abort(404)
+
+
+def get_catalogue_settings(conn=None):
+    close_conn = False
+    if conn is None:
+        conn = get_db_connection()
+        close_conn = True
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT * FROM course_catalogue_settings ORDER BY id ASC LIMIT 1")
+    row = cur.fetchone()
+    if not row:
+        row = {
+            "id": 1,
+            "hero_badge": "STEM LEARNING DOMAINS",
+            "hero_title": "Learning Categories",
+            "hero_description": "Choose a learning domain to explore progressive educational pathways across technology, programming, AI, drones, and digital skills.",
+            "hero_image": "",
+            "hero_image_alt": "Learning Categories",
+            "is_active": 1,
+        }
+    cur.close()
+    if close_conn:
+        conn.close()
+    return row
+
+
+@app.route("/admin/learning-catalogue-settings", methods=["GET", "POST"])
+@admin_required
+def admin_learning_catalogue_settings():
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT * FROM course_catalogue_settings ORDER BY id ASC LIMIT 1")
+    settings = cur.fetchone()
+
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    if not settings:
+        cur.execute(
+            """
+            INSERT INTO course_catalogue_settings (
+                hero_badge, hero_title, hero_description, hero_image, hero_image_alt, is_active, created_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                "STEM LEARNING DOMAINS",
+                "Learning Categories",
+                "Choose a learning domain to explore progressive educational pathways across technology, programming, AI, drones, and digital skills.",
+                "",
+                "Learning Categories",
+                1,
+                now_str,
+                now_str,
+            ),
+        )
+        conn.commit()
+        cur.execute("SELECT * FROM course_catalogue_settings ORDER BY id ASC LIMIT 1")
+        settings = cur.fetchone()
+
+    error = None
+    if request.method == "POST":
+        hero_badge = request.form.get("hero_badge", "").strip() or "STEM LEARNING DOMAINS"
+        hero_title = request.form.get("hero_title", "").strip()
+        hero_description = request.form.get("hero_description", "").strip()
+        hero_image_alt = request.form.get("hero_image_alt", "").strip() or hero_title or "Learning Categories"
+        is_active = 1 if request.form.get("is_active") else 0
+
+        old_image = settings.get("hero_image") or ""
+        new_image = old_image
+        should_delete_old_image = False
+        uploaded_new_storage_path = None
+
+        if request.form.get("remove_image"):
+            new_image = ""
+            should_delete_old_image = True
+        elif "image_file" in request.files and request.files["image_file"].filename:
+            img_file = request.files["image_file"]
+            is_valid, val_err = validate_uploaded_image_file(img_file)
+            if not is_valid:
+                error = val_err
+            else:
+                success, saved_path, save_err = storage.save_catalogue_hero_image(img_file, img_file.filename)
+                if success:
+                    new_image = saved_path
+                    uploaded_new_storage_path = saved_path
+                    should_delete_old_image = True
+                else:
+                    error = save_err or "Failed to store catalogue hero image."
+        elif request.form.get("image_url", "").strip():
+            new_image = request.form.get("image_url", "").strip()
+
+        if not error:
+            if not hero_title:
+                error = "Hero Heading is required."
+            else:
+                try:
+                    cur.execute(
+                        """
+                        UPDATE course_catalogue_settings
+                        SET hero_badge = %s, hero_title = %s, hero_description = %s, hero_image = %s,
+                            hero_image_alt = %s, is_active = %s, updated_at = %s
+                        WHERE id = %s
+                        """,
+                        (hero_badge, hero_title, hero_description, new_image, hero_image_alt, is_active, now_str, settings["id"])
+                    )
+                    conn.commit()
+
+                    if should_delete_old_image and old_image and old_image != new_image:
+                        if old_image.startswith("uploads/catalogue/"):
+                            storage.delete_catalogue_hero_image(old_image)
+
+                    cur.close()
+                    conn.close()
+
+                    flash("Courses page hero settings updated successfully!", "success")
+                    return redirect(url_for("admin_learning_catalogue_settings"))
+                except Exception as e:
+                    if conn:
+                        conn.rollback()
+                    if uploaded_new_storage_path:
+                        storage.delete_catalogue_hero_image(uploaded_new_storage_path)
+                    cur.close()
+                    conn.close()
+                    app.logger.error(f"Error updating catalogue settings: {e}", exc_info=True)
+                    error = f"Database error updating catalogue settings: {str(e)}"
+
+    cur.close()
+    conn.close()
+    return render_template("admin_catalogue_settings.html", active_page="admin", settings=settings, error=error)
+
+
+
+@app.route("/admin/learning-categories")
+@admin_required
+def admin_learning_categories():
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute(
+        """
+        SELECT lc.id, lc.name, lc.slug, lc.description, lc.image, lc.display_order, lc.is_active, lc.created_at,
+               COUNT(DISTINCT lp.id) AS path_count,
+               COUNT(DISTINCT c.id) AS course_count
+        FROM learning_categories lc
+        LEFT JOIN learning_paths lp ON lp.category_id = lc.id
+        LEFT JOIN courses c ON c.category_id = lc.id
+        GROUP BY lc.id, lc.name, lc.slug, lc.description, lc.image, lc.display_order, lc.is_active, lc.created_at
+        ORDER BY lc.display_order ASC, lc.id ASC
+        """
+    )
+    categories = cur.fetchall()
+    cur.close()
+    conn.close()
+    return render_template("admin_categories.html", active_page="admin", categories=categories)
+
+
+@app.route("/admin/learning-categories/new", methods=["GET", "POST"])
+@admin_required
+def admin_add_learning_category():
+    error = None
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        slug = request.form.get("slug", "").strip()
+        description = request.form.get("description", "").strip()
+        display_order = request.form.get("display_order", 1, type=int)
+        is_active = 1 if request.form.get("is_active") else 0
+        image = request.form.get("image_url", "").strip() or request.form.get("image", "").strip()
+
+        uploaded_storage_path = None
+        if "image_file" in request.files and request.files["image_file"].filename:
+            img_file = request.files["image_file"]
+            is_valid, val_err = validate_uploaded_image_file(img_file)
+            if not is_valid:
+                error = val_err
+            else:
+                success, saved_path, save_err = storage.save_category_image(img_file, 0, img_file.filename)
+                if success:
+                    image = saved_path
+                    uploaded_storage_path = saved_path
+                else:
+                    error = save_err or "Failed to store category image."
+
+        if not error:
+            if not name:
+                error = "Category name is required."
+            else:
+                if not slug:
+                    slug = re.sub(r"[^\w\s-]", "", name.lower())
+                    slug = re.sub(r"[-\s]+", "-", slug).strip("-")
+
+                conn = get_db_connection()
+                cur = get_db_cursor(conn)
+                cur.execute("SELECT id FROM learning_categories WHERE slug = %s", (slug,))
+                if cur.fetchone():
+                    error = f"A category with slug '{slug}' already exists."
+                    if uploaded_storage_path:
+                        storage.delete_category_image(uploaded_storage_path)
+                    cur.close()
+                    conn.close()
+                else:
+                    try:
+                        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                        if get_db_type() == "postgres":
+                            cur.execute(
+                                """
+                                INSERT INTO learning_categories (name, slug, description, image, display_order, is_active, created_at, updated_at)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                                RETURNING id
+                                """,
+                                (name, slug, description, image, display_order, is_active, now_str, now_str)
+                            )
+                            new_id = cur.fetchone()["id"]
+                        else:
+                            cur.execute(
+                                """
+                                INSERT INTO learning_categories (name, slug, description, image, display_order, is_active, created_at, updated_at)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                                """,
+                                (name, slug, description, image, display_order, is_active, now_str, now_str)
+                            )
+                            new_id = cur.lastrowid
+
+                        if request.form.get("create_default_paths"):
+                            for g in [1, 2, 3, 4, 5]:
+                                g_info = GRADES[g]
+                                p_name = f"{name} - {g_info['name']}"
+                                p_slug = f"grade-{g}"
+                                cur.execute(
+                                    """
+                                    INSERT INTO learning_paths (category_id, grade, name, slug, description, image, display_order, is_active, created_at, updated_at)
+                                    VALUES (%s, %s, %s, %s, %s, %s, %s, 1, %s, %s)
+                                    """,
+                                    (new_id, g, p_name, p_slug, g_info["description"], image, g, now_str, now_str)
+                                )
+
+                        conn.commit()
+                        cur.close()
+                        conn.close()
+
+                        flash(f"Learning category '{name}' created successfully!", "success")
+                        return redirect(url_for("admin_learning_categories"))
+                    except Exception as e:
+                        if conn:
+                            conn.rollback()
+                        if uploaded_storage_path:
+                            storage.delete_category_image(uploaded_storage_path)
+                        cur.close()
+                        conn.close()
+                        logger.error(f"Error creating category: {e}", exc_info=True)
+                        error = f"Database error creating category: {str(e)}"
+
+    return render_template("admin_category_form.html", active_page="admin", action="Create", error=error)
+
+
+@app.route("/admin/learning-categories/<int:category_id>/edit", methods=["GET", "POST"])
+@admin_required
+def admin_edit_learning_category(category_id):
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT * FROM learning_categories WHERE id = %s", (category_id,))
+    category = cur.fetchone()
+    if not category:
+        cur.close()
+        conn.close()
+        flash("Category not found.", "error")
+        return redirect(url_for("admin_learning_categories"))
+
+    error = None
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        slug = request.form.get("slug", "").strip()
+        description = request.form.get("description", "").strip()
+        display_order = request.form.get("display_order", 1, type=int)
+        is_active = 1 if request.form.get("is_active") else 0
+
+        old_image = category.get("image") or ""
+        new_image = old_image
+        should_delete_old_image = False
+        uploaded_new_storage_path = None
+
+        if request.form.get("remove_image"):
+            new_image = ""
+            should_delete_old_image = True
+        elif "image_file" in request.files and request.files["image_file"].filename:
+            img_file = request.files["image_file"]
+            is_valid, val_err = validate_uploaded_image_file(img_file)
+            if not is_valid:
+                error = val_err
+            else:
+                success, saved_path, save_err = storage.save_category_image(img_file, category_id, img_file.filename)
+                if success:
+                    new_image = saved_path
+                    uploaded_new_storage_path = saved_path
+                    should_delete_old_image = True
+                else:
+                    error = save_err or "Failed to store category image."
+        elif request.form.get("image_url", "").strip():
+            new_image = request.form.get("image_url", "").strip()
+
+        if not error:
+            if not name:
+                error = "Category name is required."
+            else:
+                if not slug:
+                    slug = re.sub(r"[^\w\s-]", "", name.lower())
+                    slug = re.sub(r"[-\s]+", "-", slug).strip("-")
+
+                cur.execute("SELECT id FROM learning_categories WHERE slug = %s AND id != %s", (slug, category_id))
+                if cur.fetchone():
+                    error = f"Another category with slug '{slug}' already exists."
+                    if uploaded_new_storage_path:
+                        storage.delete_category_image(uploaded_new_storage_path)
+                else:
+                    try:
+                        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                        cur.execute(
+                            """
+                            UPDATE learning_categories
+                            SET name = %s, slug = %s, description = %s, image = %s, display_order = %s, is_active = %s, updated_at = %s
+                            WHERE id = %s
+                            """,
+                            (name, slug, description, new_image, display_order, is_active, now_str, category_id)
+                        )
+                        conn.commit()
+
+                        if should_delete_old_image and old_image and old_image != new_image:
+                            if old_image.startswith("uploads/categories/"):
+                                storage.delete_category_image(old_image)
+
+                        cur.close()
+                        conn.close()
+
+                        flash(f"Learning category '{name}' updated successfully!", "success")
+                        return redirect(url_for("admin_learning_categories"))
+                    except Exception as e:
+                        if conn:
+                            conn.rollback()
+                        if uploaded_new_storage_path:
+                            storage.delete_category_image(uploaded_new_storage_path)
+                        cur.close()
+                        conn.close()
+                        logger.error(f"Error updating category: {e}", exc_info=True)
+                        error = f"Database error updating category: {str(e)}"
+
+    cur.close()
+    conn.close()
+    return render_template("admin_category_form.html", active_page="admin", action="Edit", category=category, error=error)
+
+
+@app.route("/admin/learning-categories/<int:category_id>/toggle-active", methods=["POST"])
+@admin_required
+def admin_toggle_learning_category_active(category_id):
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT id, name, is_active FROM learning_categories WHERE id = %s", (category_id,))
+    category = cur.fetchone()
+    if not category:
+        cur.close()
+        conn.close()
+        flash("Category not found.", "error")
+        return redirect(url_for("admin_learning_categories"))
+
+    new_status = 0 if category["is_active"] else 1
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    cur.execute("UPDATE learning_categories SET is_active = %s, updated_at = %s WHERE id = %s", (new_status, now_str, category_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    flash(f"Category '{category['name']}' is now {'active' if new_status else 'inactive'}.", "success")
+    return redirect(url_for("admin_learning_categories"))
+
+
+@app.route("/admin/learning-categories/<int:category_id>/paths")
+@admin_required
+def admin_category_learning_paths(category_id):
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT * FROM learning_categories WHERE id = %s", (category_id,))
+    category = cur.fetchone()
+    if not category:
+        cur.close()
+        conn.close()
+        flash("Category not found.", "error")
+        return redirect(url_for("admin_learning_categories"))
+
+    cur.execute(
+        """
+        SELECT lp.id, lp.category_id, lp.grade, lp.name, lp.slug, lp.description, lp.image, lp.display_order, lp.is_active, lp.created_at,
+               COUNT(DISTINCT c.id) AS course_count
+        FROM learning_paths lp
+        LEFT JOIN courses c ON c.category_id = lp.category_id AND c.learning_path_id = lp.id
+        WHERE lp.category_id = %s
+        GROUP BY lp.id, lp.category_id, lp.grade, lp.name, lp.slug, lp.description, lp.image, lp.display_order, lp.is_active, lp.created_at
+        ORDER BY lp.grade ASC, lp.display_order ASC, lp.id ASC
+        """,
+        (category_id,)
+    )
+    paths = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    for p in paths:
+        g_info = GRADES.get(p["grade"], {})
+        p["grade_name"] = g_info.get("name", f"Grade {p['grade']}")
+        p["classes"] = g_info.get("classes", "")
+
+    return render_template("admin_paths.html", active_page="admin", category=category, paths=paths, grades=GRADES)
+
+
+@app.route("/admin/learning-categories/<int:category_id>/paths/new", methods=["GET", "POST"])
+@admin_required
+def admin_add_learning_path(category_id):
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT * FROM learning_categories WHERE id = %s", (category_id,))
+    category = cur.fetchone()
+    if not category:
+        cur.close()
+        conn.close()
+        flash("Category not found.", "error")
+        return redirect(url_for("admin_learning_categories"))
+
+    error = None
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        slug = request.form.get("slug", "").strip()
+        grade = request.form.get("grade", 1, type=int)
+        if grade not in GRADES:
+            grade = 1
+        description = request.form.get("description", "").strip()
+        display_order = request.form.get("display_order", 1, type=int)
+        is_active = 1 if request.form.get("is_active") else 0
+        image = request.form.get("image_url", "").strip() or request.form.get("image", "").strip()
+
+        uploaded_storage_path = None
+        if "image_file" in request.files and request.files["image_file"].filename:
+            img_file = request.files["image_file"]
+            is_valid, val_err = validate_uploaded_image_file(img_file)
+            if not is_valid:
+                error = val_err
+            else:
+                success, saved_path, save_err = storage.save_learning_path_image(img_file, 0, img_file.filename)
+                if success:
+                    image = saved_path
+                    uploaded_storage_path = saved_path
+                else:
+                    error = save_err or "Failed to store learning path image."
+
+        if not error:
+            if not name:
+                error = "Learning path name is required."
+            else:
+                if not slug:
+                    slug = re.sub(r"[^\w\s-]", "", name.lower())
+                    slug = re.sub(r"[-\s]+", "-", slug).strip("-")
+
+                cur.execute("SELECT id FROM learning_paths WHERE category_id = %s AND slug = %s", (category_id, slug))
+                if cur.fetchone():
+                    error = f"A path with slug '{slug}' already exists in this category."
+                    if uploaded_storage_path:
+                        storage.delete_learning_path_image(uploaded_storage_path)
+                else:
+                    try:
+                        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                        cur.execute(
+                            """
+                            INSERT INTO learning_paths (category_id, grade, name, slug, description, image, display_order, is_active, created_at, updated_at)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            """,
+                            (category_id, grade, name, slug, description, image, display_order, is_active, now_str, now_str)
+                        )
+                        conn.commit()
+                        cur.close()
+                        conn.close()
+
+                        flash(f"Learning path '{name}' added successfully!", "success")
+                        return redirect(url_for("admin_category_learning_paths", category_id=category_id))
+                    except Exception as e:
+                        if conn:
+                            conn.rollback()
+                        if uploaded_storage_path:
+                            storage.delete_learning_path_image(uploaded_storage_path)
+                        cur.close()
+                        conn.close()
+                        logger.error(f"Error creating learning path: {e}", exc_info=True)
+                        error = f"Database error creating learning path: {str(e)}"
+
+    cur.close()
+    conn.close()
+    return render_template("admin_path_form.html", active_page="admin", action="Create", category=category, grades=GRADES, error=error)
+
+
+@app.route("/admin/learning-paths/<int:path_id>/edit", methods=["GET", "POST"])
+@admin_required
+def admin_edit_learning_path(path_id):
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute(
+        """
+        SELECT lp.*, lc.name AS category_name, lc.id AS category_id
+        FROM learning_paths lp
+        JOIN learning_categories lc ON lp.category_id = lc.id
+        WHERE lp.id = %s
+        """,
+        (path_id,)
+    )
+    path = cur.fetchone()
+    if not path:
+        cur.close()
+        conn.close()
+        flash("Learning path not found.", "error")
+        return redirect(url_for("admin_learning_categories"))
+
+    error = None
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        slug = request.form.get("slug", "").strip()
+        grade = request.form.get("grade", path["grade"], type=int)
+        if grade not in GRADES:
+            grade = path["grade"]
+        description = request.form.get("description", "").strip()
+        display_order = request.form.get("display_order", 1, type=int)
+        is_active = 1 if request.form.get("is_active") else 0
+
+        old_image = path.get("image") or ""
+        new_image = old_image
+        should_delete_old_image = False
+        uploaded_new_storage_path = None
+
+        if request.form.get("remove_image"):
+            new_image = ""
+            should_delete_old_image = True
+        elif "image_file" in request.files and request.files["image_file"].filename:
+            img_file = request.files["image_file"]
+            is_valid, val_err = validate_uploaded_image_file(img_file)
+            if not is_valid:
+                error = val_err
+            else:
+                success, saved_path, save_err = storage.save_learning_path_image(img_file, path_id, img_file.filename)
+                if success:
+                    new_image = saved_path
+                    uploaded_new_storage_path = saved_path
+                    should_delete_old_image = True
+                else:
+                    error = save_err or "Failed to store learning path image."
+        elif request.form.get("image_url", "").strip():
+            new_image = request.form.get("image_url", "").strip()
+
+        if not error:
+            if not name:
+                error = "Learning path name is required."
+            else:
+                if not slug:
+                    slug = re.sub(r"[^\w\s-]", "", name.lower())
+                    slug = re.sub(r"[-\s]+", "-", slug).strip("-")
+
+                cur.execute("SELECT id FROM learning_paths WHERE category_id = %s AND slug = %s AND id != %s", (path["category_id"], slug, path_id))
+                if cur.fetchone():
+                    error = f"Another path with slug '{slug}' already exists in this category."
+                    if uploaded_new_storage_path:
+                        storage.delete_learning_path_image(uploaded_new_storage_path)
+                else:
+                    try:
+                        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                        cur.execute(
+                            """
+                            UPDATE learning_paths
+                            SET name = %s, slug = %s, grade = %s, description = %s, image = %s, display_order = %s, is_active = %s, updated_at = %s
+                            WHERE id = %s
+                            """,
+                            (name, slug, grade, description, new_image, display_order, is_active, now_str, path_id)
+                        )
+                        conn.commit()
+
+                        if should_delete_old_image and old_image and old_image != new_image:
+                            if old_image.startswith("uploads/learning_paths/"):
+                                storage.delete_learning_path_image(old_image)
+
+                        cur.close()
+                        conn.close()
+
+                        flash(f"Learning path '{name}' updated successfully!", "success")
+                        return redirect(url_for("admin_category_learning_paths", category_id=path["category_id"]))
+                    except Exception as e:
+                        if conn:
+                            conn.rollback()
+                        if uploaded_new_storage_path:
+                            storage.delete_learning_path_image(uploaded_new_storage_path)
+                        cur.close()
+                        conn.close()
+                        logger.error(f"Error updating learning path: {e}", exc_info=True)
+                        error = f"Database error updating learning path: {str(e)}"
+
+    cur.close()
+    conn.close()
+    return render_template("admin_path_form.html", active_page="admin", action="Edit", path=path, category={"id": path["category_id"], "name": path["category_name"]}, grades=GRADES, error=error)
+
+
+@app.route("/admin/learning-paths/<int:path_id>/toggle-active", methods=["POST"])
+@admin_required
+def admin_toggle_learning_path_active(path_id):
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT id, name, category_id, is_active FROM learning_paths WHERE id = %s", (path_id,))
+    path = cur.fetchone()
+    if not path:
+        cur.close()
+        conn.close()
+        flash("Learning path not found.", "error")
+        return redirect(url_for("admin_learning_categories"))
+
+    new_status = 0 if path["is_active"] else 1
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    cur.execute("UPDATE learning_paths SET is_active = %s, updated_at = %s WHERE id = %s", (new_status, now_str, path_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    flash(f"Learning path '{path['name']}' is now {'active' if new_status else 'inactive'}.", "success")
+    return redirect(url_for("admin_category_learning_paths", category_id=path["category_id"]))
+
+
+@app.route("/admin/api/categories/<int:category_id>/paths")
+@admin_required
+def admin_api_category_paths(category_id):
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute(
+        """
+        SELECT id, category_id, grade, name, slug, description, display_order, is_active
+        FROM learning_paths
+        WHERE category_id = %s AND is_active = 1
+        ORDER BY grade ASC, display_order ASC, id ASC
+        """,
+        (category_id,)
+    )
+    paths = cur.fetchall()
+    cur.close()
+    conn.close()
+    for p in paths:
+        g_info = GRADES.get(p["grade"], {})
+        p["classes"] = g_info.get("classes", "")
+        p["grade_name"] = g_info.get("name", f"Grade {p['grade']}")
+    return jsonify({"success": True, "paths": paths})
+
+
 # ---------- Admin Course CRUD ----------
 
 @app.route("/admin/courses/new", methods=["GET", "POST"])
 @admin_required
 def admin_add_course():
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+
+    cur.execute("SELECT id, name, slug FROM learning_categories WHERE is_active = 1 ORDER BY display_order ASC, id ASC")
+    categories = cur.fetchall()
+
+    cur.execute(
+        """
+        SELECT id, category_id, grade, name, slug
+        FROM learning_paths
+        WHERE is_active = 1
+        ORDER BY grade ASC, display_order ASC, id ASC
+        """
+    )
+    learning_paths = cur.fetchall()
+
     error = None
     if request.method == "POST":
         title = request.form.get("title", "").strip()
@@ -3846,19 +5079,34 @@ def admin_add_course():
         if grade not in GRADES:
             grade = 1
 
-        # Thumbnail image handling
-        image = request.form.get("image", "images/services/drone.jpg").strip() or "images/services/drone.jpg"
-        if "thumbnail_file" in request.files:
-            file = request.files["thumbnail_file"]
-            if file and file.filename:
-                if allowed_file(file.filename, ALLOWED_IMAGE_EXTENSIONS):
-                    from werkzeug.utils import secure_filename
-                    orig_name = secure_filename(file.filename)
-                    unique_name = f"course_{int(datetime.utcnow().timestamp())}_{orig_name}"
-                    file.save(os.path.join(COURSE_IMAGE_UPLOAD_FOLDER, unique_name))
-                    image = f"uploads/courses/{unique_name}"
+        category_id = request.form.get("category_id", type=int)
+        learning_path_id = request.form.get("learning_path_id", type=int)
+
+        # Server-side validation of Category and Learning Path consistency
+        if learning_path_id and category_id:
+            cur.execute("SELECT id, category_id, grade FROM learning_paths WHERE id = %s", (learning_path_id,))
+            path_rec = cur.fetchone()
+            if not path_rec or path_rec["category_id"] != category_id:
+                error = "The selected learning path does not belong to the selected category."
+            elif path_rec["grade"] != grade:
+                error = f"The selected learning path is for Grade {path_rec['grade']}, which does not match Grade {grade}."
+        elif learning_path_id and not category_id:
+            error = "A category must be selected if a learning path is chosen."
+
+        image = request.form.get("image_url", "").strip() or request.form.get("image", "").strip()
+        uploaded_storage_path = None
+        file = request.files.get("thumbnail_file") or request.files.get("image_file")
+        if file and file.filename:
+            is_valid, val_err = validate_uploaded_image_file(file)
+            if not is_valid:
+                error = val_err
+            else:
+                success, saved_path, save_err = storage.save_course_image(file, 0, file.filename)
+                if success:
+                    image = saved_path
+                    uploaded_storage_path = saved_path
                 else:
-                    error = f"Invalid image format. Allowed formats: {', '.join(ALLOWED_IMAGE_EXTENSIONS).upper()}"
+                    error = save_err or "Failed to store course image."
 
         estimated_duration = request.form.get("estimated_duration", "").strip()
         learning_outcomes = request.form.get("learning_outcomes", "").strip()
@@ -3878,58 +5126,77 @@ def admin_add_course():
                     slug = re.sub(r"[^\w\s-]", "", title.lower())
                     slug = re.sub(r"[-\s]+", "-", slug).strip("-")
 
-                conn = get_db_connection()
-                cur = get_db_cursor(conn)
-
                 cur.execute("SELECT id FROM courses WHERE slug = %s", (slug,))
                 if cur.fetchone():
                     error = f"A course with slug '{slug}' already exists."
-                    cur.close()
-                    conn.close()
+                    if uploaded_storage_path:
+                        storage.delete_course_image(uploaded_storage_path)
                 else:
-                    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-                    if get_db_type() == "postgres":
-                        cur.execute(
-                            """
-                            INSERT INTO courses (
-                                title, slug, short_description, description, level, grade, image,
-                                estimated_duration, learning_outcomes, course_benefits, certificate_description,
-                                is_active, created_at, updated_at
+                    try:
+                        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                        if get_db_type() == "postgres":
+                            cur.execute(
+                                """
+                                INSERT INTO courses (
+                                    title, slug, short_description, description, level, grade, category_id, learning_path_id, image,
+                                    estimated_duration, learning_outcomes, course_benefits, certificate_description,
+                                    is_active, created_at, updated_at
+                                )
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                RETURNING id
+                                """,
+                                (title, slug, short_description, description, level, grade, category_id, learning_path_id, image,
+                                 estimated_duration, learning_outcomes, course_benefits, certificate_description,
+                                 is_active, now_str, now_str),
                             )
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                            RETURNING id
-                            """,
-                            (title, slug, short_description, description, level, grade, image,
-                             estimated_duration, learning_outcomes, course_benefits, certificate_description,
-                             is_active, now_str, now_str),
-                        )
-                        new_course_id = cur.fetchone()["id"]
-                    else:
-                        cur.execute(
-                            """
-                            INSERT INTO courses (
-                                title, slug, short_description, description, level, grade, image,
-                                estimated_duration, learning_outcomes, course_benefits, certificate_description,
-                                is_active, created_at, updated_at
+                            new_course_id = cur.fetchone()["id"]
+                        else:
+                            cur.execute(
+                                """
+                                INSERT INTO courses (
+                                    title, slug, short_description, description, level, grade, category_id, learning_path_id, image,
+                                    estimated_duration, learning_outcomes, course_benefits, certificate_description,
+                                    is_active, created_at, updated_at
+                                )
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                """,
+                                (title, slug, short_description, description, level, grade, category_id, learning_path_id, image,
+                                 estimated_duration, learning_outcomes, course_benefits, certificate_description,
+                                 is_active, now_str, now_str),
                             )
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                            """,
-                            (title, slug, short_description, description, level, grade, image,
-                             estimated_duration, learning_outcomes, course_benefits, certificate_description,
-                             is_active, now_str, now_str),
-                        )
-                        new_course_id = cur.lastrowid
-                    conn.commit()
-                    cur.close()
-                    conn.close()
+                            new_course_id = cur.lastrowid
+                        conn.commit()
+                        cur.close()
+                        conn.close()
 
-                    flash(f"Course '{title}' created successfully!", "success")
-                    return redirect(url_for("admin_course_detail", course_id=new_course_id))
+                        flash(f"Course '{title}' created successfully!", "success")
+                        return redirect(url_for("admin_course_detail", course_id=new_course_id))
+                    except Exception as e:
+                        if conn:
+                            conn.rollback()
+                        if uploaded_storage_path:
+                            storage.delete_course_image(uploaded_storage_path)
+                        cur.close()
+                        conn.close()
+                        logger.error(f"Error creating course: {e}", exc_info=True)
+                        error = f"Database error creating course: {str(e)}"
 
     default_grade = request.args.get("grade", 1, type=int)
     if default_grade not in GRADES:
         default_grade = 1
-    return render_template("admin_course_form.html", active_page="admin", action="Create", grades=GRADES, default_grade=default_grade, error=error)
+
+    cur.close()
+    conn.close()
+    return render_template(
+        "admin_course_form.html",
+        active_page="admin",
+        action="Create",
+        grades=GRADES,
+        default_grade=default_grade,
+        categories=categories,
+        learning_paths=learning_paths,
+        error=error,
+    )
 
 
 @app.route("/admin/courses/<int:course_id>/edit", methods=["GET", "POST"])
@@ -3947,6 +5214,19 @@ def admin_edit_course(course_id):
         flash("Course not found.", "error")
         return redirect(url_for("admin_courses"))
 
+    cur.execute("SELECT id, name, slug FROM learning_categories WHERE is_active = 1 ORDER BY display_order ASC, id ASC")
+    categories = cur.fetchall()
+
+    cur.execute(
+        """
+        SELECT id, category_id, grade, name, slug
+        FROM learning_paths
+        WHERE is_active = 1
+        ORDER BY grade ASC, display_order ASC, id ASC
+        """
+    )
+    learning_paths = cur.fetchall()
+
     error = None
     if request.method == "POST":
         title = request.form.get("title", "").strip()
@@ -3958,19 +5238,43 @@ def admin_edit_course(course_id):
         if grade not in GRADES:
             grade = 1
 
-        # Thumbnail image handling
-        image = course.get("image") or "images/services/drone.jpg"
-        if "thumbnail_file" in request.files:
-            file = request.files["thumbnail_file"]
-            if file and file.filename:
-                if allowed_file(file.filename, ALLOWED_IMAGE_EXTENSIONS):
-                    from werkzeug.utils import secure_filename
-                    orig_name = secure_filename(file.filename)
-                    unique_name = f"course_{course_id}_{int(datetime.utcnow().timestamp())}_{orig_name}"
-                    file.save(os.path.join(COURSE_IMAGE_UPLOAD_FOLDER, unique_name))
-                    image = f"uploads/courses/{unique_name}"
+        category_id = request.form.get("category_id", type=int)
+        learning_path_id = request.form.get("learning_path_id", type=int)
+
+        if learning_path_id and category_id:
+            cur.execute("SELECT id, category_id, grade FROM learning_paths WHERE id = %s", (learning_path_id,))
+            path_rec = cur.fetchone()
+            if not path_rec or path_rec["category_id"] != category_id:
+                error = "The selected learning path does not belong to the selected category."
+            elif path_rec["grade"] != grade:
+                error = f"The selected learning path is for Grade {path_rec['grade']}, which does not match Grade {grade}."
+        elif learning_path_id and not category_id:
+            error = "A category must be selected if a learning path is chosen."
+
+        old_image = course.get("image") or ""
+        new_image = old_image
+        should_delete_old_image = False
+        uploaded_new_storage_path = None
+
+        if request.form.get("remove_image") or request.form.get("remove_thumbnail"):
+            new_image = ""
+            should_delete_old_image = True
+        elif ("thumbnail_file" in request.files and request.files["thumbnail_file"].filename) or \
+             ("image_file" in request.files and request.files["image_file"].filename):
+            file = request.files.get("thumbnail_file") or request.files.get("image_file")
+            is_valid, val_err = validate_uploaded_image_file(file)
+            if not is_valid:
+                error = val_err
+            else:
+                success, saved_path, save_err = storage.save_course_image(file, course_id, file.filename)
+                if success:
+                    new_image = saved_path
+                    uploaded_new_storage_path = saved_path
+                    should_delete_old_image = True
                 else:
-                    error = f"Invalid image format. Allowed formats: {', '.join(ALLOWED_IMAGE_EXTENSIONS).upper()}"
+                    error = save_err or "Failed to store course image."
+        elif request.form.get("image_url", "").strip():
+            new_image = request.form.get("image_url", "").strip()
 
         estimated_duration = request.form.get("estimated_duration", "").strip()
         learning_outcomes = request.form.get("learning_outcomes", "").strip()
@@ -3993,30 +5297,59 @@ def admin_edit_course(course_id):
                 cur.execute("SELECT id FROM courses WHERE slug = %s AND id != %s", (slug, course_id))
                 if cur.fetchone():
                     error = f"Another course with slug '{slug}' already exists."
+                    if uploaded_new_storage_path:
+                        storage.delete_course_image(uploaded_new_storage_path)
                 else:
-                    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-                    cur.execute(
-                        """
-                        UPDATE courses
-                        SET title = %s, slug = %s, short_description = %s, description = %s, level = %s, grade = %s, image = %s,
-                            estimated_duration = %s, learning_outcomes = %s, course_benefits = %s, certificate_description = %s,
-                            is_active = %s, updated_at = %s
-                        WHERE id = %s
-                        """,
-                        (title, slug, short_description, description, level, grade, image,
-                         estimated_duration, learning_outcomes, course_benefits, certificate_description,
-                         is_active, now_str, course_id),
-                    )
-                    conn.commit()
-                    cur.close()
-                    conn.close()
+                    try:
+                        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                        cur.execute(
+                            """
+                            UPDATE courses
+                            SET title = %s, slug = %s, short_description = %s, description = %s, level = %s, grade = %s,
+                                category_id = %s, learning_path_id = %s, image = %s,
+                                estimated_duration = %s, learning_outcomes = %s, course_benefits = %s, certificate_description = %s,
+                                is_active = %s, updated_at = %s
+                            WHERE id = %s
+                            """,
+                            (title, slug, short_description, description, level, grade,
+                             category_id, learning_path_id, new_image,
+                             estimated_duration, learning_outcomes, course_benefits, certificate_description,
+                             is_active, now_str, course_id),
+                        )
+                        conn.commit()
 
-                    flash(f"Course '{title}' updated successfully!", "success")
-                    return redirect(url_for("admin_course_detail", course_id=course_id))
+                        if should_delete_old_image and old_image and old_image != new_image:
+                            if old_image.startswith("uploads/courses/"):
+                                storage.delete_course_image(old_image)
+
+                        cur.close()
+                        conn.close()
+
+                        flash(f"Course '{title}' updated successfully!", "success")
+                        return redirect(url_for("admin_course_detail", course_id=course_id))
+                    except Exception as e:
+                        if conn:
+                            conn.rollback()
+                        if uploaded_new_storage_path:
+                            storage.delete_course_image(uploaded_new_storage_path)
+                        cur.close()
+                        conn.close()
+                        logger.error(f"Error updating course: {e}", exc_info=True)
+                        error = f"Database error updating course: {str(e)}"
 
     cur.close()
     conn.close()
-    return render_template("admin_course_form.html", active_page="admin", action="Edit", course=course, grades=GRADES, error=error)
+    return render_template(
+        "admin_course_form.html",
+        active_page="admin",
+        action="Edit",
+        course=course,
+        grades=GRADES,
+        categories=categories,
+        learning_paths=learning_paths,
+        error=error,
+    )
+
 
 
 @app.route("/admin/courses/<int:course_id>/toggle-active", methods=["POST"])

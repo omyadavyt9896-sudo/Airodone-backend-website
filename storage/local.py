@@ -151,3 +151,127 @@ class LocalStorageBackend(BaseStorageBackend):
         # Local storage is protected and streamed via the LMS /courses/video/<id>/stream endpoint
         return None
 
+    def _save_image_file(
+        self,
+        file_obj,
+        subfolder: str,
+        filename_prefix: str,
+        entity_id: int,
+        original_filename: str,
+    ) -> Tuple[bool, str, Optional[str]]:
+        try:
+            import time
+            import secrets
+            ext = original_filename.rsplit(".", 1)[-1].lower() if "." in original_filename else "jpg"
+            if ext not in ("jpg", "jpeg", "png", "webp"):
+                ext = "jpg"
+            random_token = secrets.token_hex(4)
+            safe_name = f"{filename_prefix}_{int(entity_id)}_{int(time.time())}_{random_token}.{ext}"
+            rel_storage_path = f"uploads/{subfolder}/{safe_name}"
+
+            full_path_base = os.path.join(self.base_dir, subfolder, safe_name)
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+            full_path_static = os.path.join(project_root, "static", "uploads", subfolder, safe_name)
+
+            os.makedirs(os.path.dirname(full_path_base), exist_ok=True)
+            os.makedirs(os.path.dirname(full_path_static), exist_ok=True)
+
+            if hasattr(file_obj, "save"):
+                file_obj.save(full_path_static)
+                try:
+                    shutil.copy2(full_path_static, full_path_base)
+                except Exception:
+                    pass
+            elif hasattr(file_obj, "read"):
+                file_obj.seek(0)
+                with open(full_path_static, "wb") as f_out:
+                    shutil.copyfileobj(file_obj, f_out)
+                try:
+                    shutil.copy2(full_path_static, full_path_base)
+                except Exception:
+                    pass
+            else:
+                return False, "", "Invalid file object provided for local storage."
+
+            logger.info(f"Saved image locally: {rel_storage_path}")
+            return True, rel_storage_path, None
+        except Exception as e:
+            logger.error(f"Failed to save image locally: {e}", exc_info=True)
+            return False, "", f"Local storage save error: {str(e)}"
+
+    def _delete_image_file(self, storage_path: str, subfolder: str) -> bool:
+        if not storage_path:
+            return True
+        try:
+            clean_path = storage_path.replace("\\", "/").lstrip("/")
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+            filename = os.path.basename(clean_path)
+            paths_to_check = [
+                os.path.join(project_root, "static", clean_path),
+                os.path.join(project_root, "static", "uploads", subfolder, filename),
+                os.path.join(self.base_dir, subfolder, filename),
+                os.path.join(self.base_dir, clean_path),
+            ]
+            for p in paths_to_check:
+                if os.path.exists(p) and os.path.isfile(p):
+                    try:
+                        os.remove(p)
+                    except OSError:
+                        pass
+            return True
+        except Exception as e:
+            logger.warning(f"Could not delete local image '{storage_path}': {e}")
+            return False
+
+    def _image_file_exists(self, storage_path: str, subfolder: str) -> bool:
+        if not storage_path:
+            return False
+        clean_path = storage_path.replace("\\", "/").lstrip("/")
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        filename = os.path.basename(clean_path)
+        paths_to_check = [
+            os.path.join(project_root, "static", clean_path),
+            os.path.join(project_root, "static", "uploads", subfolder, filename),
+            os.path.join(self.base_dir, subfolder, filename),
+            os.path.join(self.base_dir, clean_path),
+        ]
+        return any(os.path.exists(p) and os.path.isfile(p) for p in paths_to_check)
+
+    def save_category_image(self, file_obj, category_id: int, original_filename: str) -> Tuple[bool, str, Optional[str]]:
+        return self._save_image_file(file_obj, "categories", "category", category_id, original_filename)
+
+    def delete_category_image(self, storage_path: str) -> bool:
+        return self._delete_image_file(storage_path, "categories")
+
+    def category_image_exists(self, storage_path: str) -> bool:
+        return self._image_file_exists(storage_path, "categories")
+
+    def save_learning_path_image(self, file_obj, path_id: int, original_filename: str) -> Tuple[bool, str, Optional[str]]:
+        return self._save_image_file(file_obj, "learning_paths", "learning_path", path_id, original_filename)
+
+    def delete_learning_path_image(self, storage_path: str) -> bool:
+        return self._delete_image_file(storage_path, "learning_paths")
+
+    def learning_path_image_exists(self, storage_path: str) -> bool:
+        return self._image_file_exists(storage_path, "learning_paths")
+
+    def save_course_image(self, file_obj, course_id: int, original_filename: str) -> Tuple[bool, str, Optional[str]]:
+        return self._save_image_file(file_obj, "courses", "course", course_id, original_filename)
+
+    def delete_course_image(self, storage_path: str) -> bool:
+        return self._delete_image_file(storage_path, "courses")
+
+    def course_image_exists(self, storage_path: str) -> bool:
+        return self._image_file_exists(storage_path, "courses")
+
+    def save_catalogue_hero_image(self, file_obj, original_filename: str) -> Tuple[bool, str, Optional[str]]:
+        return self._save_image_file(file_obj, "catalogue", "catalogue_hero", 0, original_filename)
+
+    def delete_catalogue_hero_image(self, storage_path: str) -> bool:
+        return self._delete_image_file(storage_path, "catalogue")
+
+    def catalogue_hero_image_exists(self, storage_path: str) -> bool:
+        return self._image_file_exists(storage_path, "catalogue")
+
+
+

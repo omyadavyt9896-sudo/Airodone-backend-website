@@ -128,6 +128,11 @@
                                 <span class="course-badge-v2" style="position: static; font-size: 0.75rem; padding: 0.2rem 0.55rem;">
                                     Grade {{ c.grade }} &bull; {{ grade_info.classes }}
                                 </span>
+                                {% if c.category_name %}
+                                <span class="course-stat-pill" style="font-size: 0.75rem; background: #e0f2fe; color: #0284c7; font-weight: 600;">
+                                    {{ c.category_name }}{% if c.path_name %} &rarr; {{ c.path_name }}{% endif %}
+                                </span>
+                                {% endif %}
                             </div>
                             <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.825rem; color: var(--color-text-muted);">
                                 <span class="badge-status badge-active" style="font-size: 0.75rem; font-weight: 700;">✓ Active</span>
@@ -179,6 +184,11 @@
                                 <span class="course-badge-v2" style="position: static; font-size: 0.75rem; padding: 0.2rem 0.55rem;">
                                     Grade {{ c.grade }} &bull; {{ grade_info.classes }}
                                 </span>
+                                {% if c.category_name %}
+                                <span class="course-stat-pill" style="font-size: 0.75rem; background: #e0f2fe; color: #0284c7; font-weight: 600;">
+                                    {{ c.category_name }}{% if c.path_name %} &rarr; {{ c.path_name }}{% endif %}
+                                </span>
+                                {% endif %}
                             </div>
                             <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.825rem; color: var(--color-text-muted);">
                                 <span class="badge-status badge-inactive" style="font-size: 0.75rem;">Not Assigned</span>

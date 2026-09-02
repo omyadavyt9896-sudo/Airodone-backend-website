@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}{{ path.name }} ({{ grade_info.classes }}) | {{ category.name }} | Airodrone{% endblock %}
+{% block meta_description %}Explore {{ path.name }} courses for {{ grade_info.name }} ({{ grade_info.classes }}) in {{ category.name }} on Airodrone.{% endblock %}
+
+{% block content %}
+<!-- Course Path Hero Section with 3-Level Breadcrumbs -->
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb" style="margin-bottom: 1rem;">
+            <a href="{{ url_for('courses') }}">Courses</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('category_paths', category_slug=category.slug) }}">{{ category.name }}</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ path.name }}</span>
+        </nav>
+
+        <div class="page-hero-inner">
+            <div>
+                <div class="hero-tagline-pill">
+                    <span class="course-badge-v2" style="position: static; background: rgba(255,255,255,0.2); color: #fff; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 9999px; margin-right: 0.4rem;">
+                        {{ path.grade_name }}
+                    </span>
+                    {{ path.classes }}
+                </div>
+                <h1 style="margin-top: 0.75rem;">{{ path.name }}</h1>
+                <p style="font-size: 1.15rem; max-width: 620px; color: var(--color-text-muted);">
+                    {{ path.description or grade_info.description }}
+                </p>
+                <div style="margin-top: 1.25rem;">
+                    <a href="{{ url_for('category_paths', category_slug=category.slug) }}" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                        &larr; Back to {{ category.name }} Pathways
+                    </a>
+                </div>
+            </div>
+            <div class="page-hero-media" style="min-width: 260px; max-width: 380px;">
+                {% set hero_img = image_url(path.image) if path.image else None %}
+                {% if hero_img %}
+                <img src="{{ hero_img }}" alt="{{ path.name }} illustration" class="hero-img-glow" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div style="display: none; width: 100%; height: 220px; border-radius: 12px; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                </div>
+                {% else %}
+                <div style="display: flex; width: 100%; height: 220px; border-radius: 12px; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Path Courses Grid Section -->
+<section class="section">
+    <div class="container">
+        <div class="section-heading">
+            <h2>Courses in {{ path.name }}</h2>
+            <p>Targeted for {{ path.grade_name }} ({{ path.classes }}). Complete video lessons, quizzes, and hands-on projects to earn verified certificates.</p>
+        </div>
+
+        {% if courses %}
+        <div class="card-grid card-grid-3">
+            {% for course in courses %}
+            <article class="card course-card-v2">
+                <div class="course-card-image-wrap" style="height: 180px; overflow: hidden; position: relative; background: #0f172a;">
+                    {% set c_img = image_url(course.image) if course.image else None %}
+                    {% if c_img %}
+                    <img src="{{ c_img }}" 
+                         alt="{{ course.title }} course banner" 
+                         class="course-card-img-v2"
+                         style="width: 100%; height: 100%; object-fit: cover;"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    {% else %}
+                    <div style="display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    {% endif %}
+                    <span class="course-badge-v2" style="position: absolute; top: 0.75rem; right: 0.75rem; background: rgba(15, 23, 42, 0.85); color: #fff; padding: 0.3rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600;">{{ path.grade_name }} &bull; {{ course.level or 'Beginner' }}</span>
+                </div>
+                
+                <div class="course-card-body-v2">
+                    <h3 class="course-card-title-v2">{{ course.title }}</h3>
+                    <p class="course-card-desc-v2">{{ course.short_description or course.description }}</p>
+                    
+                    <div class="course-meta-v2">
+                        <span class="course-meta-pill">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> {{ course.total_modules }} Modules
+                        </span>
+                        <span class="course-meta-pill">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg> {{ course.total_videos }} Lessons
+                        </span>
+                        {% if course.estimated_duration %}
+                        <span class="course-meta-pill">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> {{ course.estimated_duration }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if current_user.is_authenticated and course.is_enrolled and not current_user.is_admin() %}
+                    <div class="course-card-progress-wrap">
+                        <div class="course-card-progress-header">
+                            <span class="course-card-progress-label">Progress: {{ course.progress_pct }}%</span>
+                            {% if course.has_certificate %}
+                            <span class="cert-pill cert-pill-issued"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> Certificate Earned</span>
+                            {% elif course.progress_pct >= 75.0 %}
+                            <span class="cert-pill cert-pill-available"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> Certificate Available</span>
+                            {% endif %}
+                        </div>
+                        <div class="player-progress-track">
+                            <div class="player-progress-fill" style="width: {{ course.progress_pct }}%;"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="course-card-footer-v2">
+                        <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-primary btn-block">
+                            View Course Details <span aria-hidden="true">&rarr;</span>
+                        </a>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="text-align: center; padding: 4rem 1rem;">
+            <p style="font-size: 1.1rem; color: var(--color-text-muted);">No courses currently active in {{ path.name }}.</p>
+            <a href="{{ url_for('category_paths', category_slug=category.slug) }}" class="btn btn-secondary" style="margin-top: 1rem;">Back to {{ category.name }} Pathways</a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

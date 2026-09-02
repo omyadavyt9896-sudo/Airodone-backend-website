@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}{{ category.name }} Courses & Learning Pathways | Airodrone{% endblock %}
+{% block meta_description %}Explore hands-on STEM learning pathways in {{ category.name }} tailored across Grade 1 to Grade 5 on Airodrone.{% endblock %}
+
+{% block content %}
+<!-- Category Hero Section with Breadcrumbs -->
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb" style="margin-bottom: 1rem;">
+            <a href="{{ url_for('courses') }}">Courses</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ category.name }}</span>
+        </nav>
+
+        <div class="page-hero-inner">
+            <div>
+                <div class="hero-tagline-pill">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> 
+                    Learning Domain
+                </div>
+                <h1 style="margin-top: 0.75rem;">{{ category.name }}</h1>
+                <p style="font-size: 1.15rem; max-width: 620px; color: var(--color-text-muted);">
+                    {{ category.description or 'Explore our comprehensive curriculum and hands-on tracks across all educational grades.' }}
+                </p>
+                <div style="margin-top: 1.25rem;">
+                    <a href="{{ url_for('courses') }}" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                        &larr; Back to All Categories
+                    </a>
+                </div>
+            </div>
+            <div class="page-hero-media" style="min-width: 260px; max-width: 380px;">
+                {% set hero_img = category_image_url(category.image) if category else None %}
+                {% if hero_img %}
+                <img src="{{ hero_img }}" alt="{{ category.name }} illustration" class="hero-img-glow" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div style="display: none; width: 100%; height: 220px; border-radius: 12px; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </div>
+                {% else %}
+                <div style="display: flex; width: 100%; height: 220px; border-radius: 12px; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Category Learning Paths (Grade 1-5) Grid -->
+<section class="section">
+    <div class="container">
+        <div class="section-heading">
+            <h2>Educational Grade Pathways</h2>
+            <p>Select your educational grade to view targeted courses, hands-on modules, and verified certifications in {{ category.name }}.</p>
+        </div>
+
+        {% if paths %}
+        <div class="card-grid card-grid-3">
+            {% for p in paths %}
+            <article class="card course-card-v2" style="display: flex; flex-direction: column; overflow: hidden;">
+                <div class="course-card-image-wrap" style="height: 160px; overflow: hidden; position: relative; background: #0f172a;">
+                    {% set p_img = image_url(p.image) if p.image else None %}
+                    {% if p_img %}
+                    <img src="{{ p_img }}" 
+                         alt="{{ p.name }} pathway artwork" 
+                         class="course-card-img-v2"
+                         style="width: 100%; height: 100%; object-fit: cover;"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    </div>
+                    {% else %}
+                    <div style="display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    </div>
+                    {% endif %}
+                    <span class="course-badge-v2" style="position: absolute; top: 0.75rem; right: 0.75rem; background: rgba(15, 23, 42, 0.85); color: #fff; padding: 0.3rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600;">Grade {{ p.grade }}</span>
+                </div>
+
+                <div class="course-card-body-v2" style="padding: 1.5rem; flex: 1; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                        <span class="course-badge-v2" style="position: static; background: var(--color-primary-light, #e0f2fe); color: var(--color-primary, #0284c7); font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.8rem;">
+                            Grade {{ p.grade }}
+                        </span>
+                        <span style="font-size: 0.85rem; color: var(--color-text-muted); font-weight: 600;">
+                            {{ p.course_count }} {{ 'Course' if p.course_count == 1 else 'Courses' }}
+                        </span>
+                    </div>
+
+                    <h3 class="course-card-title-v2" style="font-size: 1.25rem; margin-bottom: 0.5rem;">
+                        <a href="{{ url_for('path_courses', category_slug=category.slug, path_slug=p.slug) }}" style="color: inherit; text-decoration: none;">
+                            {{ p.name }}
+                        </a>
+                    </h3>
+
+                    <p class="course-card-desc-v2" style="margin-bottom: 1.25rem; color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5; flex: 1;">
+                        {{ p.description or 'Curated curriculum, hands-on projects, and progressive mastery for this grade level.' }}
+                    </p>
+
+                    <div class="course-card-footer-v2" style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--color-border, #e2e8f0);">
+                        <a href="{{ url_for('path_courses', category_slug=category.slug, path_slug=p.slug) }}" class="btn btn-primary btn-block">
+                            Explore Grade {{ p.grade }} Courses &rarr;
+                        </a>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="text-align: center; padding: 4rem 1rem;">
+            <p style="font-size: 1.1rem; color: var(--color-text-muted);">No learning pathways currently active for {{ category.name }}.</p>
+            <a href="{{ url_for('courses') }}" class="btn btn-secondary" style="margin-top: 1rem;">Browse All Categories</a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

@@ -82,10 +82,54 @@
                     </div>
                 </div>
 
-                <!-- SECTION 2: Educational Grade Selection -->
+                <!-- SECTION 2: Learning Category & Pathway -->
                 <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
                         <span style="font-weight: 700; font-size: 1.15rem; color: var(--color-primary, #2563eb);">2.</span>
+                        <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Category & Learning Pathway</h2>
+                    </div>
+                    <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">
+                        Classify this course under a Learning Domain and specific Grade Learning Pathway. Selecting a pathway automatically aligns the educational grade.
+                    </p>
+
+                    {% set current_cat_id = request.form.get('category_id', course.category_id if course else '')|string %}
+                    {% set current_path_id = request.form.get('learning_path_id', course.learning_path_id if course else '')|string %}
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem;">
+                        <div class="form-group">
+                            <label for="categorySelect" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                                Learning Category
+                            </label>
+                            <select id="categorySelect" name="category_id" class="form-control" onchange="handleCategoryChange()">
+                                <option value="">-- No Category (Uncategorized) --</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if current_cat_id == cat.id|string %}selected{% endif %}>
+                                    {{ cat.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="learningPathSelect" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+                                Grade Learning Path
+                            </label>
+                            <select id="learningPathSelect" name="learning_path_id" class="form-control" onchange="handlePathChange()">
+                                <option value="">-- Select Category First --</option>
+                                {% for lp in learning_paths %}
+                                <option value="{{ lp.id }}" data-category="{{ lp.category_id }}" data-grade="{{ lp.grade }}" {% if current_path_id == lp.id|string %}selected{% endif %}>
+                                    Grade {{ lp.grade }}: {{ lp.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: Educational Grade Selection -->
+                <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
+                        <span style="font-weight: 700; font-size: 1.15rem; color: var(--color-primary, #2563eb);">3.</span>
                         <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Educational Grade <span style="color: var(--color-error);">*</span></h2>
                     </div>
                     <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">
@@ -119,15 +163,12 @@
                     </div>
                 </div>
 
-                <!-- SECTION 3: Course Thumbnail -->
+                <!-- SECTION 4: Course Thumbnail -->
                 <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
-                        <span style="font-weight: 700; font-size: 1.15rem; color: var(--color-primary, #2563eb);">3.</span>
-                        <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Course Thumbnail <span style="color: var(--color-error);">*</span></h2>
+                        <span style="font-weight: 700; font-size: 1.15rem; color: var(--color-primary, #2563eb);">4.</span>
+                        <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Course Thumbnail</h2>
                     </div>
-
-                    <!-- Hidden path input for fallback/edit -->
-                    <input type="hidden" name="image" id="courseImageFallback" value="{{ request.form.get('image', course.image if course else 'images/services/drone.jpg') }}">
 
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; align-items: start;">
                         <!-- Upload Controls -->
@@ -136,14 +177,14 @@
                                 Upload Thumbnail Image
                             </label>
                             <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 0.75rem;">
-                                Upload a clear cover image for catalogue cards and course hero.
+                                Upload a clear cover image directly from your computer.
                             </p>
 
                             <div style="position: relative; margin-bottom: 0.75rem;">
                                 <input type="file" 
                                        id="thumbnailFileInput" 
                                        name="thumbnail_file" 
-                                       accept="image/jpeg,image/png,image/webp,image/jpg" 
+                                       accept=".jpg,.jpeg,.png,.webp" 
                                        onchange="handleThumbnailPreview(this)" 
                                        style="display: none;">
                                 <button type="button" 
@@ -157,7 +198,31 @@
 
                             <div id="thumbnailClientError" class="alert alert-error" style="display: none; font-size: 0.85rem; padding: 0.5rem 0.75rem; margin-top: 0.5rem;"></div>
 
-                            <div style="font-size: 0.8rem; color: var(--color-text-muted); line-height: 1.5; margin-top: 0.5rem;">
+                            <div id="courseSelectedFileInfo" style="display: none; margin-top: 0.5rem; font-size: 0.85rem; color: var(--color-primary, #0284c7); font-weight: 600;">
+                                <span id="courseFileName"></span> (<span id="courseFileSize"></span>)
+                            </div>
+
+                            {% if course and course.image %}
+                            <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed var(--color-border);">
+                                <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--color-error, #dc2626); font-size: 0.9rem; font-weight: 600;">
+                                    <input type="checkbox" name="remove_image" value="1" id="removeCourseImageCheckbox" onchange="handleCourseRemoveCheckbox(this)" style="cursor: pointer; width: 16px; height: 16px;">
+                                    Remove Current Thumbnail (Use placeholder)
+                                </label>
+                            </div>
+                            {% endif %}
+
+                            <div style="margin-top: 1rem;">
+                                <details style="font-size: 0.85rem; color: var(--color-text-muted);">
+                                    <summary style="cursor: pointer; font-weight: 600;">Or enter image URL / static path</summary>
+                                    <div style="margin-top: 0.5rem;">
+                                        <input type="text" id="image_url" name="image_url" class="form-control" 
+                                               value="{{ request.form.get('image_url', '') }}" 
+                                               placeholder="e.g. images/services/ai.jpg or https://...">
+                                    </div>
+                                </details>
+                            </div>
+
+                            <div style="font-size: 0.8rem; color: var(--color-text-muted); line-height: 1.5; margin-top: 0.75rem;">
                                 &bull; Formats: <strong>JPG, JPEG, PNG, WEBP</strong><br>
                                 &bull; Recommended Aspect Ratio: <strong>16:9</strong> (e.g. 1280&times;720)<br>
                                 &bull; Max File Size: <strong>5 MB</strong>
@@ -170,16 +235,23 @@
                                 Thumbnail Preview
                             </label>
                             <div class="thumbnail-preview-frame" style="width: 100%; aspect-ratio: 16/9; background: #0f172a; border-radius: var(--radius-md, 8px); overflow: hidden; border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: center; position: relative;">
-                                {% if course and course.image %}
+                                {% set cur_thumb = image_url(course.image) if course else None %}
+                                {% if cur_thumb %}
                                     <img id="thumbnailPreviewImg" 
-                                         src="{{ url_for('static', filename=course.image) }}" 
+                                         src="{{ cur_thumb }}" 
                                          alt="Course thumbnail preview" 
                                          style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                                    <div id="thumbnailPreviewPlaceholder" style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
+                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                                    </div>
                                 {% else %}
                                     <img id="thumbnailPreviewImg" 
-                                         src="{{ url_for('static', filename='images/services/drone.jpg') }}" 
+                                         src="" 
                                          alt="Course thumbnail preview" 
-                                         style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                                         style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                                    <div id="thumbnailPreviewPlaceholder" style="display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
+                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                                    </div>
                                 {% endif %}
                                 <div id="previewOverlayBadge" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.7); color: #fff; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px;">
                                     16:9 Preview
@@ -381,6 +453,77 @@
 </style>
 
 <script>
+var ALL_PATHS = [
+    {% for lp in learning_paths %}
+    {id: {{ lp.id }}, category_id: {{ lp.category_id }}, grade: {{ lp.grade }}, name: {{ lp.name|tojson }}},
+    {% endfor %}
+];
+var GRADES_MAP = {
+    {% for g_id, g_info in grades.items() %}
+    {{ g_id }}: {name: {{ g_info.name|tojson }}, classes: {{ g_info.classes|tojson }}},
+    {% endfor %}
+};
+
+function handleCategoryChange() {
+    var catSelect = document.getElementById("categorySelect");
+    var pathSelect = document.getElementById("learningPathSelect");
+    var selectedCatId = catSelect && catSelect.value ? parseInt(catSelect.value) : null;
+    var currentPathVal = pathSelect ? pathSelect.value : "";
+
+    if (!pathSelect) return;
+
+    pathSelect.innerHTML = "";
+    
+    if (!selectedCatId) {
+        var opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "-- Select Category First --";
+        pathSelect.appendChild(opt);
+        return;
+    }
+
+    var defaultOpt = document.createElement("option");
+    defaultOpt.value = "";
+    defaultOpt.textContent = "-- Select Learning Path --";
+    pathSelect.appendChild(defaultOpt);
+
+    var matchingPaths = ALL_PATHS.filter(function(p) { return p.category_id === selectedCatId; });
+    
+    matchingPaths.forEach(function(p) {
+        var opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = "Grade " + p.grade + ": " + p.name;
+        opt.setAttribute("data-grade", p.grade);
+        if (String(p.id) === String(currentPathVal)) {
+            opt.selected = true;
+        }
+        pathSelect.appendChild(opt);
+    });
+}
+
+function handlePathChange() {
+    var pathSelect = document.getElementById("learningPathSelect");
+    if (!pathSelect || !pathSelect.value) return;
+    
+    var pathId = parseInt(pathSelect.value);
+    var found = ALL_PATHS.find(function(p) { return p.id === pathId; });
+    if (found && GRADES_MAP[found.grade]) {
+        handleGradeSelect(found.grade, GRADES_MAP[found.grade].classes, GRADES_MAP[found.grade].name);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    var catSelect = document.getElementById("categorySelect");
+    var pathSelect = document.getElementById("learningPathSelect");
+    if (catSelect && catSelect.value) {
+        var initialPathVal = "{{ course.learning_path_id if course and course.learning_path_id else '' }}";
+        handleCategoryChange();
+        if (initialPathVal && pathSelect) {
+            pathSelect.value = initialPathVal;
+        }
+    }
+});
+
 function handleGradeSelect(gradeNum, classesText, gradeName) {
     var input = document.getElementById("selectedGradeInput");
     if (input) input.value = gradeNum;
@@ -403,9 +546,16 @@ function handleGradeSelect(gradeNum, classesText, gradeName) {
 
 function handleThumbnailPreview(input) {
     var previewImg = document.getElementById("thumbnailPreviewImg");
+    var placeholderDiv = document.getElementById("thumbnailPreviewPlaceholder");
     var errorBox = document.getElementById("thumbnailClientError");
+    var infoDiv = document.getElementById("courseSelectedFileInfo");
+    var nameSpan = document.getElementById("courseFileName");
+    var sizeSpan = document.getElementById("courseFileSize");
     var btnText = document.getElementById("uploadButtonText");
+    var removeCb = document.getElementById("removeCourseImageCheckbox");
+
     if (errorBox) errorBox.style.display = "none";
+    if (removeCb) removeCb.checked = false;
 
     if (input.files && input.files[0]) {
         var file = input.files[0];
@@ -418,6 +568,7 @@ function handleThumbnailPreview(input) {
                 errorBox.style.display = "block";
             }
             input.value = "";
+            if (infoDiv) infoDiv.style.display = "none";
             return;
         }
 
@@ -427,15 +578,40 @@ function handleThumbnailPreview(input) {
                 errorBox.style.display = "block";
             }
             input.value = "";
+            if (infoDiv) infoDiv.style.display = "none";
             return;
         }
 
+        if (nameSpan) nameSpan.textContent = file.name;
+        if (sizeSpan) sizeSpan.textContent = (file.size / 1024).toFixed(1) + " KB";
+        if (infoDiv) infoDiv.style.display = "block";
+
         var reader = new FileReader();
         reader.onload = function(e) {
-            if (previewImg) previewImg.src = e.target.result;
+            if (previewImg) {
+                previewImg.src = e.target.result;
+                previewImg.style.display = "block";
+            }
+            if (placeholderDiv) placeholderDiv.style.display = "none";
             if (btnText) btnText.textContent = "Replace Selected: " + file.name;
         };
         reader.readAsDataURL(file);
+    }
+}
+
+function handleCourseRemoveCheckbox(cb) {
+    var previewImg = document.getElementById("thumbnailPreviewImg");
+    var placeholderDiv = document.getElementById("thumbnailPreviewPlaceholder");
+    var fileInput = document.getElementById("thumbnailFileInput");
+    var infoDiv = document.getElementById("courseSelectedFileInfo");
+    var btnText = document.getElementById("uploadButtonText");
+
+    if (cb.checked) {
+        if (fileInput) fileInput.value = "";
+        if (infoDiv) infoDiv.style.display = "none";
+        if (previewImg) previewImg.style.display = "none";
+        if (placeholderDiv) placeholderDiv.style.display = "flex";
+        if (btnText) btnText.textContent = "Choose Image File";
     }
 }
 </script>

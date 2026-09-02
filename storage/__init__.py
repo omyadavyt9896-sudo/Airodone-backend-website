@@ -92,6 +92,66 @@ def open_video_stream(
     return get_storage().open_video_stream(storage_path, start_byte, length, chunk_size)
 
 
+def save_category_image(file_obj, category_id: int, original_filename: str) -> Tuple[bool, str, Optional[str]]:
+    """Save category image to active storage backend."""
+    return get_storage().save_category_image(file_obj, category_id, original_filename)
+
+
+def delete_category_image(storage_path: str) -> bool:
+    """Delete category image from active storage backend."""
+    return get_storage().delete_category_image(storage_path)
+
+
+def category_image_exists(storage_path: str) -> bool:
+    """Check if category image exists on active storage backend."""
+    return get_storage().category_image_exists(storage_path)
+
+
+def save_learning_path_image(file_obj, path_id: int, original_filename: str) -> Tuple[bool, str, Optional[str]]:
+    """Save learning path image to active storage backend."""
+    return get_storage().save_learning_path_image(file_obj, path_id, original_filename)
+
+
+def delete_learning_path_image(storage_path: str) -> bool:
+    """Delete learning path image from active storage backend."""
+    return get_storage().delete_learning_path_image(storage_path)
+
+
+def learning_path_image_exists(storage_path: str) -> bool:
+    """Check if learning path image exists on active storage backend."""
+    return get_storage().learning_path_image_exists(storage_path)
+
+
+def save_course_image(file_obj, course_id: int, original_filename: str) -> Tuple[bool, str, Optional[str]]:
+    """Save course thumbnail image to active storage backend."""
+    return get_storage().save_course_image(file_obj, course_id, original_filename)
+
+
+def delete_course_image(storage_path: str) -> bool:
+    """Delete course thumbnail image from persistent storage."""
+    return get_storage().delete_course_image(storage_path)
+
+
+def course_image_exists(storage_path: str) -> bool:
+    """Check if course thumbnail image exists on active storage backend."""
+    return get_storage().course_image_exists(storage_path)
+
+
+def save_catalogue_hero_image(file_obj, original_filename: str) -> Tuple[bool, str, Optional[str]]:
+    """Save courses catalogue hero image to active storage backend."""
+    return get_storage().save_catalogue_hero_image(file_obj, original_filename)
+
+
+def delete_catalogue_hero_image(storage_path: str) -> bool:
+    """Delete courses catalogue hero image from active storage backend."""
+    return get_storage().delete_catalogue_hero_image(storage_path)
+
+
+def catalogue_hero_image_exists(storage_path: str) -> bool:
+    """Check if courses catalogue hero image exists on active storage backend."""
+    return get_storage().catalogue_hero_image_exists(storage_path)
+
+
 __all__ = [
     "BaseStorageBackend",
     "LocalStorageBackend",
@@ -105,5 +165,19 @@ __all__ = [
     "open_video_stream",
     "build_video_storage_path",
     "sanitize_storage_filename",
+    "save_category_image",
+    "delete_category_image",
+    "category_image_exists",
+    "save_learning_path_image",
+    "delete_learning_path_image",
+    "learning_path_image_exists",
+    "save_course_image",
+    "delete_course_image",
+    "course_image_exists",
+    "save_catalogue_hero_image",
+    "delete_catalogue_hero_image",
+    "catalogue_hero_image_exists",
 ]
+
+
 

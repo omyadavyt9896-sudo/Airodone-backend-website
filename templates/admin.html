@@ -31,6 +31,7 @@
         <div class="admin-action-bar">
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
                 <a href="{{ url_for('admin_courses') }}" class="btn btn-primary">Manage Course Videos &rarr;</a>
+                <a href="{{ url_for('admin_learning_categories') }}" class="btn btn-secondary">Learning Categories &rarr;</a>
             </div>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                 <a href="{{ url_for('admin_contacts') }}" class="btn btn-outline btn-sm">View All Contacts</a>
@@ -41,6 +42,14 @@
 
         <div class="card-grid card-grid-4" style="margin-bottom: 3rem;">
             <article class="card">
+                <h3>Learning Categories</h3>
+                <p>Manage learning domains, Grade 1–5 pathways, and course taxonomy.</p>
+                <a href="{{ url_for('admin_learning_categories') }}" class="card-link">
+                    Manage Categories
+                    <span aria-hidden="true">→</span>
+                </a>
+            </article>
+            <article class="card">
                 <h3>Course Videos</h3>
                 <p>Manage course curriculum, video lessons, quizzes, and projects.</p>
                 <a href="{{ url_for('admin_courses') }}" class="card-link">
@@ -49,18 +58,18 @@
                 </a>
             </article>
             <article class="card">
-                <h3>Contact Submissions</h3>
-                <p>View all contact form submissions from the website.</p>
-                <a href="{{ url_for('admin_contacts') }}" class="card-link">
-                    View Contacts
-                    <span aria-hidden="true">→</span>
-                </a>
-            </article>
-            <article class="card">
                 <h3>User Management</h3>
                 <p>Manage registered users and their roles.</p>
                 <a href="{{ url_for('admin_users') }}" class="card-link">
                     Manage Users
+                    <span aria-hidden="true">→</span>
+                </a>
+            </article>
+            <article class="card">
+                <h3>Contact Submissions</h3>
+                <p>View all contact form submissions from the website.</p>
+                <a href="{{ url_for('admin_contacts') }}" class="card-link">
+                    View Contacts
                     <span aria-hidden="true">→</span>
                 </a>
             </article>

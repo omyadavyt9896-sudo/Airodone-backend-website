@@ -374,3 +374,174 @@ class HostingerStorageBackend(BaseStorageBackend):
         # Protected streaming through LMS authorization
         return None
 
+    def _save_image_file(
+        self,
+        file_obj,
+        subfolder: str,
+        filename_prefix: str,
+        entity_id: int,
+        original_filename: str,
+    ) -> Tuple[bool, str, Optional[str]]:
+        if not self.is_configured():
+            err_msg = "Hostinger storage credentials not configured. Please set HOSTINGER_SFTP_HOST, HOSTINGER_SFTP_USERNAME, HOSTINGER_SFTP_PASSWORD."
+            logger.error(err_msg)
+            return False, "", err_msg
+
+        import time
+        import secrets
+        ext = original_filename.rsplit(".", 1)[-1].lower() if "." in original_filename else "jpg"
+        if ext not in ("jpg", "jpeg", "png", "webp"):
+            ext = "jpg"
+        random_token = secrets.token_hex(4)
+        safe_name = f"{filename_prefix}_{int(entity_id)}_{int(time.time())}_{random_token}.{ext}"
+        rel_storage_path = f"uploads/{subfolder}/{safe_name}"
+
+        remote_full_path = self._get_remote_full_path(rel_storage_path)
+        remote_dir = os.path.dirname(remote_full_path)
+
+        tmp_file = None
+        try:
+            fd, tmp_file = tempfile.mkstemp(prefix="img_upload_", suffix=f".{ext}")
+            os.close(fd)
+
+            if hasattr(file_obj, "save"):
+                file_obj.save(tmp_file)
+            elif hasattr(file_obj, "read"):
+                file_obj.seek(0)
+                with open(tmp_file, "wb") as f_out:
+                    shutil.copyfileobj(file_obj, f_out)
+            else:
+                return False, "", "Invalid file object provided for upload."
+
+            # Cache locally in static/uploads/<subfolder> for immediate serving
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+            local_static_path = os.path.join(project_root, "static", "uploads", subfolder, safe_name)
+            os.makedirs(os.path.dirname(local_static_path), exist_ok=True)
+            try:
+                shutil.copy2(tmp_file, local_static_path)
+            except Exception:
+                pass
+
+            upload_size = os.path.getsize(tmp_file)
+            logger.info(f"Transferring image to Hostinger: {rel_storage_path} ({upload_size} bytes)")
+
+            if self.protocol == "sftp":
+                client = self._get_sftp_client()
+                self._ensure_remote_dir_sftp(client, remote_dir)
+                client.put(tmp_file, remote_full_path)
+            else:
+                ftp = self._get_ftp_client()
+                self._ensure_remote_dir_ftp(ftp, remote_dir)
+                with open(tmp_file, "rb") as f_in:
+                    ftp.storbinary(f"STOR {remote_full_path}", f_in)
+
+            logger.info(f"Successfully transferred image to Hostinger: {remote_full_path}")
+            return True, rel_storage_path, None
+        except Exception as e:
+            logger.error(f"Failed to upload image to Hostinger: {e}", exc_info=True)
+            return False, "", f"Remote upload failed: {str(e)}"
+        finally:
+            if tmp_file and os.path.exists(tmp_file):
+                try:
+                    os.remove(tmp_file)
+                except OSError:
+                    pass
+
+    def _delete_image_file(self, storage_path: str, subfolder: str) -> bool:
+        if not storage_path:
+            return True
+        if not self.is_configured():
+            return False
+
+        # Clean local cache if exists
+        try:
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+            clean_path = storage_path.replace("\\", "/").lstrip("/")
+            filename = os.path.basename(clean_path)
+            local_static_path = os.path.join(project_root, "static", "uploads", subfolder, filename)
+            if os.path.exists(local_static_path):
+                os.remove(local_static_path)
+        except Exception:
+            pass
+
+        remote_full_path = self._get_remote_full_path(storage_path)
+        try:
+            if self.protocol == "sftp":
+                client = self._get_sftp_client()
+                try:
+                    client.remove(remote_full_path)
+                    logger.info(f"Deleted image from Hostinger: {remote_full_path}")
+                except IOError:
+                    logger.warning(f"File did not exist on Hostinger: {remote_full_path}")
+            else:
+                ftp = self._get_ftp_client()
+                try:
+                    ftp.delete(remote_full_path)
+                    logger.info(f"Deleted image from Hostinger: {remote_full_path}")
+                except ftplib.error_perm:
+                    logger.warning(f"File did not exist on Hostinger: {remote_full_path}")
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting image from Hostinger {remote_full_path}: {e}")
+            return False
+
+    def _image_file_exists(self, storage_path: str, subfolder: str) -> bool:
+        if not storage_path or not self.is_configured():
+            return False
+        remote_full_path = self._get_remote_full_path(storage_path)
+        try:
+            if self.protocol == "sftp":
+                client = self._get_sftp_client()
+                try:
+                    client.stat(remote_full_path)
+                    return True
+                except IOError:
+                    return False
+            else:
+                ftp = self._get_ftp_client()
+                try:
+                    size = ftp.size(remote_full_path)
+                    return size is not None
+                except ftplib.error_perm:
+                    return False
+        except Exception:
+            return False
+
+    def save_category_image(self, file_obj, category_id: int, original_filename: str) -> Tuple[bool, str, Optional[str]]:
+        return self._save_image_file(file_obj, "categories", "category", category_id, original_filename)
+
+    def delete_category_image(self, storage_path: str) -> bool:
+        return self._delete_image_file(storage_path, "categories")
+
+    def category_image_exists(self, storage_path: str) -> bool:
+        return self._image_file_exists(storage_path, "categories")
+
+    def save_learning_path_image(self, file_obj, path_id: int, original_filename: str) -> Tuple[bool, str, Optional[str]]:
+        return self._save_image_file(file_obj, "learning_paths", "learning_path", path_id, original_filename)
+
+    def delete_learning_path_image(self, storage_path: str) -> bool:
+        return self._delete_image_file(storage_path, "learning_paths")
+
+    def learning_path_image_exists(self, storage_path: str) -> bool:
+        return self._image_file_exists(storage_path, "learning_paths")
+
+    def save_course_image(self, file_obj, course_id: int, original_filename: str) -> Tuple[bool, str, Optional[str]]:
+        return self._save_image_file(file_obj, "courses", "course", course_id, original_filename)
+
+    def delete_course_image(self, storage_path: str) -> bool:
+        return self._delete_image_file(storage_path, "courses")
+
+    def course_image_exists(self, storage_path: str) -> bool:
+        return self._image_file_exists(storage_path, "courses")
+
+    def save_catalogue_hero_image(self, file_obj, original_filename: str) -> Tuple[bool, str, Optional[str]]:
+        return self._save_image_file(file_obj, "catalogue", "catalogue_hero", 0, original_filename)
+
+    def delete_catalogue_hero_image(self, storage_path: str) -> bool:
+        return self._delete_image_file(storage_path, "catalogue")
+
+    def catalogue_hero_image_exists(self, storage_path: str) -> bool:
+        return self._image_file_exists(storage_path, "catalogue")
+
+
+

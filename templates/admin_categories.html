@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Learning Categories | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Learning Categories</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>Learning Categories</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    Manage top-level STEM learning categories, configure grade pathways, and organize catalogue hierarchy.
+                </p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin_add_learning_category') }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <span>+</span> Add New Category
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container" style="max-width: 1100px; margin: 0 auto;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 1.75rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="card profile-form-card" style="padding: 1.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                    <h2 style="font-size: 1.25rem; margin: 0; color: var(--color-text);">All Learning Categories</h2>
+                    <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: var(--color-text-muted);">Top-level technology domains shown to students on the courses homepage.</p>
+                </div>
+                <span class="course-stat-pill" style="font-weight: 700; background: #e0f2fe; color: #0284c7;">
+                    {{ categories|length }} Categories Total
+                </span>
+            </div>
+
+            {% if categories %}
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.925rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--color-border); color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            <th style="padding: 0.75rem 0.5rem;">Order</th>
+                            <th style="padding: 0.75rem 0.5rem;">Category Name & Slug</th>
+                            <th style="padding: 0.75rem 0.5rem;">Pathways</th>
+                            <th style="padding: 0.75rem 0.5rem;">Courses</th>
+                            <th style="padding: 0.75rem 0.5rem;">Status</th>
+                            <th style="padding: 0.75rem 0.5rem; text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cat in categories %}
+                        <tr style="border-bottom: 1px solid var(--color-border);">
+                            <td style="padding: 1rem 0.5rem; font-weight: 700; color: var(--color-text-muted);">
+                                #{{ cat.display_order }}
+                            </td>
+                            <td style="padding: 1rem 0.5rem;">
+                                <div style="font-weight: 700; font-size: 1.05rem; color: var(--color-text);">
+                                    {{ cat.name }}
+                                </div>
+                                <div style="font-size: 0.8rem; color: var(--color-text-muted); font-family: monospace;">
+                                    /courses/category/{{ cat.slug }}
+                                </div>
+                                {% if cat.description %}
+                                <div style="font-size: 0.85rem; color: var(--color-text-muted); margin-top: 0.25rem; max-width: 420px;">
+                                    {{ cat.description[:90] }}{% if cat.description|length > 90 %}...{% endif %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 1rem 0.5rem;">
+                                <span class="course-stat-pill" style="font-weight: 600; background: var(--color-bg-subtle, #f1f5f9); font-size: 0.8rem;">
+                                    {{ cat.path_count }} Paths
+                                </span>
+                            </td>
+                            <td style="padding: 1rem 0.5rem;">
+                                <span class="course-stat-pill" style="font-weight: 600; background: var(--color-bg-subtle, #f1f5f9); font-size: 0.8rem;">
+                                    {{ cat.course_count }} Courses
+                                </span>
+                            </td>
+                            <td style="padding: 1rem 0.5rem;">
+                                <span class="badge-status {{ 'badge-active' if cat.is_active else 'badge-inactive' }}" style="font-size: 0.8rem;">
+                                    {{ 'Active' if cat.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+                            <td style="padding: 1rem 0.5rem; text-align: right;">
+                                <div style="display: inline-flex; gap: 0.4rem; align-items: center; justify-content: flex-end;">
+                                    <a href="{{ url_for('admin_category_learning_paths', category_id=cat.id) }}" class="btn btn-primary btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;">
+                                        Manage Paths ({{ cat.path_count }}) &rarr;
+                                    </a>
+                                    <a href="{{ url_for('admin_edit_learning_category', category_id=cat.id) }}" class="btn btn-secondary btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;">
+                                        Edit
+                                    </a>
+                                    <form method="post" action="{{ url_for('admin_toggle_learning_category_active', category_id=cat.id) }}" style="display: inline;" onsubmit="return confirm('Toggle active status for {{ cat.name|e }}?');">
+                                        <button type="submit" class="btn btn-outline btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;">
+                                            {{ 'Deactivate' if cat.is_active else 'Activate' }}
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state" style="text-align: center; padding: 3rem 1rem;">
+                <p style="color: var(--color-text-muted);">No learning categories created yet.</p>
+                <a href="{{ url_for('admin_add_learning_category') }}" class="btn btn-primary" style="margin-top: 1rem;">Create First Category</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

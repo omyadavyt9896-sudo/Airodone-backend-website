@@ -1070,8 +1070,200 @@ def seed_initial_catalogue(cur, conn):
 
 
 def seed_initial_courses(cur, conn):
-    """Seed the five core courses with sample modules and videos."""
+    """Seed the five core AI courses and domain courses with sample modules, videos, quizzes, and projects."""
     initial_courses = [
+        {
+            "title": "AI Discovery",
+            "slug": "ai-discovery",
+            "grade": 1,
+            "category_slug": "artificial-intelligence",
+            "path_slug": "ai-discovery",
+            "description": "Foundational awareness of intelligent systems, smart assistants, and machine perception for early learners.",
+            "image": "images/services/ai.jpg",
+            "level": "Beginner",
+            "modules": [
+                {
+                    "title": "Discovering Artificial Intelligence",
+                    "description": "Explore what AI is, how smart devices work around us, and fundamental concepts of machine intelligence.",
+                    "sequence": 1,
+                    "videos": [
+                        {"title": "What Is Artificial Intelligence?", "description": "Introduction to AI principles and smart systems.", "duration": "08:30", "sequence": 1},
+                        {"title": "AI Around Us", "description": "Recognizing intelligent technology in everyday life.", "duration": "10:15", "sequence": 2},
+                        {"title": "Smart Machines & Computers", "description": "How computers solve problems using basic logic.", "duration": "12:00", "sequence": 3},
+                        {"title": "Sensors and Data", "description": "How AI devices perceive light, sound, and touch.", "duration": "09:45", "sequence": 4},
+                        {"title": "Helping People with AI", "description": "Real world applications in medicine, travel, and farming.", "duration": "11:20", "sequence": 5},
+                        {"title": "My First AI Activity", "description": "Interactive visual exercise in logic and pattern building.", "duration": "07:50", "sequence": 6}
+                    ],
+                    "quiz": {
+                        "title": "AI Basics Quiz",
+                        "description": "Test your basic understanding of AI concept fundamentals.",
+                        "passing_score": 70,
+                        "max_attempts": 5,
+                        "questions": [
+                            {
+                                "question_text": "What does AI stand for?",
+                                "option_a": "Artificial Intelligence",
+                                "option_b": "Automated Internet",
+                                "option_c": "Advanced Interface",
+                                "option_d": "Applied Integration",
+                                "correct_option": "A",
+                                "explanation": "AI stands for Artificial Intelligence."
+                            },
+                            {
+                                "question_text": "Which of the following uses Artificial Intelligence?",
+                                "option_a": "A wooden chair",
+                                "option_b": "A smart voice assistant",
+                                "option_c": "A manual pencil sharpener",
+                                "option_d": "A glass bottle",
+                                "correct_option": "B",
+                                "explanation": "Voice assistants use AI to process speech and respond."
+                            }
+                        ]
+                    },
+                    "project": {
+                        "title": "AI Around Me",
+                        "description": "Identify 3 smart devices in your daily life and describe how they use artificial intelligence.",
+                        "max_marks": 100
+                    }
+                },
+                {
+                    "title": "How AI Understands the World",
+                    "description": "Learn how AI sees images, recognizes voices, and processes patterns.",
+                    "sequence": 2,
+                    "videos": [
+                        {"title": "Computer Vision Basics", "description": "How cameras and computers recognize objects.", "duration": "10:00", "sequence": 1},
+                        {"title": "Voice & Speech Recognition", "description": "Understanding spoken words and audio inputs.", "duration": "11:30", "sequence": 2},
+                        {"title": "Pattern Detection", "description": "Finding similarities and sorting information.", "duration": "09:15", "sequence": 3},
+                        {"title": "Sorting and Categorizing", "description": "Grouping data by colors, shapes, and features.", "duration": "12:10", "sequence": 4},
+                        {"title": "Smart Cameras in Action", "description": "Face detection and gesture identification.", "duration": "08:45", "sequence": 5},
+                        {"title": "Making Predictions", "description": "How AI guesses what comes next based on past data.", "duration": "10:50", "sequence": 6}
+                    ],
+                    "quiz": {
+                        "title": "AI Perception Quiz",
+                        "description": "Test your knowledge on vision, sound, and pattern detection.",
+                        "passing_score": 70,
+                        "max_attempts": 5,
+                        "questions": [
+                            {
+                                "question_text": "What sensor does AI use to see images?",
+                                "option_a": "Microphone",
+                                "option_b": "Camera",
+                                "option_c": "Thermometer",
+                                "option_d": "Speaker",
+                                "correct_option": "B",
+                                "explanation": "Cameras capture image inputs for computer vision models."
+                            }
+                        ]
+                    },
+                    "project": {
+                        "title": "Pattern Hunter Project",
+                        "description": "Create a visual collage showing how smart cameras identify patterns and shapes.",
+                        "max_marks": 100
+                    }
+                },
+                {
+                    "title": "Machine Learning Foundations",
+                    "description": "Introduction to training computers using data and feedback.",
+                    "sequence": 3,
+                    "videos": [
+                        {"title": "Data & Training", "description": "Giving examples to teach smart algorithms.", "duration": "09:00", "sequence": 1},
+                        {"title": "Teaching Computers", "description": "Supervised learning and instant feedback.", "duration": "11:00", "sequence": 2},
+                        {"title": "Smart Decisions", "description": "How AI makes choices based on probabilities.", "duration": "10:30", "sequence": 3}
+                    ]
+                },
+                {
+                    "title": "Ethics & Future of AI",
+                    "description": "Understanding responsible AI, fairness, and safety in intelligent systems.",
+                    "sequence": 4,
+                    "videos": [
+                        {"title": "Responsible AI", "description": "Using technology fairly and respectfully.", "duration": "08:30", "sequence": 1},
+                        {"title": "AI Safety Basics", "description": "Keeping human privacy and safety first.", "duration": "09:45", "sequence": 2},
+                        {"title": "The Future of Smart Tech", "description": "Exciting possibilities in science and space.", "duration": "11:15", "sequence": 3}
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "AI Creation",
+            "slug": "ai-creation",
+            "grade": 2,
+            "category_slug": "artificial-intelligence",
+            "path_slug": "ai-creation",
+            "description": "Visual block-based logic, pattern recognition, and creative AI interactive projects.",
+            "image": "images/services/ai.jpg",
+            "level": "Beginner",
+            "modules": [
+                {
+                    "title": "Visual AI Blocks & Logic",
+                    "description": "Building interactive AI models using simple drag-and-drop block interfaces.",
+                    "sequence": 1,
+                    "videos": [
+                        {"title": "Introduction to Block AI", "description": "Setting up visual classification blocks.", "duration": "09:30", "sequence": 1},
+                        {"title": "Training Image Models", "description": "Adding photo samples to teach visual classifiers.", "duration": "12:00", "sequence": 2}
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "AI Engineering",
+            "slug": "ai-engineering",
+            "grade": 3,
+            "category_slug": "artificial-intelligence",
+            "path_slug": "ai-engineering",
+            "description": "Hands-on machine learning, neural network concepts, data analysis, and predictive models.",
+            "image": "images/services/ai.jpg",
+            "level": "Intermediate",
+            "modules": [
+                {
+                    "title": "Machine Learning Workflows",
+                    "description": "Data preprocessing, model training, evaluation, and hyperparameter tuning.",
+                    "sequence": 1,
+                    "videos": [
+                        {"title": "ML Pipeline Overview", "description": "Step by step workflow from dataset to model deployment.", "duration": "14:20", "sequence": 1}
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Intelligent Systems",
+            "slug": "intelligent-systems",
+            "grade": 4,
+            "category_slug": "artificial-intelligence",
+            "path_slug": "intelligent-systems",
+            "description": "Applied artificial intelligence, computer vision, natural language processing, and automation.",
+            "image": "images/services/ai.jpg",
+            "level": "Intermediate",
+            "modules": [
+                {
+                    "title": "Computer Vision & Natural Language",
+                    "description": "Building computer vision pipelines and processing text data with NLP.",
+                    "sequence": 1,
+                    "videos": [
+                        {"title": "Object Detection & NLP", "description": "Applying OpenCV and NLP models for automation.", "duration": "16:45", "sequence": 1}
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Advanced AI",
+            "slug": "advanced-ai",
+            "grade": 5,
+            "category_slug": "artificial-intelligence",
+            "path_slug": "advanced-ai",
+            "description": "Deep learning architectures, autonomous decision systems, and cutting-edge research topics.",
+            "image": "images/services/ai.jpg",
+            "level": "Advanced",
+            "modules": [
+                {
+                    "title": "Deep Learning & Autonomous Systems",
+                    "description": "Convolutional Neural Networks, Transformer architectures, and RL control loops.",
+                    "sequence": 1,
+                    "videos": [
+                        {"title": "CNNs and Transformers", "description": "Architectural breakdown of modern AI models.", "duration": "18:30", "sequence": 1}
+                    ]
+                }
+            ]
+        },
         {
             "title": "Drone Technology",
             "slug": "drone-technology",
@@ -1089,53 +1281,6 @@ def seed_initial_courses(cur, conn):
                     "videos": [
                         {"title": "Video 1 — Introduction to Drones", "description": "Fundamentals of UAV technology and applications.", "duration": "08:30", "sequence": 1},
                         {"title": "Video 2 — History of Drone Technology", "description": "Classification from multirotors to fixed-wing drones.", "duration": "12:15", "sequence": 2}
-                    ]
-                },
-                {
-                    "title": "Module 2 — Drone Components",
-                    "description": "Detailed breakdown of flight controllers, ESCs, BLDC motors, and power management.",
-                    "sequence": 2,
-                    "videos": [
-                        {"title": "Video 3 — Drone Components", "description": "Understanding frame, motors, propellers, and ESCs.", "duration": "15:00", "sequence": 1},
-                        {"title": "Video 4 — Flight Controller", "description": "Configuring gyro sensors, receiver, and transmitter.", "duration": "18:45", "sequence": 2}
-                    ]
-                },
-                {
-                    "title": "Module 3 — Drone Operation",
-                    "description": "Pre-flight checks, basic piloting, aerodynamics, and regulatory compliance.",
-                    "sequence": 3,
-                    "videos": [
-                        {"title": "Video 5 — Basic Flight Principles", "description": "Pitch, roll, yaw, and altitude control mechanisms.", "duration": "10:20", "sequence": 1}
-                    ]
-                }
-            ]
-        },
-        {
-            "title": "Artificial Intelligence",
-            "slug": "artificial-intelligence",
-            "grade": 5,
-            "category_slug": "artificial-intelligence",
-            "path_slug": "advanced-ai",
-            "description": "Learn fundamental AI concepts, machine learning models, computer vision, and neural networks through real-world projects.",
-            "image": "images/services/ai.jpg",
-            "level": "Beginner to Advanced",
-            "modules": [
-                {
-                    "title": "Module 1 — AI Foundations & Machine Learning",
-                    "description": "Introduction to AI principles, data processing, and supervised learning algorithms.",
-                    "sequence": 1,
-                    "videos": [
-                        {"title": "Video 1 — What is Artificial Intelligence?", "description": "Exploring rule-based systems vs machine learning.", "duration": "09:45", "sequence": 1},
-                        {"title": "Video 2 — Supervised vs Unsupervised Learning", "description": "Regression, classification, and clustering overview.", "duration": "14:20", "sequence": 2}
-                    ]
-                },
-                {
-                    "title": "Module 2 — Computer Vision & Deep Learning",
-                    "description": "Image processing fundamentals and introduction to artificial neural networks.",
-                    "sequence": 2,
-                    "videos": [
-                        {"title": "Video 3 — Introduction to Neural Networks", "description": "Perceptrons, activation functions, and backpropagation.", "duration": "16:30", "sequence": 1},
-                        {"title": "Video 4 — Computer Vision Fundamentals", "description": "Object detection and image classification basics.", "duration": "11:50", "sequence": 2}
                     ]
                 }
             ]
@@ -1155,17 +1300,7 @@ def seed_initial_courses(cur, conn):
                     "description": "Anatomy of robots, actuators, sensors, and structural framework.",
                     "sequence": 1,
                     "videos": [
-                        {"title": "Video 1 — Anatomy of a Robot", "description": "Key structural elements and power distribution.", "duration": "07:50", "sequence": 1},
-                        {"title": "Video 2 — Sensors & Actuators", "description": "Ultrasonic, infrared, IR line sensors, and servo motors.", "duration": "13:40", "sequence": 2}
-                    ]
-                },
-                {
-                    "title": "Module 2 — Microcontrollers & Programming",
-                    "description": "Programming microcontrollers to read sensor inputs and control movement.",
-                    "sequence": 2,
-                    "videos": [
-                        {"title": "Video 3 — Microcontroller Setup", "description": "Arduino & ESP32 pinouts and basic code structure.", "duration": "15:10", "sequence": 1},
-                        {"title": "Video 4 — Motor Control & Kinematics", "description": "H-bridge drivers and differential drive control.", "duration": "17:25", "sequence": 2}
+                        {"title": "Video 1 — Anatomy of a Robot", "description": "Key structural elements and power distribution.", "duration": "07:50", "sequence": 1}
                     ]
                 }
             ]
@@ -1185,17 +1320,7 @@ def seed_initial_courses(cur, conn):
                     "description": "Logic flow, algorithms, variables, control structures, and loops.",
                     "sequence": 1,
                     "videos": [
-                        {"title": "Video 1 — Logic Building & Flowcharts", "description": "Deconstructing problems into structured algorithmic steps.", "duration": "10:00", "sequence": 1},
-                        {"title": "Video 2 — Getting Started with Python", "description": "Syntax, variables, data types, and basic I/O.", "duration": "14:15", "sequence": 2}
-                    ]
-                },
-                {
-                    "title": "Module 2 — Functions & Data Structures",
-                    "description": "Modular code design using functions, lists, dictionaries, and file handling.",
-                    "sequence": 2,
-                    "videos": [
-                        {"title": "Video 3 — Control Flow & Loops", "description": "Conditional statements and loop iterations.", "duration": "12:45", "sequence": 1},
-                        {"title": "Video 4 — Functions & Reusable Code", "description": "Parameters, return values, and scope.", "duration": "16:00", "sequence": 2}
+                        {"title": "Video 1 — Logic Building & Flowcharts", "description": "Deconstructing problems into structured algorithmic steps.", "duration": "10:00", "sequence": 1}
                     ]
                 }
             ]
@@ -1215,17 +1340,7 @@ def seed_initial_courses(cur, conn):
                     "description": "Interactive exploration of simple machines, shapes, patterns, and everyday technology.",
                     "sequence": 1,
                     "videos": [
-                        {"title": "Video 1 — What is STEM?", "description": "Introduction to science and building things.", "duration": "06:30", "sequence": 1},
-                        {"title": "Video 2 — Exploring Simple Machines", "description": "Levers, wheels, and pulleys in action.", "duration": "08:15", "sequence": 2}
-                    ]
-                },
-                {
-                    "title": "Module 2 — Basic Logic & Creative Problem Solving",
-                    "description": "Visual puzzles, sequencing games, and creative construction.",
-                    "sequence": 2,
-                    "videos": [
-                        {"title": "Video 3 — Fun with Patterns & Sequences", "description": "Understanding order and steps.", "duration": "07:45", "sequence": 1},
-                        {"title": "Video 4 — My First Creative Build", "description": "Hands-on guided craft and logic project.", "duration": "09:20", "sequence": 2}
+                        {"title": "Video 1 — What is STEM?", "description": "Introduction to science and building things.", "duration": "06:30", "sequence": 1}
                     ]
                 }
             ]
@@ -1296,7 +1411,7 @@ def seed_initial_courses(cur, conn):
                 )
                 course_id = cur.lastrowid
             
-            for mod_data in course_data["modules"]:
+            for mod_data in course_data.get("modules", []):
                 if get_db_type() == "postgres":
                     cur.execute(
                         """
@@ -1347,9 +1462,62 @@ def seed_initial_courses(cur, conn):
                             now_str,
                         ),
                     )
+
+                # Seed module quiz if configured
+                quiz_data = mod_data.get("quiz")
+                if quiz_data:
+                    cur.execute(
+                        """
+                        INSERT INTO quizzes (module_id, title, description, passing_score, max_attempts, is_active, created_at, updated_at)
+                        VALUES (%s, %s, %s, %s, %s, 1, %s, %s)
+                        """,
+                        (module_id, quiz_data["title"], quiz_data.get("description", ""), quiz_data.get("passing_score", 70), quiz_data.get("max_attempts", 5), now_str, now_str)
+                    )
+                    quiz_id = cur.lastrowid if get_db_type() != "postgres" else None
+                    if get_db_type() == "postgres":
+                        cur.execute("SELECT id FROM quizzes WHERE module_id = %s ORDER BY id DESC LIMIT 1", (module_id,))
+                        q_row = cur.fetchone()
+                        if q_row:
+                            quiz_id = q_row["id"]
+
+                    if quiz_id:
+                        for q_idx, q_item in enumerate(quiz_data.get("questions", []), start=1):
+                            cur.execute(
+                                """
+                                INSERT INTO quiz_questions (quiz_id, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, sequence, is_active, created_at, updated_at)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 1, %s, %s)
+                                """,
+                                (
+                                    quiz_id,
+                                    q_item["question_text"],
+                                    q_item["option_a"],
+                                    q_item["option_b"],
+                                    q_item["option_c"],
+                                    q_item["option_d"],
+                                    q_item["correct_option"],
+                                    q_item.get("explanation", ""),
+                                    q_idx,
+                                    now_str,
+                                    now_str
+                                )
+                            )
+
+                # Seed module project if configured
+                proj_data = mod_data.get("project")
+                if proj_data:
+                    cur.execute(
+                        """
+                        INSERT INTO projects (module_id, title, description, max_marks, is_active, created_at, updated_at)
+                        VALUES (%s, %s, %s, %s, 1, %s, %s)
+                        """,
+                        (module_id, proj_data["title"], proj_data.get("description", ""), proj_data.get("max_marks", 100), now_str, now_str)
+                    )
         else:
             course_id = existing["id"]
-            cur.execute("UPDATE courses SET grade = %s WHERE id = %s AND (grade IS NULL OR grade != %s)", (grade_val, course_id, grade_val))
+            if cat_id:
+                cur.execute("UPDATE courses SET category_id = %s, grade = %s WHERE id = %s", (cat_id, grade_val, course_id))
+            else:
+                cur.execute("UPDATE courses SET grade = %s WHERE id = %s AND (grade IS NULL OR grade != %s)", (grade_val, course_id, grade_val))
             conn.commit()
 
 
@@ -2237,6 +2405,22 @@ def category_paths(category_slug):
 
         cur.execute(
             """
+            SELECT c.id, c.title, c.slug, c.short_description, c.description, c.image, c.level, c.estimated_duration, c.grade, c.created_at,
+                   COUNT(DISTINCT m.id) AS total_modules,
+                   COUNT(DISTINCT v.id) AS total_videos
+            FROM courses c
+            LEFT JOIN modules m ON m.course_id = c.id AND m.is_active = 1
+            LEFT JOIN course_videos v ON v.module_id = m.id AND v.is_active = 1
+            WHERE c.category_id = %s AND c.is_active = 1
+            GROUP BY c.id, c.title, c.slug, c.short_description, c.description, c.image, c.level, c.estimated_duration, c.grade, c.created_at
+            ORDER BY c.grade ASC, c.id ASC
+            """,
+            (category["id"],)
+        )
+        courses_list = cur.fetchall()
+
+        cur.execute(
+            """
             SELECT lp.id, lp.category_id, lp.grade, lp.name, lp.slug, lp.description, lp.image, lp.display_order,
                    COUNT(DISTINCT c.id) AS course_count
             FROM learning_paths lp
@@ -2249,10 +2433,32 @@ def category_paths(category_slug):
         )
         paths = cur.fetchall()
 
-        for p in paths:
+        cur.execute("SELECT LOWER(title) AS title FROM courses WHERE category_id = %s", (category["id"],))
+        all_category_course_titles = {row["title"].strip() for row in cur.fetchall()}
+        display_paths = [p for p in paths if p["name"].strip().lower() not in all_category_course_titles]
+
+        for p in display_paths:
             g_info = GRADES.get(p["grade"], {})
             p["grade_name"] = g_info.get("name", f"Grade {p['grade']}")
             p["classes"] = g_info.get("classes", "")
+
+        if current_user.is_authenticated:
+            for c in courses_list:
+                c["is_enrolled"] = can_access_course(current_user.id, c["id"])
+                if c["is_enrolled"] and not current_user.is_admin():
+                    comp_pct, _, _ = calculate_course_completion(current_user.id, c["id"])
+                    c["progress_pct"] = round(comp_pct, 1)
+                    cur.execute("SELECT certificate_id FROM certificates WHERE user_id = %s AND course_id = %s", (current_user.id, c["id"]))
+                    cert = cur.fetchone()
+                    c["has_certificate"] = bool(cert)
+                else:
+                    c["progress_pct"] = 0.0
+                    c["has_certificate"] = False
+        else:
+            for c in courses_list:
+                c["is_enrolled"] = False
+                c["progress_pct"] = 0.0
+                c["has_certificate"] = False
 
         cur.close()
         conn.close()
@@ -2261,11 +2467,12 @@ def category_paths(category_slug):
             "category_paths.html",
             active_page="courses",
             category=category,
-            paths=paths,
+            courses=courses_list,
+            paths=display_paths,
             grades=GRADES,
         )
     except Exception as e:
-        app.logger.error(f"Error fetching category paths for {category_slug}: {e}")
+        app.logger.error(f"Error fetching category courses for {category_slug}: {e}")
         abort(404)
 
 
@@ -4277,9 +4484,11 @@ def admin_course_detail(course_id):
 
     cur.execute(
         """
-        SELECT id, title, slug, description, image, level, grade, is_active, created_at, updated_at
-        FROM courses
-        WHERE id = %s
+        SELECT c.id, c.title, c.slug, c.description, c.image, c.level, c.grade, c.category_id, c.is_active, c.created_at, c.updated_at,
+               lc.name AS category_name, lc.slug AS category_slug
+        FROM courses c
+        LEFT JOIN learning_categories lc ON lc.id = c.category_id
+        WHERE c.id = %s
         """,
         (course_id,),
     )
@@ -4773,6 +4982,45 @@ def admin_toggle_learning_category_active(category_id):
     return redirect(url_for("admin_learning_categories"))
 
 
+@app.route("/admin/learning-categories/<int:category_id>/courses")
+@admin_required
+def admin_category_courses(category_id):
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT * FROM learning_categories WHERE id = %s", (category_id,))
+    category = cur.fetchone()
+    if not category:
+        cur.close()
+        conn.close()
+        flash("Category not found.", "error")
+        return redirect(url_for("admin_learning_categories"))
+
+    cur.execute(
+        """
+        SELECT c.id, c.title, c.slug, c.short_description, c.description, c.image, c.level, c.grade, c.is_active, c.created_at,
+               COUNT(DISTINCT m.id) AS total_modules,
+               COUNT(DISTINCT v.id) AS total_videos
+        FROM courses c
+        LEFT JOIN modules m ON m.course_id = c.id
+        LEFT JOIN course_videos v ON v.module_id = m.id
+        WHERE c.category_id = %s
+        GROUP BY c.id, c.title, c.slug, c.short_description, c.description, c.image, c.level, c.grade, c.is_active, c.created_at
+        ORDER BY c.grade ASC, c.id ASC
+        """,
+        (category_id,)
+    )
+    courses_list = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    for c in courses_list:
+        g_info = GRADES.get(c["grade"], {})
+        c["grade_name"] = g_info.get("name", f"Grade {c['grade']}")
+        c["classes"] = g_info.get("classes", "")
+
+    return render_template("admin_courses.html", active_page="admin", show_grades=False, category=category, courses=courses_list, grades=GRADES)
+
+
 @app.route("/admin/learning-categories/<int:category_id>/paths")
 @admin_required
 def admin_category_learning_paths(category_id):
@@ -5020,6 +5268,43 @@ def admin_toggle_learning_path_active(path_id):
     conn.close()
 
     flash(f"Learning path '{path['name']}' is now {'active' if new_status else 'inactive'}.", "success")
+    return redirect(url_for("admin_category_learning_paths", category_id=path["category_id"]))
+
+
+@app.route("/admin/learning-paths/<int:path_id>/delete", methods=["POST"])
+@admin_required
+def admin_delete_learning_path(path_id):
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT id, name, category_id, is_active FROM learning_paths WHERE id = %s", (path_id,))
+    path = cur.fetchone()
+    if not path:
+        cur.close()
+        conn.close()
+        flash("Learning path not found.", "error")
+        return redirect(url_for("admin_learning_categories"))
+
+    # Check if courses are attached to this path
+    cur.execute("SELECT COUNT(*) AS cnt FROM courses WHERE learning_path_id = %s", (path_id,))
+    course_cnt = cur.fetchone()["cnt"]
+
+    if course_cnt > 0:
+        # Soft-deactivate path instead of hard-delete if courses exist
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute("UPDATE learning_paths SET is_active = 0, updated_at = %s WHERE id = %s", (now_str, path_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        flash(f"Learning path '{path['name']}' has {course_cnt} associated course(s). It has been deactivated to preserve course relationships.", "info")
+        return redirect(url_for("admin_category_learning_paths", category_id=path["category_id"]))
+
+    # If completely unused, allow permanent deletion
+    cur.execute("DELETE FROM learning_paths WHERE id = %s", (path_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    flash(f"Learning path '{path['name']}' deleted successfully.", "success")
     return redirect(url_for("admin_category_learning_paths", category_id=path["category_id"]))
 
 
@@ -5353,6 +5638,8 @@ def admin_edit_course(course_id):
 
 
 @app.route("/admin/courses/<int:course_id>/toggle-active", methods=["POST"])
+@app.route("/admin/courses/<int:course_id>/toggle-status", methods=["POST"])
+@app.route("/admin/courses/<int:course_id>/toggle-active", methods=["POST"])
 @admin_required
 def admin_toggle_course_active(course_id):
     conn = get_db_connection()
@@ -5372,13 +5659,13 @@ def admin_toggle_course_active(course_id):
     cur.close()
     conn.close()
 
-    flash(f"Course '{course['title']}' is now {'active' if new_status else 'inactive'}.", "success")
+    flash(f"Course '{course['title']}' is now {'active' if new_status else 'deactivated'}.", "success")
     return redirect(url_for("admin_course_detail", course_id=course_id))
 
 
-@app.route("/admin/courses/<int:course_id>/delete", methods=["POST"])
+@app.route("/admin/courses/<int:course_id>/deactivate", methods=["POST"])
 @admin_required
-def admin_delete_course(course_id):
+def admin_deactivate_course(course_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
     cur.execute("SELECT id, title FROM courses WHERE id = %s", (course_id,))
@@ -5389,15 +5676,111 @@ def admin_delete_course(course_id):
         flash("Course not found.", "error")
         return redirect(url_for("admin_courses"))
 
-    # Soft-delete / deactivate course to protect historical student data
     now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     cur.execute("UPDATE courses SET is_active = 0, updated_at = %s WHERE id = %s", (now_str, course_id))
     conn.commit()
     cur.close()
     conn.close()
 
-    flash(f"Course '{course['title']}' has been deleted/deactivated.", "success")
-    return redirect(url_for("admin_courses"))
+    flash(f"Course '{course['title']}' has been deactivated. It is hidden from the student catalogue but its modules and data remain intact.", "success")
+    return redirect(url_for("admin_course_detail", course_id=course_id))
+
+
+@app.route("/admin/courses/<int:course_id>/reactivate", methods=["POST"])
+@admin_required
+def admin_reactivate_course(course_id):
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT id, title FROM courses WHERE id = %s", (course_id,))
+    course = cur.fetchone()
+    if not course:
+        cur.close()
+        conn.close()
+        flash("Course not found.", "error")
+        return redirect(url_for("admin_courses"))
+
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    cur.execute("UPDATE courses SET is_active = 1, updated_at = %s WHERE id = %s", (now_str, course_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    flash(f"Course '{course['title']}' has been reactivated and is now visible in the student catalogue.", "success")
+    return redirect(url_for("admin_course_detail", course_id=course_id))
+
+
+@app.route("/admin/courses/<int:course_id>/delete", methods=["POST"])
+@admin_required
+def admin_delete_course(course_id):
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT id, title, is_active, image FROM courses WHERE id = %s", (course_id,))
+    course = cur.fetchone()
+    if not course:
+        cur.close()
+        conn.close()
+        flash("Course not found.", "error")
+        return redirect(url_for("admin_courses"))
+
+    action = request.form.get("action", "deactivate")
+    confirm_title = request.form.get("confirm_title", "").strip()
+
+    if action == "permanent_delete" or request.form.get("permanent"):
+        # Check associated data before permanent deletion
+        cur.execute("SELECT COUNT(*) AS cnt FROM modules WHERE course_id = %s", (course_id,))
+        mod_cnt = cur.fetchone()["cnt"]
+
+        cur.execute(
+            """
+            SELECT COUNT(*) AS cnt
+            FROM course_videos v
+            JOIN modules m ON v.module_id = m.id
+            WHERE m.course_id = %s
+            """,
+            (course_id,)
+        )
+        vid_cnt = cur.fetchone()["cnt"]
+
+        # Check permissions/enrollments
+        cur.execute("SELECT COUNT(*) AS cnt FROM user_course_permissions WHERE course_id = %s", (course_id,))
+        enroll_cnt = cur.fetchone()["cnt"]
+
+        if mod_cnt > 0 or vid_cnt > 0 or enroll_cnt > 0:
+            cur.close()
+            conn.close()
+            flash(
+                f"Cannot permanently delete course '{course['title']}' because it contains {mod_cnt} module(s), {vid_cnt} video(s), or student enrollments. Please DEACTIVATE the course instead.",
+                "error"
+            )
+            return redirect(url_for("admin_course_detail", course_id=course_id))
+
+        if confirm_title != course["title"]:
+            cur.close()
+            conn.close()
+            flash(f"Course title confirmation mismatch. Expected '{course['title']}'. Permanent deletion cancelled.", "error")
+            return redirect(url_for("admin_course_detail", course_id=course_id))
+
+        # Safe permanent deletion of empty course
+        if course.get("image") and course["image"].startswith("uploads/courses/"):
+            storage.delete_course_image(course["image"])
+
+        cur.execute("DELETE FROM courses WHERE id = %s", (course_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        flash(f"Course '{course['title']}' was permanently deleted.", "success")
+        return redirect(url_for("admin_courses"))
+
+    # Default action: Deactivate / Archive
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    cur.execute("UPDATE courses SET is_active = 0, updated_at = %s WHERE id = %s", (now_str, course_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    flash(f"Course '{course['title']}' has been deactivated.", "success")
+    return redirect(url_for("admin_course_detail", course_id=course_id))
 
 
 # ---------- Admin Module CRUD ----------

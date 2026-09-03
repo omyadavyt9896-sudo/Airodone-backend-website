@@ -4509,7 +4509,7 @@ p {
     background: rgba(15, 23, 42, 0.65);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     padding: 1rem;
@@ -4518,7 +4518,12 @@ p {
     transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
+.airo-modal-backdrop[hidden] {
+    display: none !important;
+}
+
 .airo-modal-backdrop.active {
+    display: flex;
     opacity: 1;
     visibility: visible;
 }
@@ -4876,6 +4881,144 @@ main > section:first-of-type,
     border-color: var(--color-danger) !important;
     color: var(--color-danger) !important;
     transform: translateY(-1px);
+/* Admin Course Management Action Buttons (High Contrast & Stacking Safety) */
+.admin-btn-edit {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    border: 1px solid #0284c7 !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
+}
+
+.admin-btn-edit:hover {
+    background: #0369a1 !important;
+    color: #ffffff !important;
+    border-color: #0369a1 !important;
+    transform: translateY(-1px);
+}
+
+.admin-btn-preview {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    border: 1px solid #0f172a !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.2);
+}
+
+.admin-btn-preview:hover {
+    background: #1e293b !important;
+    color: #ffffff !important;
+    border-color: #1e293b !important;
+    transform: translateY(-1px);
+}
+
+.admin-btn-deactivate {
+    background: #fff7ed !important;
+    color: #c2410c !important;
+    border: 1px solid #fdba74 !important;
+    font-weight: 600 !important;
+}
+
+.admin-btn-deactivate:hover {
+    background: #ffedd5 !important;
+    color: #9a3412 !important;
+    border-color: #fb923c !important;
+    transform: translateY(-1px);
+}
+
+.admin-btn-reactivate {
+    background: #16a34a !important;
+    color: #ffffff !important;
+    border: 1px solid #16a34a !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 4px rgba(22, 163, 74, 0.25);
+}
+
+.admin-btn-reactivate:hover {
+    background: #15803d !important;
+    color: #ffffff !important;
+    border-color: #15803d !important;
+    transform: translateY(-1px);
+}
+
+.admin-btn-delete {
+    background: #fef2f2 !important;
+    color: #dc2626 !important;
+    border: 1px solid #fca5a5 !important;
+    font-weight: 600 !important;
+}
+
+.admin-btn-delete:hover {
+    background: #fee2e2 !important;
+    color: #b91c1c !important;
+    border-color: #f87171 !important;
+    transform: translateY(-1px);
+}
+
+/* Admin Course Hero Stacking & Theme Rules */
+.admin-course-hero {
+    padding: 2.5rem 0 2rem 0;
+    background: #f0f9ff;
+    border-bottom: 1px solid #e0f2fe;
+    position: relative;
+    z-index: 1;
+}
+
+.admin-course-hero h1 {
+    color: #0f172a !important;
+}
+
+.admin-course-hero p {
+    color: #334155 !important;
+}
+
+.admin-course-hero .course-breadcrumb,
+.admin-course-hero .course-breadcrumb a {
+    color: #475569 !important;
+}
+
+.admin-course-hero .course-breadcrumb .current-breadcrumb {
+    color: #0284c7 !important;
+}
+
+.dark-mode .admin-course-hero {
+    background: #0f172a !important;
+    border-bottom: 1px solid #1e293b !important;
+}
+
+.dark-mode .admin-course-hero h1 {
+    color: #ffffff !important;
+}
+
+.dark-mode .admin-course-hero p {
+    color: #cbd5e1 !important;
+}
+
+.dark-mode .admin-course-hero .course-breadcrumb,
+.dark-mode .admin-course-hero .course-breadcrumb a {
+    color: #94a3b8 !important;
+}
+
+.dark-mode .admin-course-hero .course-breadcrumb .current-breadcrumb {
+    color: #38bdf8 !important;
+}
+
+.dark-mode .admin-btn-preview {
+    background: #334155 !important;
+    color: #ffffff !important;
+    border: 1px solid #475569 !important;
+}
+
+.dark-mode .admin-btn-deactivate {
+    background: rgba(194, 65, 12, 0.25) !important;
+    color: #ffedd5 !important;
+    border: 1px solid #ea580c !important;
+}
+
+.dark-mode .admin-btn-delete {
+    background: rgba(220, 38, 38, 0.25) !important;
+    color: #fee2e2 !important;
+    border: 1px solid #ef4444 !important;
 }
 
 .btn-sm {
@@ -4942,22 +5085,42 @@ main > section:first-of-type,
 
 .course-card-v2:hover .course-card-img-v2 {
     transform: scale(1.03);
+.course-card-badge-static {
+    position: static !important;
+    display: inline-flex;
+    align-items: center;
 }
 
-.course-badge-v2 {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    color: #ffffff;
-    font-size: 0.75rem;
+.course-card__image {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #0f172a;
+    overflow: hidden;
+    border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0 0;
+}
+
+.course-card__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.course-grade-pill {
+    display: inline-flex;
+    align-items: center;
+    background: #e0f2fe;
+    color: #0284c7;
     font-weight: 700;
+    font-size: 0.8rem;
     padding: 0.25rem 0.65rem;
-    border-radius: var(--radius-pill);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    z-index: 2;
+    border-radius: 9999px;
+    line-height: 1.2;
+}
+
+.module-detail-section {
+    transition: all 0.2s ease-in-out;
 }
 
 .course-card-body-v2 {

@@ -115,6 +115,11 @@
                                             {{ 'Deactivate' if p.is_active else 'Activate' }}
                                         </button>
                                     </form>
+                                    <form method="post" action="{{ url_for('admin_delete_learning_path', path_id=p.id) }}" style="display: inline;" onsubmit="return confirm('Delete learning path {{ p.name|e }}?\n\nIf courses are associated with this path, it will be safely deactivated to preserve data.');">
+                                        <button type="submit" class="btn btn-outline btn-sm btn-destructive" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;">
+                                            Delete
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>

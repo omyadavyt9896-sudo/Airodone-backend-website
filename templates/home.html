@@ -118,11 +118,19 @@ STEM workshops designed for schools and institutions.{% endblock %}
 <section class="section section-light">
     <div class="container highlight-strip">
         <div class="highlight-text">
+<section class="section section-light home-cta-section">
+    <div class="container highlight-strip home-cta">
+        <div class="highlight-text home-cta__content">
             <h2>Ready to activate your ATL or STEM lab?</h2>
             <p>Share your institution's goals and we'll design a customized roadmap for your campus.</p>
         </div>
         <div class="highlight-action">
             <a href="{{ url_for('contact') }}" class="btn btn-primary">Contact Us Today &rarr;</a>
+        <div class="highlight-action home-cta__action">
+            <a href="{{ url_for('contact') }}" class="btn btn-primary home-cta__btn" aria-label="Talk to Us about activating your ATL or STEM lab">
+                <span>Talk to Us</span>
+                <span class="home-cta__btn-arrow" aria-hidden="true">&rarr;</span>
+            </a>
         </div>
     </div>
 </section>

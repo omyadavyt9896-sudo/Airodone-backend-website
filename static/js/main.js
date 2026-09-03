@@ -13,34 +13,25 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Accessible Scroll Reveal Observer
-  const prefersReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Basic fade-in animation for sections
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("in-view");
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    {
+      threshold: 0.16,
+    }
+  );
 
-  if (prefersReducedMotion) {
-    document.querySelectorAll(".section, .hero, .page-hero, .category-card, .course-card-v2").forEach((el) => {
-      el.classList.add("in-view");
-    });
-  } else if ("IntersectionObserver" in window) {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("in-view");
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      {
-        threshold: 0.12,
-        rootMargin: "0px 0px -40px 0px",
-      }
-    );
-
-    document.querySelectorAll(".section, .hero, .page-hero, .category-grid, .card-grid").forEach((el) => {
-      el.classList.add("pre-animate");
-      observer.observe(el);
-    });
-  }
+  document.querySelectorAll(".section, .hero, .page-hero").forEach((el) => {
+    el.classList.add("pre-animate");
+    observer.observe(el);
+  });
 
   // Quiz Start Fullscreen User Gesture Listener (Phase 7.6A)
   document.querySelectorAll(".js-start-quiz-btn").forEach(function (btn) {

@@ -127,31 +127,31 @@
         {% if courses %}
         <div class="card-grid card-grid-3">
             {% for course in courses %}
-            <a href="{{ url_for('course_detail', slug=course.slug) }}" class="card course-card-v2 category-card" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; overflow: hidden;" aria-label="View {{ course.title }} Details">
-                <div class="category-image-wrap" style="height: 180px; overflow: hidden; position: relative; background: #0f172a;">
+            <article class="card course-card-v2">
+                <div class="course-card-image-wrap" style="height: 180px; overflow: hidden; position: relative; background: #0f172a;">
                     {% set c_img = image_url(course.image) %}
                     {% if c_img %}
                     <img src="{{ c_img }}" 
                          alt="{{ course.title }} course banner" 
-                         class="category-card-img"
+                         class="course-card-img-v2"
                          style="width: 100%; height: 100%; object-fit: cover;"
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                    <div class="category-fallback-svg" style="display: none;">
+                    <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                     </div>
                     {% else %}
-                    <div class="category-fallback-svg" style="display: flex;">
+                    <div style="display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                     </div>
                     {% endif %}
-                    <span class="category-path-badge">Grade {{ course.grade }} &bull; {{ course.level or 'Beginner' }}</span>
+                    <span class="course-badge-v2" style="position: absolute; top: 0.75rem; right: 0.75rem; background: rgba(15, 23, 42, 0.85); color: #fff; padding: 0.3rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600;">Grade {{ course.grade }} &bull; {{ course.level or 'Beginner' }}</span>
                 </div>
                 
-                <div class="category-card-content" style="padding: 1.5rem; flex: 1; display: flex; flex-direction: column;">
-                    <h3 class="category-card-title" style="font-size: 1.25rem; margin-bottom: 0.5rem;">{{ course.title }}</h3>
-                    <p class="category-card-desc" style="margin-bottom: 1rem; color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5; flex: 1;">{{ course.short_description or course.description }}</p>
+                <div class="course-card-body-v2">
+                    <h3 class="course-card-title-v2">{{ course.title }}</h3>
+                    <p class="course-card-desc-v2">{{ course.short_description or course.description }}</p>
                     
-                    <div class="course-meta-v2" style="margin-bottom: 1rem;">
+                    <div class="course-meta-v2">
                         <span class="course-meta-pill">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> {{ course.total_modules }} Modules
                         </span>
@@ -166,7 +166,7 @@
                     </div>
 
                     {% if current_user.is_authenticated and course.is_enrolled and not current_user.is_admin() %}
-                    <div class="course-card-progress-wrap" style="margin-bottom: 1rem;">
+                    <div class="course-card-progress-wrap">
                         <div class="course-card-progress-header">
                             <span class="course-card-progress-label">Progress: {{ course.progress_pct }}%</span>
                             {% if course.has_certificate %}
@@ -181,17 +181,13 @@
                     </div>
                     {% endif %}
 
-                    <div class="category-card-footer" style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--color-border, #e2e8f0);">
-                        <span class="btn btn-primary btn-block category-action-btn">
-                            {% if current_user.is_authenticated and course.is_enrolled and not current_user.is_admin() %}
-                                Continue Learning &rarr;
-                            {% else %}
-                                View Course Details &rarr;
-                            {% endif %}
-                        </span>
+                    <div class="course-card-footer-v2">
+                        <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-primary btn-block">
+                            View Course Details <span aria-hidden="true">&rarr;</span>
+                        </a>
                     </div>
                 </div>
-            </a>
+            </article>
             {% endfor %}
         </div>
         {% else %}

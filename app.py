@@ -130,6 +130,18 @@ class User(UserMixin):
     def is_admin(self):
         return self.role == "admin"
 
+    def is_sub_admin(self):
+        return self.role == "sub_admin"
+
+    def is_teacher(self):
+        return self.role == "teacher"
+
+    def is_student(self):
+        return self.role in ("user", "student")
+
+    def has_role(self, *roles):
+        return self.role in roles
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -186,8 +198,9 @@ def is_user_enrolled(user_id, course_id):
 def can_access_course(user_id, course_id):
     """
     Check if user can access course content:
-    - Admin always has access.
-    - Student requires explicit active enrollment (course_enrollments.is_active = 1) granted by an admin.
+    - Admin & Sub-Admin always have full access.
+    - Teacher has access if assigned to course in teacher_assignments.
+    - Student requires explicit active enrollment (course_enrollments.is_active = 1).
     """
     if not user_id or not course_id:
         return False
@@ -201,12 +214,23 @@ def can_access_course(user_id, course_id):
             conn.close()
             return False
 
-        if u["role"] == "admin":
+        user_role = u["role"]
+        if user_role in ("admin", "sub_admin"):
             cur.close()
             conn.close()
             return True
 
-        # Check explicit active enrollment record
+        if user_role == "teacher":
+            cur.execute(
+                "SELECT id FROM teacher_assignments WHERE teacher_id = %s AND course_id = %s",
+                (user_id, course_id)
+            )
+            assignment = cur.fetchone()
+            cur.close()
+            conn.close()
+            return bool(assignment)
+
+        # Check explicit active enrollment record for student (user/student)
         cur.execute(
             "SELECT is_active FROM course_enrollments WHERE user_id = %s AND course_id = %s",
             (user_id, course_id)
@@ -222,6 +246,43 @@ def can_access_course(user_id, course_id):
     except Exception as e:
         app.logger.error(f"Error checking access for user {user_id}, course {course_id}: {e}")
         return False
+
+
+def is_teacher_assigned_to_course(teacher_id, course_id):
+    """Check if a teacher is assigned to a specific course."""
+    if not teacher_id or not course_id:
+        return False
+    try:
+        conn = get_db_connection()
+        cur = get_db_cursor(conn)
+        cur.execute(
+            "SELECT id FROM teacher_assignments WHERE teacher_id = %s AND course_id = %s",
+            (teacher_id, course_id)
+        )
+        assignment = cur.fetchone()
+        cur.close()
+        conn.close()
+        return bool(assignment)
+    except Exception as e:
+        app.logger.error(f"Error checking teacher assignment: {e}")
+        return False
+
+
+def get_teacher_assigned_course_ids(teacher_id):
+    """Get list of course IDs assigned to a teacher."""
+    if not teacher_id:
+        return []
+    try:
+        conn = get_db_connection()
+        cur = get_db_cursor(conn)
+        cur.execute("SELECT course_id FROM teacher_assignments WHERE teacher_id = %s", (teacher_id,))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return [r["course_id"] for r in rows]
+    except Exception as e:
+        app.logger.error(f"Error fetching teacher course IDs: {e}")
+        return []
 
 
 # ---------- Database helpers ----------
@@ -886,6 +947,34 @@ def init_db():
     add_column_if_not_exists(cur, "quiz_attempts", "started_at", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "quiz_attempts", "submitted_at", "TEXT DEFAULT NULL")
 
+    # Create teacher_assignments table
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS teacher_assignments (
+            id {pk_def},
+            teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+            assigned_at TEXT NOT NULL,
+            UNIQUE(teacher_id, course_id)
+        )
+        """
+    )
+
+    # Create audit_logs table
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id {pk_def},
+            user_id INTEGER,
+            action TEXT NOT NULL,
+            target_type TEXT,
+            target_id INTEGER,
+            details TEXT,
+            timestamp TEXT NOT NULL
+        )
+        """
+    )
+
     # Create targeted performance indexes across PostgreSQL, MySQL, and SQLite
     create_index_if_not_exists(cur, "idx_courses_grade", "courses", ["grade"])
     create_index_if_not_exists(cur, "idx_learning_categories_slug", "learning_categories", ["slug"])
@@ -901,6 +990,9 @@ def init_db():
     create_index_if_not_exists(cur, "idx_quiz_answers_attempt_id", "quiz_answers", ["attempt_id"])
     create_index_if_not_exists(cur, "idx_projects_module_id", "projects", ["module_id"])
     create_index_if_not_exists(cur, "idx_project_submissions_user_project", "project_submissions", ["user_id", "project_id"])
+    create_index_if_not_exists(cur, "idx_teacher_assignments_teacher", "teacher_assignments", ["teacher_id"])
+    create_index_if_not_exists(cur, "idx_teacher_assignments_course", "teacher_assignments", ["course_id"])
+    create_index_if_not_exists(cur, "idx_audit_logs_user", "audit_logs", ["user_id"])
 
     conn.commit()
 
@@ -1920,18 +2012,61 @@ def generate_certificate_pdf(certificate):
     return buffer
 
 
-# ---------- Decorators ----------
+# ---------- Audit Logging & Role Decorators ----------
+
+def log_audit(user_id, action, target_type=None, target_id=None, details=None):
+    """
+    Record an administrative/audit action in database without sensitive credentials.
+    """
+    try:
+        conn = get_db_connection()
+        cur = get_db_cursor(conn)
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute(
+            """
+            INSERT INTO audit_logs (user_id, action, target_type, target_id, details, timestamp)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (user_id, action, target_type, target_id, details, now_str)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        app.logger.error(f"Failed to log audit action '{action}': {e}")
+
+
+def role_required(*roles):
+    """
+    Decorator to require specific user roles.
+    If current authenticated user does not have one of the allowed roles, returns HTTP 403 Forbidden.
+    """
+    def decorator(f):
+        @wraps(f)
+        @login_required
+        def decorated_function(*args, **kwargs):
+            if not current_user.has_role(*roles):
+                if request.is_json or request.path.startswith("/api/"):
+                    return jsonify({"error": "Forbidden", "message": "You do not have permission to access this resource."}), 403
+                return render_template("403.html"), 403
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
 
 def admin_required(f):
-    """Decorator to require admin role."""
-    @wraps(f)
-    @login_required
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_admin():
-            flash("Access denied. Admin privileges required.", "error")
-            return redirect(url_for("dashboard"))
-        return f(*args, **kwargs)
-    return decorated_function
+    """Decorator to require Admin role strictly."""
+    return role_required("admin")(f)
+
+
+def admin_or_subadmin_required(f):
+    """Decorator to require Admin or Sub-Admin role."""
+    return role_required("admin", "sub_admin")(f)
+
+
+def evaluator_required(f):
+    """Decorator to require Admin, Sub-Admin, or Teacher role."""
+    return role_required("admin", "sub_admin", "teacher")(f)
 
 
 @app.template_filter("nl2br")
@@ -3731,30 +3866,108 @@ def profile():
 # ---------- Admin Routes ----------
 
 @app.route("/admin")
-@admin_required
+@evaluator_required
 def admin():
     conn = get_db_connection()
     cur = get_db_cursor(conn)
-    cur.execute(
-        """
-        SELECT id, name, email, phone, subject, message, created_at
-        FROM contacts
-        ORDER BY created_at DESC
-        """
-    )
+
+    # Base metrics
+    cur.execute("SELECT COUNT(*) AS count FROM users WHERE role IN ('user', 'student') AND is_active = 1")
+    total_students = cur.fetchone()["count"]
+
+    cur.execute("SELECT COUNT(*) AS count FROM users WHERE role = 'teacher' AND is_active = 1")
+    total_teachers = cur.fetchone()["count"]
+
+    cur.execute("SELECT COUNT(*) AS count FROM users WHERE role = 'sub_admin' AND is_active = 1")
+    total_subadmins = cur.fetchone()["count"]
+
+    cur.execute("SELECT COUNT(*) AS count FROM courses WHERE is_active = 1")
+    total_courses = cur.fetchone()["count"]
+
+    # Pending project evaluations count
+    if current_user.is_teacher():
+        assigned_course_ids = get_teacher_assigned_course_ids(current_user.id)
+        if assigned_course_ids:
+            placeholders = ",".join(["%s"] * len(assigned_course_ids))
+            cur.execute(
+                f"""
+                SELECT COUNT(*) AS count
+                FROM project_submissions ps
+                JOIN projects p ON p.id = ps.project_id
+                JOIN modules m ON m.id = p.module_id
+                WHERE m.course_id IN ({placeholders}) AND ps.status != 'evaluated'
+                """,
+                tuple(assigned_course_ids)
+            )
+            pending_evaluations = cur.fetchone()["count"]
+        else:
+            pending_evaluations = 0
+    else:
+        cur.execute("SELECT COUNT(*) AS count FROM project_submissions WHERE status != 'evaluated'")
+        pending_evaluations = cur.fetchone()["count"]
+
+    # Recent submissions / contacts
+    cur.execute("SELECT id, name, email, phone, subject, message, created_at FROM contacts ORDER BY created_at DESC LIMIT 10")
     submissions = cur.fetchall()
+
+    # Audit logs preview for Admin
+    audit_logs = []
+    if current_user.is_admin():
+        cur.execute(
+            """
+            SELECT a.id, a.user_id, a.action, a.target_type, a.target_id, a.details, a.timestamp, u.name as user_name
+            FROM audit_logs a
+            LEFT JOIN users u ON u.id = a.user_id
+            ORDER BY a.timestamp DESC, a.id DESC
+            LIMIT 10
+            """
+        )
+        audit_logs = cur.fetchall()
+
+    # Assigned courses for teacher
+    teacher_courses = []
+    if current_user.is_teacher():
+        assigned_course_ids = get_teacher_assigned_course_ids(current_user.id)
+        if assigned_course_ids:
+            placeholders = ",".join(["%s"] * len(assigned_course_ids))
+            cur.execute(
+                f"""
+                SELECT c.id, c.title, c.slug, c.level, c.grade, c.short_description, c.image, c.category_id,
+                       lc.name AS category_name,
+                       COUNT(DISTINCT m.id) AS module_count,
+                       COUNT(DISTINCT v.id) AS video_count
+                FROM courses c
+                LEFT JOIN learning_categories lc ON lc.id = c.category_id
+                LEFT JOIN modules m ON m.course_id = c.id AND m.is_active = 1
+                LEFT JOIN course_videos v ON v.module_id = m.id AND v.is_active = 1
+                WHERE c.id IN ({placeholders}) AND c.is_active = 1
+                GROUP BY c.id, c.title, c.slug, c.level, c.grade, c.short_description, c.image, c.category_id, lc.name
+                ORDER BY c.grade ASC, c.title ASC
+                """,
+                tuple(assigned_course_ids)
+            )
+            teacher_courses = cur.fetchall()
+
     cur.close()
     conn.close()
 
     return render_template(
         "admin.html",
         active_page="admin",
+        total_students=total_students,
+        total_teachers=total_teachers,
+        total_subadmins=total_subadmins,
+        total_courses=total_courses,
+        pending_evaluations=pending_evaluations,
         submissions=submissions,
+        audit_logs=audit_logs,
+        teacher_courses=teacher_courses,
+        assigned_courses=teacher_courses,
     )
 
 
 @app.route("/admin/contacts")
-@admin_required
+@admin_or_subadmin_required
 def admin_contacts():
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -3773,16 +3986,32 @@ def admin_contacts():
 
 
 @app.route("/admin/users")
-@admin_required
+@admin_or_subadmin_required
 def admin_users():
+    tab = request.args.get("tab", "students").strip().lower()
+    if current_user.is_sub_admin() and tab == "subadmins":
+        tab = "students"
+
     conn = get_db_connection()
     cur = get_db_cursor(conn)
+
+    if tab == "teachers":
+        role_clause = "u.role = 'teacher'"
+    elif tab == "subadmins":
+        role_clause = "u.role = 'sub_admin'"
+    else:
+        tab = "students"
+        role_clause = "u.role IN ('user', 'student')"
+
     cur.execute(
-        """
+        f"""
         SELECT u.id, u.name, u.father_name, u.student_class, u.email, u.phone, u.role, u.is_active, u.created_at,
-               COUNT(DISTINCT e.course_id) AS enrolled_count
+               COUNT(DISTINCT e.course_id) AS enrolled_count,
+               COUNT(DISTINCT ta.course_id) AS assigned_teacher_courses
         FROM users u
         LEFT JOIN course_enrollments e ON e.user_id = u.id AND e.is_active = 1
+        LEFT JOIN teacher_assignments ta ON ta.teacher_id = u.id
+        WHERE {role_clause}
         GROUP BY u.id, u.name, u.father_name, u.student_class, u.email, u.phone, u.role, u.is_active, u.created_at
         ORDER BY u.created_at DESC, u.id DESC
         """
@@ -3797,11 +4026,11 @@ def admin_users():
     cur.close()
     conn.close()
 
-    return render_template("admin_users.html", active_page="admin", users=users)
+    return render_template("admin_users.html", active_page="admin", users=users, current_tab=tab)
 
 
 @app.route("/admin/users/new", methods=["GET", "POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_user_new():
     error = None
     form_data = {}
@@ -3812,7 +4041,19 @@ def admin_user_new():
         email = request.form.get("email", "").strip().lower()
         phone = request.form.get("phone", "").strip()
         password = request.form.get("password", "")
+        role = request.form.get("role", "user").strip().lower()
         is_active = 1 if request.form.get("is_active") else 0
+
+        # Sub-Admin security guard: Sub-Admin CANNOT create Admin or Sub-Admin!
+        if current_user.is_sub_admin() and role in ("admin", "sub_admin"):
+            return render_template("403.html"), 403
+
+        allowed_roles = ("user", "student", "teacher", "sub_admin") if current_user.is_admin() else ("user", "student", "teacher")
+        if role not in allowed_roles:
+            error = f"Invalid role selected: '{role}'."
+
+        if role == "student":
+            role = "user"
 
         form_data = {
             "name": name,
@@ -3821,47 +4062,56 @@ def admin_user_new():
             "email": email,
             "phone": phone,
             "password": password,
+            "role": role,
             "is_active": is_active,
         }
 
-        if not name or not email or not password:
-            error = "Please fill in all required fields (Name, Email, Password)."
-        elif not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-            error = "Please enter a valid email address."
-        elif len(password) < 6:
-            error = "Temporary password must be at least 6 characters long."
-        else:
-            conn = get_db_connection()
-            cur = get_db_cursor(conn)
-            cur.execute("SELECT id FROM users WHERE email = %s", (email,))
-            existing = cur.fetchone()
-
-            if existing:
-                cur.close()
-                conn.close()
-                error = "Email already registered. Duplicate account creation is not allowed."
+        if not error:
+            if not name or not email or not password:
+                error = "Please fill in all required fields (Name, Email, Password)."
+            elif not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+                error = "Please enter a valid email address."
+            elif len(password) < 6:
+                error = "Temporary password must be at least 6 characters long."
             else:
-                password_hash = generate_password_hash(password)
-                created_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-                cur.execute(
-                    """
-                    INSERT INTO users (name, father_name, student_class, email, phone, password_hash, role, is_active, created_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, 'user', %s, %s)
-                    """,
-                    (name, father_name or None, student_class or None, email, phone or None, password_hash, is_active, created_at),
-                )
-                conn.commit()
-                cur.close()
-                conn.close()
+                conn = get_db_connection()
+                cur = get_db_cursor(conn)
+                cur.execute("SELECT id FROM users WHERE email = %s", (email,))
+                existing = cur.fetchone()
 
-                flash(f"Student account created successfully for {name} ({email}).", "success")
-                return redirect(url_for("admin_users"))
+                if existing:
+                    cur.close()
+                    conn.close()
+                    error = "Email already registered. Duplicate account creation is not allowed."
+                else:
+                    password_hash = generate_password_hash(password)
+                    created_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                    cur.execute(
+                        """
+                        INSERT INTO users (name, father_name, student_class, email, phone, password_hash, role, is_active, created_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        """,
+                        (name, father_name or None, student_class or None, email, phone or None, password_hash, role, is_active, created_at),
+                    )
+                    conn.commit()
+                    cur.execute("SELECT id FROM users WHERE email = %s", (email,))
+                    new_user = cur.fetchone()
+                    cur.close()
+                    conn.close()
+
+                    log_audit(current_user.id, "create_user", "user", new_user["id"] if new_user else None, f"Created {role} account for {name} ({email})")
+
+                    role_display = "Sub-Admin" if role == "sub_admin" else ("Teacher" if role == "teacher" else "Student")
+                    target_tab = "subadmins" if role == "sub_admin" else ("teachers" if role == "teacher" else "students")
+
+                    flash(f"{role_display} account created successfully for {name} ({email}).", "success")
+                    return redirect(url_for("admin_users", tab=target_tab))
 
     return render_template("admin_student_form.html", active_page="admin", edit_mode=False, error=error, form_data=form_data)
 
 
 @app.route("/admin/users/<int:user_id>/edit", methods=["GET", "POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_user_edit(user_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -3874,8 +4124,14 @@ def admin_user_edit(user_id):
     if not student:
         cur.close()
         conn.close()
-        flash("Student account not found.", "error")
+        flash("User account not found.", "error")
         return redirect(url_for("admin_users"))
+
+    # Sub-Admin security guard: Sub-Admin cannot edit Admin or Sub-Admin profiles
+    if current_user.is_sub_admin() and student["role"] in ("admin", "sub_admin"):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
 
     error = None
     if request.method == "POST":
@@ -3884,7 +4140,17 @@ def admin_user_edit(user_id):
         student_class = request.form.get("student_class", "").strip()
         email = request.form.get("email", "").strip().lower()
         phone = request.form.get("phone", "").strip()
+        new_role = request.form.get("role", student["role"]).strip().lower()
         is_active = 1 if request.form.get("is_active") else 0
+
+        # Sub-Admin security guard: Sub-Admin cannot assign admin or sub_admin role
+        if current_user.is_sub_admin() and new_role in ("admin", "sub_admin"):
+            cur.close()
+            conn.close()
+            return render_template("403.html"), 403
+
+        if new_role == "student":
+            new_role = "user"
 
         if not name or not email:
             error = "Please fill in all required fields (Name, Email)."
@@ -3899,16 +4165,18 @@ def admin_user_edit(user_id):
                 cur.execute(
                     """
                     UPDATE users
-                    SET name = %s, father_name = %s, student_class = %s, email = %s, phone = %s, is_active = %s
+                    SET name = %s, father_name = %s, student_class = %s, email = %s, phone = %s, role = %s, is_active = %s
                     WHERE id = %s
                     """,
-                    (name, father_name or None, student_class or None, email, phone or None, is_active, user_id),
+                    (name, father_name or None, student_class or None, email, phone or None, new_role, is_active, user_id),
                 )
                 conn.commit()
                 cur.close()
                 conn.close()
-                flash(f"Student account updated for {name}.", "success")
-                return redirect(url_for("admin_users"))
+                log_audit(current_user.id, "edit_user", "user", user_id, f"Updated profile & role ({new_role}) for {name} ({email})")
+                flash(f"User account updated for {name}.", "success")
+                target_tab = "subadmins" if new_role == "sub_admin" else ("teachers" if new_role == "teacher" else "students")
+                return redirect(url_for("admin_users", tab=target_tab))
 
     cur.close()
     conn.close()
@@ -3916,7 +4184,7 @@ def admin_user_edit(user_id):
 
 
 @app.route("/admin/users/<int:user_id>/toggle-active", methods=["POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_user_toggle_active(user_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -3926,8 +4194,14 @@ def admin_user_toggle_active(user_id):
     if not student:
         cur.close()
         conn.close()
-        flash("Student account not found.", "error")
+        flash("User account not found.", "error")
         return redirect(url_for("admin_users"))
+
+    # Security guard: Sub-Admin cannot deactivate Admin or Sub-Admin
+    if current_user.is_sub_admin() and student["role"] in ("admin", "sub_admin"):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
 
     if student["role"] == "admin":
         cur.close()
@@ -3941,24 +4215,33 @@ def admin_user_toggle_active(user_id):
     cur.close()
     conn.close()
 
+    log_audit(current_user.id, "toggle_active_user", "user", user_id, f"Set is_active={new_active} for {student['name']}")
+
     status_str = "activated" if new_active else "deactivated"
     flash(f"Account for {student['name']} has been {status_str}.", "success")
-    return redirect(url_for("admin_users"))
+    target_tab = "subadmins" if student["role"] == "sub_admin" else ("teachers" if student["role"] == "teacher" else "students")
+    return redirect(url_for("admin_users", tab=target_tab))
 
 
 @app.route("/admin/users/<int:user_id>/reset-password", methods=["POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_user_reset_password(user_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
-    cur.execute("SELECT id, name, email FROM users WHERE id = %s", (user_id,))
+    cur.execute("SELECT id, name, email, role FROM users WHERE id = %s", (user_id,))
     student = cur.fetchone()
 
     if not student:
         cur.close()
         conn.close()
-        flash("Student account not found.", "error")
+        flash("User account not found.", "error")
         return redirect(url_for("admin_users"))
+
+    # Sub-Admin cannot reset password of Admin or Sub-Admin
+    if current_user.is_sub_admin() and student["role"] in ("admin", "sub_admin"):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
 
     temp_password = request.form.get("new_password", "").strip()
     if not temp_password:
@@ -3971,15 +4254,111 @@ def admin_user_reset_password(user_id):
     cur.close()
     conn.close()
 
+    log_audit(current_user.id, "reset_password", "user", user_id, f"Reset password for {student['name']}")
+
     flash(
         f"Password reset successfully for {student['name']}. Temporary password: '{temp_password}'. Save this temporary password securely. It will not be shown again.",
         "info"
     )
-    return redirect(url_for("admin_users"))
+    target_tab = "subadmins" if student["role"] == "sub_admin" else ("teachers" if student["role"] == "teacher" else "students")
+    return redirect(url_for("admin_users", tab=target_tab))
+
+
+@app.route("/admin/teachers/<int:teacher_id>/assign-courses", methods=["GET", "POST"])
+@admin_or_subadmin_required
+def admin_teacher_assign_courses(teacher_id):
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT id, name, email, role FROM users WHERE id = %s AND role = 'teacher'", (teacher_id,))
+    teacher = cur.fetchone()
+    if not teacher:
+        cur.close()
+        conn.close()
+        flash("Teacher account not found.", "error")
+        return redirect(url_for("admin_users", tab="teachers"))
+
+    if request.method == "POST":
+        course_id = request.form.get("course_id", type=int)
+        if course_id:
+            now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+            try:
+                cur.execute(
+                    "INSERT INTO teacher_assignments (teacher_id, course_id, assigned_at) VALUES (%s, %s, %s)",
+                    (teacher_id, course_id, now_str)
+                )
+                conn.commit()
+                log_audit(current_user.id, "assign_teacher_course", "user", teacher_id, f"Assigned course ID {course_id}")
+                flash("Course assigned successfully to teacher.", "success")
+            except Exception:
+                conn.rollback()
+                flash("Course is already assigned to this teacher.", "info")
+
+    cur.execute(
+        """
+        SELECT c.id, c.title, c.slug, c.grade, ta.assigned_at
+        FROM courses c
+        JOIN teacher_assignments ta ON ta.course_id = c.id
+        WHERE ta.teacher_id = %s
+        ORDER BY c.title ASC
+        """,
+        (teacher_id,)
+    )
+    assigned_courses = cur.fetchall()
+
+    cur.execute("SELECT id, title, slug, grade FROM courses WHERE is_active = 1 ORDER BY title ASC")
+    all_courses = cur.fetchall()
+
+    assigned_ids = {c["id"] for c in assigned_courses}
+    unassigned_courses = [c for c in all_courses if c["id"] not in assigned_ids]
+
+    cur.close()
+    conn.close()
+    return render_template(
+        "admin_teacher_assign.html",
+        active_page="admin",
+        teacher=teacher,
+        assigned_courses=assigned_courses,
+        unassigned_courses=unassigned_courses
+    )
+
+
+@app.route("/admin/teachers/<int:teacher_id>/remove-course/<int:course_id>", methods=["POST"])
+@admin_or_subadmin_required
+def admin_teacher_remove_course(teacher_id, course_id):
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("DELETE FROM teacher_assignments WHERE teacher_id = %s AND course_id = %s", (teacher_id, course_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+    log_audit(current_user.id, "remove_teacher_course", "user", teacher_id, f"Removed course ID {course_id}")
+    flash("Course assignment removed.", "success")
+    return redirect(url_for("admin_teacher_assign_courses", teacher_id=teacher_id))
+
+
+@app.route("/admin/audit-logs")
+@admin_required
+def admin_audit_logs():
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute(
+        """
+        SELECT a.id, a.user_id, a.action, a.target_type, a.target_id, a.details, a.timestamp,
+               u.name as user_name, u.email as user_email
+        FROM audit_logs a
+        LEFT JOIN users u ON u.id = a.user_id
+        ORDER BY a.timestamp DESC, a.id DESC
+        LIMIT 200
+        """
+    )
+    logs = cur.fetchall()
+    cur.close()
+    conn.close()
+    return render_template("admin_audit_logs.html", active_page="admin", logs=logs)
 
 
 @app.route("/admin/users/<int:user_id>/courses")
-@admin_required
+@admin_or_subadmin_required
 def admin_user_courses(user_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -4061,12 +4440,12 @@ def format_datetime_display(dt_str):
 
 
 @app.route("/admin/users/<int:user_id>/progress")
-@admin_required
+@evaluator_required
 def admin_student_progress(user_id):
     """
-    Admin Learning Progress Dashboard for a specific student.
-    Aggregates overall progress, enrolled course progress, module progress, and individual video status.
-    Protected by @admin_required.
+    Learning Progress Dashboard for a specific student.
+    Protected by @evaluator_required. Evaluators (Admin, Sub-Admin, Teacher) can view student progress.
+    Teachers can ONLY view progress for students enrolled in courses assigned to that teacher.
     """
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -4098,6 +4477,15 @@ def admin_student_progress(user_id):
         (user_id,)
     )
     enrolled_courses = cur.fetchall()
+
+    # Scope check for Teacher: MUST be assigned to at least one course the student is enrolled in
+    if current_user.is_teacher():
+        assigned_course_ids = set(get_teacher_assigned_course_ids(current_user.id))
+        enrolled_courses = [c for c in enrolled_courses if c["id"] in assigned_course_ids]
+        if not enrolled_courses:
+            cur.close()
+            conn.close()
+            return render_template("403.html"), 403
 
     course_ids = [c["id"] for c in enrolled_courses]
     module_videos = []
@@ -4279,7 +4667,7 @@ def admin_student_progress(user_id):
 
 
 @app.route("/admin/users/<int:user_id>/courses/assign", methods=["POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_user_assign_course(user_id):
     course_id = request.form.get("course_id", type=int)
     if not course_id:
@@ -4342,7 +4730,7 @@ def admin_user_assign_course(user_id):
 
 
 @app.route("/admin/users/<int:user_id>/courses/<int:course_id>/remove", methods=["POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_user_remove_course(user_id, course_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -4392,93 +4780,151 @@ def admin_user_remove_course(user_id, course_id):
 
 
 @app.route("/admin/courses")
-@admin_required
+@admin_or_subadmin_required
 def admin_courses():
     conn = get_db_connection()
     cur = get_db_cursor(conn)
 
+    category_id = request.args.get("category_id", type=int)
     selected_grade = request.args.get("grade", type=int)
 
-    if selected_grade is None:
-        # First Screen: Display ONLY 5 Educational Grade cards
-        grade_counts = {}
-        for g_id in [1, 2, 3, 4, 5]:
-            cur.execute(
-                """
-                SELECT COUNT(*) AS total_count,
-                       SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) AS active_count
-                FROM courses
-                WHERE grade = %s
-                """,
-                (g_id,),
-            )
-            row = cur.fetchone()
-            grade_counts[g_id] = {
-                "total": row["total_count"] if row and row["total_count"] else 0,
-                "active": row["active_count"] if row and row["active_count"] else 0,
-            }
-
-        grades_data = [
-            {
-                "grade_id": g_id,
-                "name": GRADES[g_id]["name"],
-                "classes": GRADES[g_id]["classes"],
-                "description": GRADES[g_id]["description"],
-                "total_courses": grade_counts[g_id]["total"],
-                "active_courses": grade_counts[g_id]["active"],
-            }
-            for g_id in [1, 2, 3, 4, 5]
-        ]
+    # LEVEL 1: Category Selection Overview (No category_id & No grade)
+    if category_id is None and selected_grade is None:
+        cur.execute(
+            """
+            SELECT lc.id, lc.name, lc.slug, lc.description, lc.image, lc.is_active, lc.display_order,
+                   COUNT(c.id) AS course_count
+            FROM learning_categories lc
+            LEFT JOIN courses c ON c.category_id = lc.id AND c.is_active = 1
+            GROUP BY lc.id, lc.name, lc.slug, lc.description, lc.image, lc.is_active, lc.display_order
+            ORDER BY lc.display_order ASC, lc.id ASC
+            """
+        )
+        categories = cur.fetchall()
         cur.close()
         conn.close()
 
         return render_template(
             "admin_courses.html",
             active_page="admin",
-            show_grades=True,
+            view_mode="categories",
+            categories=categories,
+        )
+
+    # LEVEL 2: Grade Selection within a Category (category_id supplied, grade is None)
+    if category_id is not None and selected_grade is None:
+        cur.execute("SELECT * FROM learning_categories WHERE id = %s", (category_id,))
+        category = cur.fetchone()
+        if not category:
+            cur.close()
+            conn.close()
+            flash("Category not found.", "error")
+            return redirect(url_for("admin_courses"))
+
+        # Calculate course count for each Grade (1 to 5) for this category
+        grades_data = []
+        for g_id in [1, 2, 3, 4, 5]:
+            cur.execute(
+                """
+                SELECT COUNT(*) AS total_count,
+                       SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) AS active_count
+                FROM courses
+                WHERE category_id = %s AND grade = %s
+                """,
+                (category_id, g_id),
+            )
+            row = cur.fetchone()
+            g_info = GRADES.get(g_id, {})
+            grades_data.append({
+                "grade_id": g_id,
+                "name": g_info.get("name", f"Grade {g_id}"),
+                "classes": g_info.get("classes", ""),
+                "description": g_info.get("description", ""),
+                "total_courses": row["total_count"] if row and row["total_count"] else 0,
+                "active_courses": row["active_count"] if row and row["active_count"] else 0,
+            })
+
+        cur.close()
+        conn.close()
+
+        return render_template(
+            "admin_courses.html",
+            active_page="admin",
+            view_mode="grades",
+            category=category,
             grades=grades_data,
         )
 
-    # Grade Selected: Show courses belonging strictly to selected grade
-    if selected_grade not in GRADES:
+    # LEVEL 3: Courses List (category_id and grade, or grade alone fallback)
+    category = None
+    if category_id:
+        cur.execute("SELECT * FROM learning_categories WHERE id = %s", (category_id,))
+        category = cur.fetchone()
+
+    if selected_grade is not None and selected_grade not in GRADES:
         cur.close()
         conn.close()
         flash("Invalid Grade selected.", "error")
         return redirect(url_for("admin_courses"))
 
-    grade_info = GRADES[selected_grade]
+    grade_info = GRADES.get(selected_grade, {}) if selected_grade else None
+
+    # Fetch courses filtered by category_id and selected_grade
+    query_conditions = []
+    params = []
+
+    if category_id:
+        query_conditions.append("c.category_id = %s")
+        params.append(category_id)
+    if selected_grade:
+        query_conditions.append("c.grade = %s")
+        params.append(selected_grade)
+
+    where_clause = ("WHERE " + " AND ".join(query_conditions)) if query_conditions else ""
 
     cur.execute(
-        """
-        SELECT c.id, c.title, c.slug, c.short_description, c.description, c.image, c.level, c.grade, c.is_active, c.created_at,
+        f"""
+        SELECT c.id, c.title, c.slug, c.short_description, c.description, c.image, c.level, c.grade, c.is_active, c.category_id,
+               lc.name AS category_name,
                COUNT(DISTINCT m.id) AS total_modules,
                COUNT(DISTINCT v.id) AS total_videos
         FROM courses c
+        LEFT JOIN learning_categories lc ON lc.id = c.category_id
         LEFT JOIN modules m ON m.course_id = c.id
         LEFT JOIN course_videos v ON v.module_id = m.id
-        WHERE c.grade = %s
-        GROUP BY c.id, c.title, c.slug, c.short_description, c.description, c.image, c.level, c.grade, c.is_active, c.created_at
-        ORDER BY c.id ASC
+        {where_clause}
+        GROUP BY c.id, c.title, c.slug, c.short_description, c.description, c.image, c.level, c.grade, c.is_active, c.category_id, lc.name
+        ORDER BY c.grade ASC, c.id ASC
         """,
-        (selected_grade,),
+        tuple(params),
     )
     courses_list = cur.fetchall()
     cur.close()
     conn.close()
 
+    for c in courses_list:
+        g_info = GRADES.get(c["grade"], {})
+        c["grade_name"] = g_info.get("name", f"Grade {c['grade']}")
+        c["classes"] = g_info.get("classes", "")
+
     return render_template(
         "admin_courses.html",
         active_page="admin",
-        show_grades=False,
+        view_mode="courses",
+        category=category,
         selected_grade=selected_grade,
         grade_info=grade_info,
         courses=courses_list,
+        grades=GRADES,
     )
 
 
 @app.route("/admin/courses/<int:course_id>")
-@admin_required
+@evaluator_required
 def admin_course_detail(course_id):
+    if not can_access_course(current_user.id, course_id):
+        return render_template("403.html"), 403
+
     conn = get_db_connection()
     cur = get_db_cursor(conn)
 
@@ -4743,7 +5189,7 @@ def admin_learning_catalogue_settings():
 
 
 @app.route("/admin/learning-categories")
-@admin_required
+@admin_or_subadmin_required
 def admin_learning_categories():
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -4766,7 +5212,7 @@ def admin_learning_categories():
 
 
 @app.route("/admin/learning-categories/new", methods=["GET", "POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_add_learning_category():
     error = None
     if request.method == "POST":
@@ -4864,7 +5310,7 @@ def admin_add_learning_category():
 
 
 @app.route("/admin/learning-categories/<int:category_id>/edit", methods=["GET", "POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_edit_learning_category(category_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -4959,7 +5405,7 @@ def admin_edit_learning_category(category_id):
 
 
 @app.route("/admin/learning-categories/<int:category_id>/toggle-active", methods=["POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_toggle_learning_category_active(category_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -4978,13 +5424,14 @@ def admin_toggle_learning_category_active(category_id):
     cur.close()
     conn.close()
 
+    log_audit(current_user.id, "TOGGLE_CATEGORY_STATUS", "category", category_id, f"Set category '{category['name']}' status to {'active' if new_status else 'inactive'}")
     flash(f"Category '{category['name']}' is now {'active' if new_status else 'inactive'}.", "success")
     return redirect(url_for("admin_learning_categories"))
 
 
-@app.route("/admin/learning-categories/<int:category_id>/courses")
-@admin_required
-def admin_category_courses(category_id):
+@app.route("/admin/learning-categories/<int:category_id>/delete", methods=["POST"])
+@admin_or_subadmin_required
+def admin_delete_learning_category(category_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
     cur.execute("SELECT * FROM learning_categories WHERE id = %s", (category_id,))
@@ -4995,34 +5442,52 @@ def admin_category_courses(category_id):
         flash("Category not found.", "error")
         return redirect(url_for("admin_learning_categories"))
 
-    cur.execute(
-        """
-        SELECT c.id, c.title, c.slug, c.short_description, c.description, c.image, c.level, c.grade, c.is_active, c.created_at,
-               COUNT(DISTINCT m.id) AS total_modules,
-               COUNT(DISTINCT v.id) AS total_videos
-        FROM courses c
-        LEFT JOIN modules m ON m.course_id = c.id
-        LEFT JOIN course_videos v ON v.module_id = m.id
-        WHERE c.category_id = %s
-        GROUP BY c.id, c.title, c.slug, c.short_description, c.description, c.image, c.level, c.grade, c.is_active, c.created_at
-        ORDER BY c.grade ASC, c.id ASC
-        """,
-        (category_id,)
-    )
-    courses_list = cur.fetchall()
+    # Dependency protection check: Check if category contains courses or learning paths
+    cur.execute("SELECT COUNT(*) AS c_count FROM courses WHERE category_id = %s", (category_id,))
+    c_res = cur.fetchone()
+    course_count = c_res["c_count"] if c_res else 0
+
+    cur.execute("SELECT COUNT(*) AS p_count FROM learning_paths WHERE category_id = %s", (category_id,))
+    p_res = cur.fetchone()
+    path_count = p_res["p_count"] if p_res else 0
+
+    if course_count > 0 or path_count > 0:
+        cur.close()
+        conn.close()
+        flash("This category cannot be deleted because it contains courses or learning paths. Remove or reassign the dependent content first.", "warning")
+        return redirect(url_for("admin_learning_categories"))
+
+    # Category is empty and safe to delete
+    cat_image = category.get("image") or ""
+    cat_name = category.get("name") or f"Category #{category_id}"
+
+    cur.execute("DELETE FROM learning_categories WHERE id = %s", (category_id,))
+    conn.commit()
+
+    # Clean up uploaded category image if not referenced elsewhere
+    if cat_image and cat_image.startswith("uploads/categories/"):
+        cur.execute("SELECT COUNT(*) AS img_ref FROM learning_categories WHERE image = %s", (cat_image,))
+        ref_res = cur.fetchone()
+        img_refs = ref_res["img_ref"] if ref_res else 0
+        if img_refs == 0:
+            storage.delete_category_image(cat_image)
+
     cur.close()
     conn.close()
 
-    for c in courses_list:
-        g_info = GRADES.get(c["grade"], {})
-        c["grade_name"] = g_info.get("name", f"Grade {c['grade']}")
-        c["classes"] = g_info.get("classes", "")
+    log_audit(current_user.id, "DELETE_CATEGORY", "category", category_id, f"Deleted empty category '{cat_name}'")
+    flash(f"Learning category '{cat_name}' deleted successfully!", "success")
+    return redirect(url_for("admin_learning_categories"))
 
-    return render_template("admin_courses.html", active_page="admin", show_grades=False, category=category, courses=courses_list, grades=GRADES)
+
+@app.route("/admin/learning-categories/<int:category_id>/courses")
+@admin_or_subadmin_required
+def admin_category_courses(category_id):
+    return redirect(url_for("admin_courses", category_id=category_id))
 
 
 @app.route("/admin/learning-categories/<int:category_id>/paths")
-@admin_required
+@admin_or_subadmin_required
 def admin_category_learning_paths(category_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -5059,7 +5524,7 @@ def admin_category_learning_paths(category_id):
 
 
 @app.route("/admin/learning-categories/<int:category_id>/paths/new", methods=["GET", "POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_add_learning_path(category_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -5142,7 +5607,7 @@ def admin_add_learning_path(category_id):
 
 
 @app.route("/admin/learning-paths/<int:path_id>/edit", methods=["GET", "POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_edit_learning_path(path_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -5248,7 +5713,7 @@ def admin_edit_learning_path(path_id):
 
 
 @app.route("/admin/learning-paths/<int:path_id>/toggle-active", methods=["POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_toggle_learning_path_active(path_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -5272,7 +5737,7 @@ def admin_toggle_learning_path_active(path_id):
 
 
 @app.route("/admin/learning-paths/<int:path_id>/delete", methods=["POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_delete_learning_path(path_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -5309,7 +5774,7 @@ def admin_delete_learning_path(path_id):
 
 
 @app.route("/admin/api/categories/<int:category_id>/paths")
-@admin_required
+@admin_or_subadmin_required
 def admin_api_category_paths(category_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -5335,7 +5800,7 @@ def admin_api_category_paths(category_id):
 # ---------- Admin Course CRUD ----------
 
 @app.route("/admin/courses/new", methods=["GET", "POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_add_course():
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -5470,6 +5935,8 @@ def admin_add_course():
     if default_grade not in GRADES:
         default_grade = 1
 
+    default_category_id = request.args.get("category_id", type=int)
+
     cur.close()
     conn.close()
     return render_template(
@@ -5478,6 +5945,7 @@ def admin_add_course():
         action="Create",
         grades=GRADES,
         default_grade=default_grade,
+        default_category_id=default_category_id,
         categories=categories,
         learning_paths=learning_paths,
         error=error,
@@ -5485,7 +5953,7 @@ def admin_add_course():
 
 
 @app.route("/admin/courses/<int:course_id>/edit", methods=["GET", "POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_edit_course(course_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -5640,7 +6108,7 @@ def admin_edit_course(course_id):
 @app.route("/admin/courses/<int:course_id>/toggle-active", methods=["POST"])
 @app.route("/admin/courses/<int:course_id>/toggle-status", methods=["POST"])
 @app.route("/admin/courses/<int:course_id>/toggle-active", methods=["POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_toggle_course_active(course_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -5664,7 +6132,7 @@ def admin_toggle_course_active(course_id):
 
 
 @app.route("/admin/courses/<int:course_id>/deactivate", methods=["POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_deactivate_course(course_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -5687,7 +6155,7 @@ def admin_deactivate_course(course_id):
 
 
 @app.route("/admin/courses/<int:course_id>/reactivate", methods=["POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_reactivate_course(course_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -5710,7 +6178,7 @@ def admin_reactivate_course(course_id):
 
 
 @app.route("/admin/courses/<int:course_id>/delete", methods=["POST"])
-@admin_required
+@admin_or_subadmin_required
 def admin_delete_course(course_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -5786,8 +6254,11 @@ def admin_delete_course(course_id):
 # ---------- Admin Module CRUD ----------
 
 @app.route("/admin/courses/<int:course_id>/modules/new", methods=["GET", "POST"])
-@admin_required
+@evaluator_required
 def admin_add_module(course_id):
+    if not can_access_course(current_user.id, course_id):
+        return render_template("403.html"), 403
+
     conn = get_db_connection()
     cur = get_db_cursor(conn)
     cur.execute("SELECT id, title FROM courses WHERE id = %s", (course_id,))
@@ -5831,7 +6302,7 @@ def admin_add_module(course_id):
 
 
 @app.route("/admin/modules/<int:module_id>/edit", methods=["GET", "POST"])
-@admin_required
+@evaluator_required
 def admin_edit_module(module_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -5851,6 +6322,11 @@ def admin_edit_module(module_id):
         conn.close()
         flash("Module not found.", "error")
         return redirect(url_for("admin_courses"))
+
+    if not can_access_course(current_user.id, module["course_id"]):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
 
     error = None
     if request.method == "POST":
@@ -5886,7 +6362,7 @@ def admin_edit_module(module_id):
 
 
 @app.route("/admin/modules/<int:module_id>/delete", methods=["POST"])
-@admin_required
+@evaluator_required
 def admin_delete_module(module_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -5897,6 +6373,11 @@ def admin_delete_module(module_id):
         conn.close()
         flash("Module not found.", "error")
         return redirect(url_for("admin_courses"))
+
+    if not can_access_course(current_user.id, module["course_id"]):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
 
     course_id = module["course_id"]
     now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
@@ -5913,7 +6394,7 @@ def admin_delete_module(module_id):
 # ---------- Admin Video CRUD ----------
 
 @app.route("/admin/modules/<int:module_id>/videos/new", methods=["GET", "POST"])
-@admin_required
+@evaluator_required
 def admin_add_video(module_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -5934,6 +6415,9 @@ def admin_add_video(module_id):
     if not mod_info:
         flash("Module not found.", "error")
         return redirect(url_for("admin_courses"))
+
+    if not can_access_course(current_user.id, mod_info["course_id"]):
+        return render_template("403.html"), 403
 
     error = None
     if request.method == "POST":
@@ -6023,7 +6507,7 @@ def admin_add_video(module_id):
 
 
 @app.route("/admin/videos/<int:video_id>/edit", methods=["GET", "POST"])
-@admin_required
+@evaluator_required
 def admin_edit_video(video_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -6047,6 +6531,9 @@ def admin_edit_video(video_id):
     if not video:
         flash("Video not found.", "error")
         return redirect(url_for("admin_courses"))
+
+    if not can_access_course(current_user.id, video["course_id"]):
+        return render_template("403.html"), 403
 
     error = None
     if request.method == "POST":
@@ -6144,7 +6631,7 @@ def admin_edit_video(video_id):
 
 
 @app.route("/admin/videos/<int:video_id>/delete", methods=["POST"])
-@admin_required
+@evaluator_required
 def admin_delete_video(video_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -6165,6 +6652,11 @@ def admin_delete_video(video_id):
         conn.close()
         flash("Video not found.", "error")
         return redirect(url_for("admin_courses"))
+
+    if not can_access_course(current_user.id, video["course_id"]):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
 
     course_id = video["course_id"]
 
@@ -6571,7 +7063,7 @@ def student_quiz_result(course_slug, module_id, attempt_id):
 # ==================================================
 
 @app.route("/admin/modules/<int:module_id>/quiz/new", methods=["GET", "POST"])
-@admin_required
+@evaluator_required
 def admin_add_quiz(module_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -6583,6 +7075,11 @@ def admin_add_quiz(module_id):
         conn.close()
         flash("Module not found.", "error")
         return redirect(url_for("admin_courses"))
+
+    if not can_access_course(current_user.id, mod_info["course_id"]):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
 
     error = None
     if request.method == "POST":
@@ -6615,7 +7112,7 @@ def admin_add_quiz(module_id):
 
 
 @app.route("/admin/quizzes/<int:quiz_id>/edit", methods=["GET", "POST"])
-@admin_required
+@evaluator_required
 def admin_edit_quiz(quiz_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -6637,6 +7134,11 @@ def admin_edit_quiz(quiz_id):
         conn.close()
         flash("Quiz not found.", "error")
         return redirect(url_for("admin_courses"))
+
+    if not can_access_course(current_user.id, quiz["course_id"]):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
 
     error = None
     if request.method == "POST":
@@ -6670,31 +7172,35 @@ def admin_edit_quiz(quiz_id):
 
 
 @app.route("/admin/quizzes/<int:quiz_id>/delete", methods=["POST"])
-@admin_required
+@evaluator_required
 def admin_delete_quiz(quiz_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
 
     cur.execute("SELECT q.id, m.course_id FROM quizzes q JOIN modules m ON m.id = q.module_id WHERE q.id = %s", (quiz_id,))
     quiz = cur.fetchone()
-    if quiz:
-        cur.execute("DELETE FROM quizzes WHERE id = %s", (quiz_id,))
-        conn.commit()
-        flash("Quiz deleted successfully.", "success")
-        course_id = quiz["course_id"]
-    else:
+    if not quiz:
+        cur.close()
+        conn.close()
         flash("Quiz not found.", "error")
-        course_id = None
+        return redirect(url_for("admin_courses"))
 
+    if not can_access_course(current_user.id, quiz["course_id"]):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
+
+    course_id = quiz["course_id"]
+    cur.execute("DELETE FROM quizzes WHERE id = %s", (quiz_id,))
+    conn.commit()
     cur.close()
     conn.close()
-    if course_id:
-        return redirect(url_for("admin_course_detail", course_id=course_id))
-    return redirect(url_for("admin_courses"))
+    flash("Quiz deleted successfully.", "success")
+    return redirect(url_for("admin_course_detail", course_id=course_id))
 
 
 @app.route("/admin/quizzes/<int:quiz_id>/questions")
-@admin_required
+@evaluator_required
 def admin_quiz_questions(quiz_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -6717,6 +7223,11 @@ def admin_quiz_questions(quiz_id):
         flash("Quiz not found.", "error")
         return redirect(url_for("admin_courses"))
 
+    if not can_access_course(current_user.id, quiz["course_id"]):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
+
     cur.execute(
         """
         SELECT id, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, sequence, is_active
@@ -6734,7 +7245,7 @@ def admin_quiz_questions(quiz_id):
 
 
 @app.route("/admin/quizzes/<int:quiz_id>/questions/new", methods=["GET", "POST"])
-@admin_required
+@evaluator_required
 def admin_add_question(quiz_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -6755,6 +7266,11 @@ def admin_add_question(quiz_id):
         conn.close()
         flash("Quiz not found.", "error")
         return redirect(url_for("admin_courses"))
+
+    if not can_access_course(current_user.id, quiz["course_id"]):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
 
     error = None
     if request.method == "POST":
@@ -6793,7 +7309,7 @@ def admin_add_question(quiz_id):
 
 
 @app.route("/admin/questions/<int:question_id>/edit", methods=["GET", "POST"])
-@admin_required
+@evaluator_required
 def admin_edit_question(question_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -6816,6 +7332,11 @@ def admin_edit_question(question_id):
         conn.close()
         flash("Question not found.", "error")
         return redirect(url_for("admin_courses"))
+
+    if not can_access_course(current_user.id, question["course_id"]):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
 
     error = None
     if request.method == "POST":
@@ -6856,31 +7377,44 @@ def admin_edit_question(question_id):
 
 
 @app.route("/admin/questions/<int:question_id>/delete", methods=["POST"])
-@admin_required
+@evaluator_required
 def admin_delete_question(question_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
 
-    cur.execute("SELECT id, quiz_id FROM quiz_questions WHERE id = %s", (question_id,))
+    cur.execute(
+        """
+        SELECT qq.id, qq.quiz_id, m.course_id
+        FROM quiz_questions qq
+        JOIN quizzes q ON q.id = qq.quiz_id
+        JOIN modules m ON m.id = q.module_id
+        WHERE qq.id = %s
+        """,
+        (question_id,),
+    )
     question = cur.fetchone()
-    if question:
-        quiz_id = question["quiz_id"]
-        cur.execute("DELETE FROM quiz_questions WHERE id = %s", (question_id,))
-        conn.commit()
-        flash("Question deleted successfully.", "success")
-    else:
-        quiz_id = None
+    if not question:
+        cur.close()
+        conn.close()
         flash("Question not found.", "error")
+        return redirect(url_for("admin_courses"))
 
+    if not can_access_course(current_user.id, question["course_id"]):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
+
+    quiz_id = question["quiz_id"]
+    cur.execute("DELETE FROM quiz_questions WHERE id = %s", (question_id,))
+    conn.commit()
     cur.close()
     conn.close()
-    if quiz_id:
-        return redirect(url_for("admin_quiz_questions", quiz_id=quiz_id))
-    return redirect(url_for("admin_courses"))
+    flash("Question deleted successfully.", "success")
+    return redirect(url_for("admin_quiz_questions", quiz_id=quiz_id))
 
 
 @app.route("/admin/quizzes/<int:quiz_id>/attempts")
-@admin_required
+@evaluator_required
 def admin_quiz_attempts(quiz_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -6902,6 +7436,11 @@ def admin_quiz_attempts(quiz_id):
         conn.close()
         flash("Quiz not found.", "error")
         return redirect(url_for("admin_courses"))
+
+    if not can_access_course(current_user.id, quiz["course_id"]):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
 
     cur.execute(
         """
@@ -7079,7 +7618,7 @@ def download_project_submission_file(submission_id):
 # ==================================================
 
 @app.route("/admin/modules/<int:module_id>/project/new", methods=["GET", "POST"])
-@admin_required
+@evaluator_required
 def admin_add_project(module_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -7099,6 +7638,11 @@ def admin_add_project(module_id):
         conn.close()
         flash("Module not found.", "error")
         return redirect(url_for("admin_courses"))
+
+    if not can_access_course(current_user.id, mod_info["course_id"]):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
 
     error = None
     if request.method == "POST":
@@ -7122,6 +7666,7 @@ def admin_add_project(module_id):
             conn.commit()
             cur.close()
             conn.close()
+            log_audit(current_user.id, "create_project", "module", module_id, f"Created project '{title}'")
             flash("Project created successfully!", "success")
             return redirect(url_for("admin_course_detail", course_id=mod_info["course_id"]))
 
@@ -7131,7 +7676,7 @@ def admin_add_project(module_id):
 
 
 @app.route("/admin/projects/<int:project_id>/edit", methods=["GET", "POST"])
-@admin_required
+@evaluator_required
 def admin_edit_project(project_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -7153,6 +7698,11 @@ def admin_edit_project(project_id):
         conn.close()
         flash("Project not found.", "error")
         return redirect(url_for("admin_courses"))
+
+    if not can_access_course(current_user.id, project["course_id"]):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
 
     error = None
     if request.method == "POST":
@@ -7177,6 +7727,7 @@ def admin_edit_project(project_id):
             conn.commit()
             cur.close()
             conn.close()
+            log_audit(current_user.id, "edit_project", "project", project_id, f"Updated project '{title}'")
             flash("Project updated successfully!", "success")
             return redirect(url_for("admin_course_detail", course_id=project["course_id"]))
 
@@ -7186,31 +7737,36 @@ def admin_edit_project(project_id):
 
 
 @app.route("/admin/projects/<int:project_id>/delete", methods=["POST"])
-@admin_required
+@evaluator_required
 def admin_delete_project(project_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
 
-    cur.execute("SELECT p.id, m.course_id FROM projects p JOIN modules m ON m.id = p.module_id WHERE p.id = %s", (project_id,))
+    cur.execute("SELECT p.id, p.title, m.course_id FROM projects p JOIN modules m ON m.id = p.module_id WHERE p.id = %s", (project_id,))
     project = cur.fetchone()
-    if project:
-        cur.execute("DELETE FROM projects WHERE id = %s", (project_id,))
-        conn.commit()
-        flash("Project deleted successfully.", "success")
-        course_id = project["course_id"]
-    else:
+    if not project:
+        cur.close()
+        conn.close()
         flash("Project not found.", "error")
-        course_id = None
+        return redirect(url_for("admin_courses"))
 
+    if not can_access_course(current_user.id, project["course_id"]):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
+
+    course_id = project["course_id"]
+    cur.execute("DELETE FROM projects WHERE id = %s", (project_id,))
+    conn.commit()
+    log_audit(current_user.id, "delete_project", "project", project_id, f"Deleted project '{project['title']}'")
+    flash("Project deleted successfully.", "success")
     cur.close()
     conn.close()
-    if course_id:
-        return redirect(url_for("admin_course_detail", course_id=course_id))
-    return redirect(url_for("admin_courses"))
+    return redirect(url_for("admin_course_detail", course_id=course_id))
 
 
 @app.route("/admin/projects/<int:project_id>/submissions")
-@admin_required
+@evaluator_required
 def admin_project_submissions(project_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -7232,6 +7788,12 @@ def admin_project_submissions(project_id):
         conn.close()
         flash("Project not found.", "error")
         return redirect(url_for("admin_courses"))
+
+    # Teacher scope validation: must be assigned to the course of this project
+    if not can_access_course(current_user.id, project["course_id"]):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
 
     cur.execute(
         """
@@ -7272,7 +7834,7 @@ def admin_project_submissions(project_id):
 
 
 @app.route("/admin/submissions/<int:submission_id>/evaluate", methods=["GET", "POST"])
-@admin_required
+@evaluator_required
 def admin_evaluate_submission(submission_id):
     conn = get_db_connection()
     cur = get_db_cursor(conn)
@@ -7300,6 +7862,12 @@ def admin_evaluate_submission(submission_id):
         flash("Submission not found.", "error")
         return redirect(url_for("admin_courses"))
 
+    # Teacher scope validation: must be assigned to course of this submission
+    if not can_access_course(current_user.id, sub["course_id"]):
+        cur.close()
+        conn.close()
+        return render_template("403.html"), 403
+
     error = None
     if request.method == "POST":
         marks = request.form.get("marks", type=int)
@@ -7320,6 +7888,7 @@ def admin_evaluate_submission(submission_id):
             conn.commit()
             cur.close()
             conn.close()
+            log_audit(current_user.id, "evaluate_project", "project_submission", submission_id, f"Evaluated submission with {marks}/{sub['max_marks']} marks")
             flash(f"Submission for {sub['student_name']} evaluated successfully with {marks}/{sub['max_marks']} marks!", "success")
             return redirect(url_for("admin_project_submissions", project_id=sub["project_id"], tab="evaluated"))
 

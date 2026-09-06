@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 
-{% block title %}Admin — Student Account Management | airodrone{% endblock %}
+{% block title %}User Management | airodrone{% endblock %}
 
 {% block content %}
 <section class="page-hero">
     <div class="container page-hero-inner">
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
             <div>
-                <h1>Admin &mdash; Student Account Management</h1>
-                <p style="color: var(--color-text-muted);">Manage private student credentials, course enrollments, and account access status.</p>
+                <h1>User Management</h1>
+                <p style="color: var(--color-text-muted);">Student Account Management — Manage student accounts, teacher course assignments, and sub-administrative staff.</p>
             </div>
             <div>
                 <a href="{{ url_for('admin_user_new') }}" class="btn btn-primary btn-md">
-                    + Create Student Account
+                    + Create User
                 </a>
             </div>
         </div>
@@ -31,8 +31,23 @@
             {% endif %}
         {% endwith %}
 
-        <div style="margin-bottom: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-            <a href="{{ url_for('admin') }}" class="btn btn-outline">&larr; Back to Admin Panel</a>
+        <!-- Tab Navigation -->
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border-color, #e2e8f0); padding-bottom: 0.5rem;">
+            <a href="{{ url_for('admin_users', tab='students') }}" class="btn {% if current_tab == 'students' or not current_tab %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius: 6px; padding: 0.5rem 1.25rem;">
+                Students
+            </a>
+            <a href="{{ url_for('admin_users', tab='teachers') }}" class="btn {% if current_tab == 'teachers' %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius: 6px; padding: 0.5rem 1.25rem;">
+                Teachers
+            </a>
+            {% if current_user.is_admin() %}
+            <a href="{{ url_for('admin_users', tab='subadmins') }}" class="btn {% if current_tab == 'subadmins' %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius: 6px; padding: 0.5rem 1.25rem;">
+                Sub-Admins
+            </a>
+            {% endif %}
+        </div>
+
+        <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="{{ url_for('admin') }}" class="btn btn-outline">&larr; Back to Panel</a>
             <a href="{{ url_for('admin_courses') }}" class="btn btn-outline">Course Management</a>
         </div>
 
@@ -42,13 +57,19 @@
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Student Name</th>
+                        <th>Name</th>
+                        {% if current_tab == 'students' %}
                         <th>Father's Name</th>
                         <th>Class / Grade</th>
+                        {% endif %}
                         <th>Email / Contact</th>
                         <th>Role</th>
                         <th>Status</th>
+                        {% if current_tab == 'students' %}
                         <th>Enrolled Courses</th>
+                        {% elif current_tab == 'teachers' %}
+                        <th>Assigned Courses</th>
+                        {% endif %}
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -59,6 +80,7 @@
                         <td>
                             <strong>{{ u.name }}</strong>
                         </td>
+                        {% if current_tab == 'students' %}
                         <td>{{ u.father_name or '&mdash;'|safe }}</td>
                         <td>
                             {% if u.student_class %}
@@ -70,6 +92,7 @@
                                 <span style="color: var(--color-text-muted);">&mdash;</span>
                             {% endif %}
                         </td>
+                        {% endif %}
                         <td>
                             <a href="mailto:{{ u.email }}">{{ u.email }}</a>
                             {% if u.phone %}
@@ -77,8 +100,8 @@
                             {% endif %}
                         </td>
                         <td>
-                            <span class="badge-status {% if u.role == 'admin' %}badge-active{% else %}badge-inactive{% endif %}" style="font-size: 0.8rem;">
-                                {{ u.role|title }}
+                            <span class="badge-status {% if u.role == 'admin' %}badge-active{% elif u.role == 'sub_admin' %}badge-active{% elif u.role == 'teacher' %}badge-active{% else %}badge-inactive{% endif %}" style="font-size: 0.8rem;">
+                                {% if u.role == 'sub_admin' %}Sub-Admin{% elif u.role == 'teacher' %}Teacher{% elif u.role == 'admin' %}Admin{% else %}Student{% endif %}
                             </span>
                         </td>
                         <td>
@@ -86,29 +109,36 @@
                                 {{ 'Active' if u.is_active else 'Inactive' }}
                             </span>
                         </td>
+                        {% if current_tab == 'students' %}
                         <td>
-                            {% if u.role == 'admin' %}
-                                <span style="font-size: 0.85rem; color: var(--color-text-muted);">All Courses (Admin)</span>
-                            {% else %}
-                                <strong>{{ u.enrolled_count or 0 }} Course{% if u.enrolled_count != 1 %}s{% endif %}</strong>
-                            {% endif %}
+                            <strong>{{ u.enrolled_count or 0 }} Course{% if u.enrolled_count != 1 %}s{% endif %}</strong>
                         </td>
+                        {% elif current_tab == 'teachers' %}
+                        <td>
+                            <strong>{{ u.assigned_teacher_courses or 0 }} Course{% if u.assigned_teacher_courses != 1 %}s{% endif %}</strong>
+                        </td>
+                        {% endif %}
                         <td>
                             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-                                {% if u.role != 'admin' %}
+                                {% if current_tab == 'students' %}
                                 <a href="{{ url_for('admin_student_progress', user_id=u.id) }}" class="btn btn-secondary btn-sm">
                                     Progress
                                 </a>
                                 <a href="{{ url_for('admin_user_courses', user_id=u.id) }}" class="btn btn-primary btn-sm">
-                                    Courses
+                                    Enroll Courses
                                 </a>
-                                <a href="{{ url_for('admin_user_edit', user_id=u.id) }}" class="btn btn-outline btn-sm">
-                                    Edit
+                                {% elif current_tab == 'teachers' %}
+                                <a href="{{ url_for('admin_teacher_assign_courses', teacher_id=u.id) }}" class="btn btn-primary btn-sm">
+                                    Assign Courses
                                 </a>
                                 {% endif %}
 
-                                <!-- Reset Password Inline Form -->
-                                <form method="post" action="{{ url_for('admin_user_reset_password', user_id=u.id) }}" style="display: inline;" onsubmit="return confirm('Reset password for {{ u.name }}? A temporary password will be generated.');">
+                                {% if current_user.is_admin() or (current_user.is_sub_admin() and u.role not in ('admin', 'sub_admin')) %}
+                                <a href="{{ url_for('admin_user_edit', user_id=u.id) }}" class="btn btn-outline btn-sm">
+                                    Edit
+                                </a>
+
+                                <form method="post" action="{{ url_for('admin_user_reset_password', user_id=u.id) }}" style="display: inline;" onsubmit="return confirm('Reset password for {{ u.name }}?');">
                                     <button type="submit" class="btn btn-outline btn-sm">
                                         Reset Pass
                                     </button>
@@ -121,6 +151,7 @@
                                     </button>
                                 </form>
                                 {% endif %}
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -129,7 +160,7 @@
             </table>
         </div>
         {% else %}
-        <p style="color: var(--color-text-muted);">No student users registered yet.</p>
+        <p style="color: var(--color-text-muted);">No users found in this category.</p>
         {% endif %}
     </div>
 </section>

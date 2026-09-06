@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}{% if edit_mode %}Edit Student — {{ student.name }}{% else %}Create Student Account{% endif %} | airodrone{% endblock %}
+{% block title %}{% if edit_mode %}Edit User — {{ student.name }}{% else %}Create User Account{% endif %} | airodrone{% endblock %}
 
 {% block content %}
 <section class="page-hero">
     <div class="container page-hero-inner">
         <div>
-            <h1>Admin &mdash; {% if edit_mode %}Edit Student Account{% else %}Create Student Account{% endif %}</h1>
-            <p>{% if edit_mode %}Update student profile details and account status{% else %}Manually register a new student account{% endif %}</p>
+            <h1>{% if edit_mode %}Edit User Account{% else %}Create User Account{% endif %}</h1>
+            <p>{% if edit_mode %}Update user details, role, and access status{% else %}Register a new Student, Teacher, or Sub-Admin account{% endif %}</p>
         </div>
     </div>
 </section>
@@ -34,24 +34,36 @@
             <form method="post" action="{% if edit_mode %}{{ url_for('admin_user_edit', user_id=student.id) }}{% else %}{{ url_for('admin_user_new') }}{% endif %}">
                 <div style="display: flex; flex-direction: column; gap: 1.25rem;">
                     <div>
+                        <label for="role" style="display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.9rem;">Account Role *</label>
+                        <select id="role" name="role" class="form-input" required>
+                            {% set sel_role = student.role if edit_mode else (form_data.role if form_data else 'user') %}
+                            <option value="user" {% if sel_role == 'user' or sel_role == 'student' %}selected{% endif %}>Student (Learner)</option>
+                            <option value="teacher" {% if sel_role == 'teacher' %}selected{% endif %}>Teacher (Academic & Evaluation)</option>
+                            {% if current_user.is_admin() %}
+                            <option value="sub_admin" {% if sel_role == 'sub_admin' %}selected{% endif %}>Sub-Admin (Operational Management)</option>
+                            {% endif %}
+                        </select>
+                    </div>
+
+                    <div>
                         <label for="name" style="display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.9rem;">Full Name *</label>
                         <input type="text" id="name" name="name" class="form-input" required value="{{ student.name if edit_mode else (form_data.name if form_data else '') }}" placeholder="e.g. Om Yadav">
                     </div>
 
                     <div>
-                        <label for="father_name" style="display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.9rem;">Father's Name</label>
+                        <label for="father_name" style="display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.9rem;">Father's Name (Optional for students)</label>
                         <input type="text" id="father_name" name="father_name" class="form-input" value="{{ student.father_name if edit_mode else (form_data.father_name if form_data else '') }}" placeholder="e.g. Ramesh Yadav">
                     </div>
 
                     <div>
                         <label for="email" style="display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.9rem;">Email Address *</label>
-                        <input type="email" id="email" name="email" class="form-input" required value="{{ student.email if edit_mode else (form_data.email if form_data else '') }}" placeholder="e.g. student@school.edu">
+                        <input type="email" id="email" name="email" class="form-input" required value="{{ student.email if edit_mode else (form_data.email if form_data else '') }}" placeholder="e.g. user@school.edu">
                     </div>
 
                     <div>
-                        <label for="student_class" style="display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.9rem;">Student Class (Determines Educational Grade 1–5)</label>
+                        <label for="student_class" style="display: block; font-weight: 600; margin-bottom: 0.35rem; font-size: 0.9rem;">Student Class (For students: determines Grade 1–5)</label>
                         <select id="student_class" name="student_class" class="form-input">
-                            <option value="">-- Select Student Class --</option>
+                            <option value="">-- Select Class (Students Only) --</option>
                             {% set current_cls = student.student_class if edit_mode else (form_data.student_class if form_data else '') %}
                             <optgroup label="Grade 1 (Classes 1–2)">
                                 <option value="1" {% if current_cls == '1' or current_cls == 'Class 1' %}selected{% endif %}>Class 1 (Grade 1)</option>
@@ -93,16 +105,16 @@
                     <div>
                         <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.95rem;">
                             <input type="checkbox" name="is_active" value="1" {% if edit_mode %}{% if student.is_active %}checked{% endif %}{% else %}checked{% endif %}>
-                            <span>Active Account (Student can log in and access assigned courses)</span>
+                            <span>Active Account</span>
                         </label>
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 1rem; margin-top: 2rem; align-items: center;">
-                    <button type="submit" class="btn btn-primary btn-md">
-                        {% if edit_mode %}Save Changes{% else %}Create Student Account{% endif %} &rarr;
+                <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                    <button type="submit" class="btn btn-primary">
+                        {% if edit_mode %}Save Changes{% else %}Create Account{% endif %}
                     </button>
-                    <a href="{{ url_for('admin_users') }}" class="btn btn-outline">&larr; Cancel</a>
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-outline">Cancel</a>
                 </div>
             </form>
         </div>

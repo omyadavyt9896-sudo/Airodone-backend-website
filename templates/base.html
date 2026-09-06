@@ -95,9 +95,11 @@
                     </li>
 
                     {% if current_user.is_authenticated %}
-                    {% if current_user.is_admin() %}
+                    {% if current_user.is_admin() or current_user.is_sub_admin() or current_user.is_teacher() %}
                     <li class="admin-link {% if active_page == 'admin' %}active{% endif %}">
-                        <a href="{{ url_for('admin') }}">Admin</a>
+                        <a href="{{ url_for('admin') }}">
+                            {% if current_user.is_admin() %}Admin Panel{% elif current_user.is_sub_admin() %}Sub-Admin{% else %}Teacher Console{% endif %}
+                        </a>
                     </li>
                     {% endif %}
                     <li class="{% if active_page == 'dashboard' %}active{% endif %}">

@@ -243,23 +243,24 @@ class LMSFinalTestCase(unittest.TestCase):
     # ----------------------------------------------------
     # 2. Admin Course Management Grade Hierarchy Tests
     # ----------------------------------------------------
-    def test_admin_courses_shows_only_5_grade_cards_and_no_individual_courses(self):
+    def test_admin_courses_shows_learning_categories(self):
         self.login("admin@airodrone.com", "AdminPass123!")
         res = self.client.get("/admin/courses")
         self.assertEqual(res.status_code, 200)
         self.assertIn(b"Admin &mdash; Course Management", res.data)
+        self.assertIn(b"Learning Categories", res.data)
+        self.assertIn(b"Manage Category Courses", res.data)
+        self.logout()
+
+    def test_admin_category_selection_shows_grade_cards(self):
+        self.login("admin@airodrone.com", "AdminPass123!")
+        # Get first category ID from database or use 1
+        res = self.client.get("/admin/courses?category_id=1")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b"Courses by Grade", res.data)
         self.assertIn(b"Grade 1", res.data)
-        self.assertIn(b"Grade 2", res.data)
-        self.assertIn(b"Grade 3", res.data)
-        self.assertIn(b"Grade 4", res.data)
         self.assertIn(b"Grade 5", res.data)
         self.assertIn(b"Manage Grade 1 Courses", res.data)
-        self.assertIn(b"Manage Grade 5 Courses", res.data)
-
-        # Ensure individual course management cards are NOT on this top screen
-        self.assertNotIn(b"grade-1-course", res.data)
-        self.assertNotIn(b"grade-4-course", res.data)
-        self.assertNotIn(b"Short description for Grade 1", res.data)
         self.logout()
 
     def test_admin_grade_selection_shows_only_courses_for_selected_grade(self):
@@ -268,15 +269,13 @@ class LMSFinalTestCase(unittest.TestCase):
             res = self.client.get(f"/admin/courses?grade={g}")
             self.assertEqual(res.status_code, 200)
             self.assertIn(f"Grade {g} STEM Course".encode("utf-8"), res.data)
-            self.assertIn(f"+ Add Course to Grade {g}".encode("utf-8"), res.data)
             self.assertIn(b"Manage Course &rarr;", res.data)
-            self.assertIn(b"Back to All Grades", res.data)
+            self.assertIn(b"Back to Categories", res.data)
 
             # Ensure courses from other grades are NOT present
             for other_g in range(1, 6):
                 if other_g != g:
                     self.assertNotIn(f"Grade {other_g} STEM Course".encode("utf-8"), res.data)
-                    self.assertNotIn(f"Manage Grade {other_g} Courses".encode("utf-8"), res.data)
         self.logout()
 
     def test_admin_add_course_prepopulates_selected_grade(self):

@@ -92,7 +92,7 @@
                         Classify this course under a Learning Domain and specific Grade Learning Pathway. Selecting a pathway automatically aligns the educational grade.
                     </p>
 
-                    {% set current_cat_id = request.form.get('category_id', course.category_id if course else '')|string %}
+                    {% set current_cat_id = request.form.get('category_id', request.args.get('category_id', course.category_id if course else default_category_id|default('')))|string %}
                     {% set current_path_id = request.form.get('learning_path_id', course.learning_path_id if course else '')|string %}
 
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem;">

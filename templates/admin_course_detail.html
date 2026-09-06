@@ -10,12 +10,16 @@
         <nav class="course-breadcrumb" aria-label="Breadcrumb" style="font-size: 0.875rem; color: #475569; margin-bottom: 1.25rem;">
             <a href="{{ url_for('admin') }}" style="color: #475569; text-decoration: none; font-weight: 500;">Admin</a>
             <span aria-hidden="true" style="margin: 0 0.4rem; color: #94a3b8;">&rarr;</span>
-            <a href="{{ url_for('admin_learning_categories') }}" style="color: #475569; text-decoration: none; font-weight: 500;">Learning Categories</a>
-            <span aria-hidden="true" style="margin: 0 0.4rem; color: #94a3b8;">&rarr;</span>
+            <a href="{{ url_for('admin_courses') }}" style="color: #475569; text-decoration: none; font-weight: 500;">Course Management</a>
             {% if course.category_id %}
-            <a href="{{ url_for('admin_category_courses', category_id=course.category_id) }}" style="color: #475569; text-decoration: none; font-weight: 500;">{{ course.category_name or 'AI & Artificial Intelligence' }}</a>
             <span aria-hidden="true" style="margin: 0 0.4rem; color: #94a3b8;">&rarr;</span>
+            <a href="{{ url_for('admin_courses', category_id=course.category_id) }}" style="color: #475569; text-decoration: none; font-weight: 500;">{{ course.category_name or 'Category' }}</a>
             {% endif %}
+            {% if course.grade %}
+            <span aria-hidden="true" style="margin: 0 0.4rem; color: #94a3b8;">&rarr;</span>
+            <a href="{{ url_for('admin_courses', category_id=course.category_id, grade=course.grade) }}" style="color: #475569; text-decoration: none; font-weight: 500;">Grade {{ course.grade }}</a>
+            {% endif %}
+            <span aria-hidden="true" style="margin: 0 0.4rem; color: #94a3b8;">&rarr;</span>
             <span class="current-breadcrumb" style="color: #0284c7; font-weight: 600;">{{ course.title }}</span>
         </nav>
 
@@ -52,6 +56,7 @@
             </div>
 
             <!-- Primary Actions -->
+            {% if current_user.is_admin() or current_user.is_sub_admin() %}
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; position: relative; z-index: 3;">
                 <a href="{{ url_for('admin_edit_course', course_id=course.id) }}" class="btn admin-btn-edit" style="font-size: 0.9rem; padding: 0.6rem 1.2rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none;">
                     ✏️ Edit Course
@@ -76,6 +81,7 @@
                     🗑️ Delete
                 </button>
             </div>
+            {% endif %}
         </div>
     </div>
 </section>
@@ -104,9 +110,11 @@
                         {{ modules|length }} {{ 'Module' if modules|length == 1 else 'Modules' }} Total
                     </span>
                 </div>
+                {% if current_user.is_admin() or current_user.is_sub_admin() %}
                 <a href="{{ url_for('admin_add_module', course_id=course.id) }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600;">
                     <span>+</span> Add Module
                 </a>
+                {% endif %}
             </div>
         </div>
 

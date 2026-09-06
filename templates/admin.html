@@ -1,17 +1,44 @@
 {% extends "base.html" %}
 
-{% block title %}Admin | Contact Submissions | airodrone{% endblock %}
-{% block meta_description %}View contact form submissions received by airodrone through the website.{% endblock %}
+{% block title %}
+{% if current_user.is_admin() %}Admin Panel — Full Access{% elif current_user.is_sub_admin() %}Sub-Admin Panel — Operations{% else %}Teacher Console — Academic Evaluation{% endif %} | airodrone
+{% endblock %}
 
 {% block content %}
 <section class="page-hero">
     <div class="container page-hero-inner">
-        <div>
-            <h1>Admin &mdash; Contact Submissions</h1>
-            <p>
-                This page lists all enquiries submitted via the website contact form, including contact
-                details, subject, message, and timestamp.
-            </p>
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h1>
+                    {% if current_user.is_admin() %}
+                        Admin Console
+                    {% elif current_user.is_sub_admin() %}
+                        Sub-Admin Console
+                    {% else %}
+                        Teacher Console
+                    {% endif %}
+                </h1>
+                <p>
+                    {% if current_user.is_admin() %}
+                        Full system access: Manage users, sub-admins, teachers, courses, evaluations, audit logs, and settings.
+                    {% elif current_user.is_sub_admin() %}
+                        Operational management: Manage students, teachers, course assignments, curriculum, and evaluations.
+                    {% else %}
+                        Academic console: View assigned courses, monitor student progress, and evaluate project submissions.
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <span class="badge-status badge-active" style="font-size: 0.95rem; padding: 0.5rem 1rem;">
+                    {% if current_user.is_admin() %}
+                        ADMIN &bull; Full System Access
+                    {% elif current_user.is_sub_admin() %}
+                        SUB-ADMIN &bull; Operations Access
+                    {% else %}
+                        TEACHER &bull; Academic Access
+                    {% endif %}
+                </span>
+            </div>
         </div>
     </div>
 </section>
@@ -21,70 +48,188 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}">
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}" style="margin-bottom: 1.5rem;">
                         {{ message }}
                     </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
-        <div class="admin-action-bar">
-            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                <a href="{{ url_for('admin_courses') }}" class="btn btn-primary">Manage Course Videos &rarr;</a>
-                <a href="{{ url_for('admin_learning_categories') }}" class="btn btn-secondary">Learning Categories &rarr;</a>
+        <!-- Quick Summary Stats Bar -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem;">
+            {% if current_user.is_admin() or current_user.is_sub_admin() %}
+            <div class="card" style="padding: 1.25rem; border-radius: 10px; text-align: center; border-top: 4px solid #2563eb;">
+                <div style="font-size: 2rem; font-weight: 700; color: #1e293b;">{{ total_students }}</div>
+                <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Total Students</div>
             </div>
-            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <a href="{{ url_for('admin_contacts') }}" class="btn btn-outline btn-sm">View All Contacts</a>
-                <a href="{{ url_for('admin_users') }}" class="btn btn-outline btn-sm">Manage Users</a>
-                <a href="{{ url_for('dashboard') }}" class="btn btn-outline btn-sm">Dashboard</a>
+            <div class="card" style="padding: 1.25rem; border-radius: 10px; text-align: center; border-top: 4px solid #0284c7;">
+                <div style="font-size: 2rem; font-weight: 700; color: #1e293b;">{{ total_teachers }}</div>
+                <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Total Teachers</div>
+            </div>
+            {% if current_user.is_admin() %}
+            <div class="card" style="padding: 1.25rem; border-radius: 10px; text-align: center; border-top: 4px solid #7c3aed;">
+                <div style="font-size: 2rem; font-weight: 700; color: #1e293b;">{{ total_subadmins }}</div>
+                <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Sub-Admins</div>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            {% if current_user.is_teacher() %}
+            <div class="card" style="padding: 1.25rem; border-radius: 10px; text-align: center; border-top: 4px solid #16a34a;">
+                <div style="font-size: 2rem; font-weight: 700; color: #1e293b;">{{ teacher_courses|length }}</div>
+                <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Assigned Courses</div>
+            </div>
+            {% endif %}
+
+            <div class="card" style="padding: 1.25rem; border-radius: 10px; text-align: center; border-top: 4px solid #ea580c;">
+                <div style="font-size: 2rem; font-weight: 700; color: #1e293b;">{{ pending_evaluations }}</div>
+                <div style="font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Pending Evaluations</div>
             </div>
         </div>
 
-        <div class="card-grid card-grid-4" style="margin-bottom: 3rem;">
-            <article class="card">
-                <h3>Learning Categories</h3>
-                <p>Manage learning domains, Grade 1–5 pathways, and course taxonomy.</p>
-                <a href="{{ url_for('admin_learning_categories') }}" class="card-link">
-                    Manage Categories
-                    <span aria-hidden="true">→</span>
-                </a>
-            </article>
-            <article class="card">
-                <h3>Course Videos</h3>
-                <p>Manage course curriculum, video lessons, quizzes, and projects.</p>
-                <a href="{{ url_for('admin_courses') }}" class="card-link">
-                    Manage Course Videos
-                    <span aria-hidden="true">→</span>
-                </a>
-            </article>
+        {% if current_user.is_teacher() %}
+        <div style="margin-bottom: 3rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+                <h2 style="margin: 0; font-size: 1.5rem; color: var(--color-text);">My Assigned Courses</h2>
+                <span class="course-stat-pill" style="font-weight: 700; background: #e0f2fe; color: #0284c7;">
+                    {{ teacher_courses|length }} Course{% if teacher_courses|length != 1 %}s{% endif %} Assigned
+                </span>
+            </div>
+
+            {% if teacher_courses %}
+            <div class="card-grid card-grid-3" style="margin-bottom: 1.5rem;">
+                {% for c in teacher_courses %}
+                <article class="card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 1.5rem;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span class="badge-status badge-active" style="font-size: 0.75rem;">
+                                {{ c.category_name or 'STEM Domain' }}
+                            </span>
+                            <span style="font-size: 0.8rem; font-weight: 700; color: var(--color-accent);">
+                                Grade {{ c.grade }}
+                            </span>
+                        </div>
+                        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem; color: var(--color-text);">
+                            {{ c.title }}
+                        </h3>
+                        {% if c.short_description %}
+                        <p style="font-size: 0.875rem; color: var(--color-text-muted); margin-bottom: 1rem;">
+                            {{ c.short_description[:90] }}{% if c.short_description|length > 90 %}...{% endif %}
+                        </p>
+                        {% endif %}
+                        <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">
+                            📘 {{ c.module_count or 0 }} Modules &bull; 🎬 {{ c.video_count or 0 }} Videos
+                        </div>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('admin_course_detail', course_id=c.id) }}" class="btn btn-primary btn-sm" style="width: 100%; text-align: center; justify-content: center; border-radius: 6px;">
+                            Open Course &rarr;
+                        </a>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="card" style="padding: 2rem; text-align: center; color: var(--color-text-muted); margin-bottom: 2rem;">
+                <p style="margin-bottom: 0;">No courses assigned to your account yet. Contact an administrator to assign courses.</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Role Action Cards Grid -->
+        {% if current_user.is_admin() or current_user.is_sub_admin() %}
+        <h2 style="margin-bottom: 1.25rem;">Console Management</h2>
+        <div class="card-grid card-grid-3" style="margin-bottom: 3rem;">
+            
             <article class="card">
                 <h3>User Management</h3>
-                <p>Manage registered users and their roles.</p>
+                <p>Manage students{% if current_user.is_admin() %}, teachers, and sub-admins{% else %} and teachers{% endif %}.</p>
                 <a href="{{ url_for('admin_users') }}" class="card-link">
                     Manage Users
-                    <span aria-hidden="true">→</span>
+                    <span aria-hidden="true">&rarr;</span>
                 </a>
             </article>
+
+            <article class="card">
+                <h3>Course & Curriculum</h3>
+                <p>Manage courses, modules, video lessons, and curriculum assignments.</p>
+                <a href="{{ url_for('admin_courses') }}" class="card-link">
+                    Course Management
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+
+            <article class="card">
+                <h3>Learning Categories</h3>
+                <p>Manage learning domains and Grade 1–5 pathways.</p>
+                <a href="{{ url_for('admin_learning_categories') }}" class="card-link">
+                    Manage Categories
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+
+            {% if current_user.is_admin() %}
+            <article class="card">
+                <h3>System Settings</h3>
+                <p>Configure catalogue hero settings and global LMS parameters.</p>
+                <a href="{{ url_for('admin_learning_catalogue_settings') }}" class="card-link">
+                    System Settings
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+
+            <article class="card">
+                <h3>System Audit Logs</h3>
+                <p>Review administrative activity, user creations, role edits, and evaluations.</p>
+                <a href="{{ url_for('admin_audit_logs') }}" class="card-link">
+                    View Audit Logs
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+            {% endif %}
+
+            {% if current_user.is_admin() or current_user.is_sub_admin() %}
             <article class="card">
                 <h3>Contact Submissions</h3>
-                <p>View all contact form submissions from the website.</p>
+                <p>View website contact form enquiries.</p>
                 <a href="{{ url_for('admin_contacts') }}" class="card-link">
                     View Contacts
-                    <span aria-hidden="true">→</span>
+                    <span aria-hidden="true">&rarr;</span>
                 </a>
             </article>
-            <article class="card">
-                <h3>Dashboard</h3>
-                <p>Return to your personal dashboard.</p>
-                <a href="{{ url_for('dashboard') }}" class="card-link">
-                    Go to Dashboard
-                    <span aria-hidden="true">→</span>
-                </a>
-            </article>
+            {% endif %}
         </div>
+        {% endif %}
 
+        {% if current_user.is_admin() and audit_logs and audit_logs|length > 0 %}
+        <h2 style="margin-bottom: 1rem;">Recent System Audit Trail</h2>
+        <div class="table-wrapper" style="margin-bottom: 2.5rem;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Performed By</th>
+                        <th>Action</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in audit_logs %}
+                    <tr>
+                        <td style="white-space: nowrap; font-size: 0.85rem; color: #64748b;">{{ log.timestamp }}</td>
+                        <td><strong>{{ log.user_name or 'System' }}</strong></td>
+                        <td><span class="badge-status badge-active" style="font-size: 0.8rem;">{{ log.action|upper }}</span></td>
+                        <td style="font-size: 0.9rem;">{{ log.details }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if submissions and submissions|length > 0 and (current_user.is_admin() or current_user.is_sub_admin()) %}
         <h2 style="margin-bottom: 1.5rem;">Recent Contact Submissions</h2>
-        {% if submissions and submissions|length > 0 %}
         <div class="table-wrapper">
             <table class="data-table">
                 <thead>
@@ -94,34 +239,24 @@
                         <th>Email</th>
                         <th>Phone</th>
                         <th>Subject</th>
-                        <th>Message</th>
-                        <th>Date / Time (UTC)</th>
+                        <th>Date (UTC)</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in submissions[:10] %}
+                    {% for row in submissions[:5] %}
                     <tr>
-                        <td>{{ row.id }}</td>
-                        <td>{{ row.name }}</td>
+                        <td>#{{ row.id }}</td>
+                        <td><strong>{{ row.name }}</strong></td>
                         <td><a href="mailto:{{ row.email }}">{{ row.email }}</a></td>
                         <td>{{ row.phone or '-' }}</td>
                         <td>{{ row.subject or '-' }}</td>
-                        <td class="cell-message">{{ row.message }}</td>
                         <td>{{ row.created_at }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        <div style="text-align: center; margin-top: 1.5rem;">
-            <a href="{{ url_for('admin_contacts') }}" class="btn btn-outline">View All Submissions</a>
-        </div>
-        {% else %}
-        <p>No submissions found yet. The table will populate as visitors use the contact form.</p>
         {% endif %}
     </div>
 </section>
 {% endblock %}
-
-
-

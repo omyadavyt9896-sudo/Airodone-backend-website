@@ -1,7 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}{% if category %}{{ category.name }} Courses | Admin airodrone{% elif show_grades %}Admin — Grade Courses | airodrone{% else %}Admin — Grade {{ selected_grade }} ({{ grade_info.classes }}) Courses | airodrone{% endif %}{% endblock %}
-{% block meta_description %}Manage STEM courses, modules, quizzes, and project contents on Airodrone admin panel.{% endblock %}
+{% block title %}
+{% if view_mode == 'categories' %}
+Course Management — Categories | Admin airodrone
+{% elif view_mode == 'grades' %}
+{{ category.name }} — Courses by Grade | Admin airodrone
+{% else %}
+{% if category and selected_grade %}{{ category.name }} (Grade {{ selected_grade }}) Courses{% elif category %}{{ category.name }} Courses{% else %}Grade {{ selected_grade }} Courses{% endif %} | Admin airodrone
+{% endif %}
+{% endblock %}
+
+{% block meta_description %}Manage STEM courses, learning categories, modules, video lessons, quizzes, and project contents on Airodrone admin panel.{% endblock %}
 
 {% block content %}
 <section class="page-hero">
@@ -9,49 +18,101 @@
         <nav class="course-breadcrumb" aria-label="Breadcrumb">
             <a href="{{ url_for('admin') }}">Admin</a>
             <span aria-hidden="true">&rarr;</span>
-            <a href="{{ url_for('admin_learning_categories') }}">Learning Categories</a>
-            {% if category %}
+            <a href="{{ url_for('admin_courses') }}">Course Management</a>
+            {% if view_mode == 'grades' and category %}
             <span aria-hidden="true">&rarr;</span>
             <span class="current-breadcrumb">{{ category.name }}</span>
-            {% elif selected_grade %}
-            <span aria-hidden="true">&rarr;</span>
-            <span class="current-breadcrumb">Grade {{ selected_grade }}</span>
-            {% else %}
-            <span aria-hidden="true">&rarr;</span>
-            <span class="current-breadcrumb">All Courses</span>
+            {% elif view_mode == 'courses' %}
+                {% if category %}
+                <span aria-hidden="true">&rarr;</span>
+                <a href="{{ url_for('admin_courses', category_id=category.id) }}">{{ category.name }}</a>
+                {% endif %}
+                {% if selected_grade %}
+                <span aria-hidden="true">&rarr;</span>
+                <span class="current-breadcrumb">Grade {{ selected_grade }}</span>
+                {% endif %}
             {% endif %}
         </nav>
 
         <div class="page-hero-inner" style="margin-top: 0.75rem;">
             <div>
-                {% if category or selected_grade %}
+                {% if view_mode == 'grades' %}
                 <div style="margin-bottom: 0.75rem;">
-                    <a href="{{ url_for('admin_learning_categories') }}" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem;">
                         &larr; Back to Categories
                     </a>
+                </div>
+                {% elif view_mode == 'courses' %}
+                <div style="margin-bottom: 0.75rem;">
+                    {% if category %}
+                    <a href="{{ url_for('admin_courses', category_id=category.id) }}" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                        &larr; Back to {{ category.name }}
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                        &larr; Back to Categories
+                    </a>
+                    {% endif %}
                 </div>
                 {% endif %}
 
                 <h1>
-                    {% if category %}
-                    {{ category.name }} &mdash; Courses
-                    {% elif show_grades %}
+                    {% if view_mode == 'categories' %}
                     Admin &mdash; Course Management
+                    {% elif view_mode == 'grades' %}
+                    {{ category.name }} &mdash; Courses by Grade
                     {% else %}
-                    Grade {{ selected_grade }} &mdash; {{ grade_info.name }}
+                        {% if category and selected_grade %}
+                        {{ category.name }} &mdash; Grade {{ selected_grade }}
+                        {% elif category %}
+                        {{ category.name }} &mdash; Courses
+                        {% elif grade_info %}
+                        Grade {{ selected_grade }} &mdash; {{ grade_info.name }}
+                        {% else %}
+                        Course Listing
+                        {% endif %}
                     {% endif %}
                 </h1>
-                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
-                    {% if category %}
-                    Manage courses, curriculum modules, video lessons, quizzes, and projects for {{ category.name }}.
-                    {% elif show_grades %}
-                    Select a learning category or grade level below to manage curriculum modules, video lessons, and projects.
+                <p style="font-size: 1.05rem; max-width: 680px; color: var(--color-text-muted);">
+                    {% if view_mode == 'categories' %}
+                    Select a learning category below to manage its courses, curriculum modules, lessons, and project evaluations.
+                    {% elif view_mode == 'grades' %}
+                    {{ category.description or 'Explore and manage courses grouped by educational grade levels.' }}
                     {% else %}
+                    {% if category and selected_grade %}
+                    Manage Grade {{ selected_grade }} courses and curriculum modules for {{ category.name }}.
+                    {% elif category %}
+                    All courses belonging to {{ category.name }}.
+                    {% elif grade_info %}
                     Targeted for {{ grade_info.classes }}. {{ grade_info.description }}
+                    {% else %}
+                    Manage courses, curriculum modules, video lessons, quizzes, and projects.
+                    {% endif %}
                     {% endif %}
                 </p>
             </div>
-            {% if category %}
+
+            {% if view_mode == 'courses' %}
+            <div>
+                {% if category and selected_grade %}
+                <a href="{{ url_for('admin_add_course') }}?category_id={{ category.id }}&grade={{ selected_grade }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <span>+</span> Add Course to Grade {{ selected_grade }}
+                </a>
+                {% elif category %}
+                <a href="{{ url_for('admin_add_course') }}?category_id={{ category.id }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <span>+</span> Add Course to {{ category.name }}
+                </a>
+                {% elif selected_grade %}
+                <a href="{{ url_for('admin_add_course') }}?grade={{ selected_grade }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <span>+</span> Add Course to Grade {{ selected_grade }}
+                </a>
+                {% else %}
+                <a href="{{ url_for('admin_add_course') }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <span>+</span> Add New Course
+                </a>
+                {% endif %}
+            </div>
+            {% elif view_mode == 'grades' %}
             <div>
                 <a href="{{ url_for('admin_add_course') }}?category_id={{ category.id }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
                     <span>+</span> Add Course to {{ category.name }}
@@ -74,17 +135,94 @@
         {% endif %}
         {% endwith %}
 
-        {% if show_grades %}
-        <!-- STEP 1: Educational Grade Overview Cards -->
-        <div class="admin-action-bar" style="margin-bottom: 2rem;">
-            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                <a href="{{ url_for('admin_add_course') }}" class="btn btn-primary">
-                    + Add New Course
-                </a>
+        {% if view_mode == 'categories' %}
+        <!-- STEP 1: LEARNING CATEGORIES OVERVIEW -->
+        <div class="admin-action-bar" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="font-weight: 700; font-size: 1.1rem; color: var(--color-text);">
+                Learning Categories ({{ categories|length }})
             </div>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <a href="{{ url_for('admin_learning_categories') }}" class="btn btn-outline btn-sm">Learning Categories</a>
+                <a href="{{ url_for('admin_learning_categories') }}" class="btn btn-outline btn-sm">Manage Categories</a>
+                {% if current_user.is_admin() %}
                 <a href="{{ url_for('admin_users') }}" class="btn btn-outline btn-sm">Manage Users</a>
+                {% endif %}
+                <a href="{{ url_for('admin') }}" class="btn btn-outline btn-sm">Admin Home</a>
+            </div>
+        </div>
+
+        {% if categories %}
+        <div class="card-grid card-grid-3">
+            {% for cat in categories %}
+            <article class="card course-card-v2" style="display: flex; flex-direction: column; overflow: hidden; justify-content: space-between;">
+                <div>
+                    <div class="course-card-image-wrap" style="height: 160px; overflow: hidden; position: relative; background: #0f172a;">
+                        {% set cat_img = image_url(cat.image) if cat.image else None %}
+                        {% if cat_img %}
+                        <img src="{{ cat_img }}" 
+                             alt="{{ cat.name }}" 
+                             class="course-card-img-v2"
+                             style="width: 100%; height: 100%; object-fit: cover;"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #0284c7;">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        </div>
+                        {% else %}
+                        <div style="display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #0284c7;">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="course-card-body-v2" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                            <span class="course-stat-pill" style="font-weight: 700; background: #e0f2fe; color: #0284c7;">
+                                {{ cat.course_count }} {{ 'Course' if cat.course_count == 1 else 'Courses' }}
+                            </span>
+                            <span class="badge-status {{ 'badge-active' if cat.is_active else 'badge-inactive' }}" style="font-size: 0.75rem;">
+                                {{ 'Active' if cat.is_active else 'Inactive' }}
+                            </span>
+                        </div>
+
+                        <h3 class="course-card-title-v2" style="font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--color-text);">
+                            <a href="{{ url_for('admin_courses', category_id=cat.id) }}" style="color: inherit; text-decoration: none;">
+                                {{ cat.name }}
+                            </a>
+                        </h3>
+
+                        <p class="course-card-desc-v2" style="margin-bottom: 1.25rem; color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">
+                            {{ cat.description or 'No description available for this learning category.' }}
+                        </p>
+                    </div>
+                </div>
+
+                <div style="padding: 0 1.5rem 1.5rem 1.5rem;">
+                    <a href="{{ url_for('admin_courses', category_id=cat.id) }}" class="btn btn-primary btn-block" style="text-align: center;">
+                        Manage Category Courses &rarr;
+                    </a>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="text-align: center; padding: 3.5rem 1rem;">
+            <p style="font-size: 1.15rem; color: var(--color-text-muted); margin-bottom: 1rem;">
+                No learning categories found in database.
+            </p>
+            <a href="{{ url_for('admin_learning_categories') }}" class="btn btn-primary">
+                + Create Learning Category
+            </a>
+        </div>
+        {% endif %}
+
+        {% elif view_mode == 'grades' %}
+        <!-- STEP 2: CATEGORY GRADE SELECTION -->
+        <div class="admin-action-bar" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                <a href="{{ url_for('admin_courses') }}" class="btn btn-outline btn-sm">&larr; Categories</a>
+                <h2 style="margin: 0; font-size: 1.25rem; color: var(--color-text);">Courses by Grade</h2>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="{{ url_for('admin_add_course') }}?category_id={{ category.id }}" class="btn btn-primary btn-sm">+ Add Course</a>
                 <a href="{{ url_for('admin') }}" class="btn btn-outline btn-sm">Admin Home</a>
             </div>
         </div>
@@ -92,28 +230,28 @@
         <div class="card-grid card-grid-3">
             {% for g in grades %}
             <article class="card course-card-v2" style="display: flex; flex-direction: column; justify-content: space-between;">
-                <div class="course-card-body-v2" style="padding: 2rem 1.75rem;">
+                <div class="course-card-body-v2" style="padding: 1.75rem;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                        <span class="course-stat-pill" style="font-weight: 700; background: var(--color-primary-light, #e0f2fe); color: var(--color-primary, #0284c7);">
+                        <span class="course-stat-pill" style="font-weight: 700; background: #e0f2fe; color: #0284c7; font-size: 0.9rem;">
                             Grade {{ g.grade_id }}
                         </span>
                         <span style="font-size: 0.85rem; color: var(--color-text-muted); font-weight: 600;">
-                            {{ g.total_courses }} {{ 'Course' if g.total_courses == 1 else 'Courses' }} ({{ g.active_courses }} Active)
+                            {{ g.total_courses }} {{ 'Course' if g.total_courses == 1 else 'Courses' }}
                         </span>
                     </div>
 
                     <h3 class="course-card-title-v2" style="font-size: 1.35rem; margin-bottom: 0.35rem;">
                         {{ g.name }}
                     </h3>
-                    <div style="color: var(--color-primary, #0284c7); font-weight: 600; font-size: 0.95rem; margin-bottom: 0.75rem;">
+                    <div style="color: #0284c7; font-weight: 600; font-size: 0.95rem; margin-bottom: 0.75rem;">
                         {{ g.classes }}
                     </div>
-                    <p class="course-card-desc-v2" style="margin-bottom: 1.5rem; color: var(--color-text-muted);">
+                    <p class="course-card-desc-v2" style="margin-bottom: 1.5rem; color: var(--color-text-muted); font-size: 0.9rem;">
                         {{ g.description }}
                     </p>
 
                     <div class="course-card-footer-v2" style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--color-border, #e2e8f0);">
-                        <a href="{{ url_for('admin_courses', grade=g.grade_id) }}" class="btn btn-primary btn-block">
+                        <a href="{{ url_for('admin_courses', category_id=category.id, grade=g.grade_id) }}" class="btn btn-primary btn-block" style="text-align: center;">
                             Manage Grade {{ g.grade_id }} Courses &rarr;
                         </a>
                     </div>
@@ -122,31 +260,34 @@
             {% endfor %}
         </div>
 
-        {% else %}
-        <!-- STEP 2: Courses List -->
-        <div class="admin-action-bar" style="margin-bottom: 2rem;">
-            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                {% if category %}
+        {% elif view_mode == 'courses' %}
+        <!-- STEP 3: GRADE COURSES LIST -->
+        <div class="admin-action-bar" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+                {% if category and selected_grade %}
+                <a href="{{ url_for('admin_add_course') }}?category_id={{ category.id }}&grade={{ selected_grade }}" class="btn btn-primary">
+                    + Add Course to Grade {{ selected_grade }}
+                </a>
+                <a href="{{ url_for('admin_courses', category_id=category.id) }}" class="btn btn-outline">
+                    &larr; Back to {{ category.name }}
+                </a>
+                {% elif category %}
                 <a href="{{ url_for('admin_add_course') }}?category_id={{ category.id }}" class="btn btn-primary">
                     + Add Course to {{ category.name }}
                 </a>
+                <a href="{{ url_for('admin_courses') }}" class="btn btn-outline">
+                    &larr; Categories
+                </a>
                 {% else %}
-                <a href="{{ url_for('admin_add_course', grade=selected_grade) }}" class="btn btn-primary">
+                <a href="{{ url_for('admin_add_course') }}?grade={{ selected_grade }}" class="btn btn-primary">
                     + Add Course to Grade {{ selected_grade }}
                 </a>
-                {% endif %}
-                {% if selected_grade %}
                 <a href="{{ url_for('admin_courses') }}" class="btn btn-outline">
-                    &larr; Back to All Grades
-                </a>
-                {% else %}
-                <a href="{{ url_for('admin_learning_categories') }}" class="btn btn-outline">
                     &larr; Categories
                 </a>
                 {% endif %}
             </div>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <a href="{{ url_for('admin_users') }}" class="btn btn-outline btn-sm">Manage Users</a>
                 <a href="{{ url_for('admin') }}" class="btn btn-outline btn-sm">Admin Home</a>
             </div>
         </div>
@@ -155,20 +296,20 @@
         <div class="card-grid card-grid-3">
             {% for course in courses %}
             <article class="card course-card-v2" style="display: flex; flex-direction: column; overflow: hidden;">
-                <!-- Clean image wrapper with NO absolute overlays -->
+                <!-- Clean image wrapper with NO absolute text overlays -->
                 <div class="course-card-image-wrap" style="height: 180px; overflow: hidden; position: relative; background: #0f172a;">
-                    {% set c_img = image_url(course.image) %}
+                    {% set c_img = image_url(course.image) if course.image else None %}
                     {% if c_img %}
                     <img src="{{ c_img }}" 
                          alt="{{ course.title }} thumbnail" 
                          class="course-card-img-v2"
                          style="width: 100%; height: 100%; object-fit: cover;"
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                    <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
+                    <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #0284c7;">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 1 3-3h7z"/></svg>
                     </div>
                     {% else %}
-                    <div style="display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
+                    <div style="display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #0284c7;">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 1 3-3h7z"/></svg>
                     </div>
                     {% endif %}
@@ -177,7 +318,7 @@
                 <div class="course-card-body-v2" style="padding: 1.5rem; flex: 1; display: flex; flex-direction: column;">
                     <!-- Grade badge OUTSIDE image -->
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                        <span class="course-stat-pill" style="font-weight: 700; background: var(--color-primary-light, #e0f2fe); color: var(--color-primary, #0284c7);">
+                        <span class="course-stat-pill" style="font-weight: 700; background: #e0f2fe; color: #0284c7;">
                             Grade {{ course.grade }}
                         </span>
                         <span class="badge-status {{ 'badge-active' if course.is_active else 'badge-inactive' }}" style="font-size: 0.75rem;">
@@ -219,18 +360,24 @@
         {% else %}
         <div class="empty-state" style="text-align: center; padding: 3.5rem 1rem;">
             <p style="font-size: 1.15rem; color: var(--color-text-muted); margin-bottom: 1rem;">
-                {% if category %}
+                {% if category and selected_grade %}
+                No courses found in Grade {{ selected_grade }} for {{ category.name }}.
+                {% elif category %}
                 No courses added to {{ category.name }} yet.
                 {% else %}
                 No courses found in Grade {{ selected_grade }}.
                 {% endif %}
             </p>
-            {% if category %}
+            {% if category and selected_grade %}
+            <a href="{{ url_for('admin_add_course') }}?category_id={{ category.id }}&grade={{ selected_grade }}" class="btn btn-primary">
+                + Add First Course to Grade {{ selected_grade }}
+            </a>
+            {% elif category %}
             <a href="{{ url_for('admin_add_course') }}?category_id={{ category.id }}" class="btn btn-primary">
                 + Add First Course to {{ category.name }}
             </a>
             {% else %}
-            <a href="{{ url_for('admin_add_course', grade=selected_grade) }}" class="btn btn-primary">
+            <a href="{{ url_for('admin_add_course') }}?grade={{ selected_grade }}" class="btn btn-primary">
                 + Add First Course to Grade {{ selected_grade }}
             </a>
             {% endif %}

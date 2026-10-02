@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import datetime
 from functools import wraps
 import re
@@ -648,8 +649,21 @@ def auto_init_db_before_request():
     if request.method == "HEAD" or request.path in ("/favicon.ico", "/robots.txt"):
         return
 
-    # Allow disabling request-time DDL via environment variable
-    if os.environ.get("AUTO_INIT_DB", "true").lower() in ("0", "false", "no", "off"):
+    # In production web servers (Gunicorn, Render), HTTP requests must NEVER execute request-time DDL.
+    # Database initialization/migration in production runs exclusively via 'flask init-db'.
+    is_gunicorn = (
+        "gunicorn" in os.environ.get("SERVER_SOFTWARE", "").lower()
+        or "gunicorn" in sys.modules
+        or bool(os.environ.get("GUNICORN_CMD_ARGS"))
+    )
+    is_render = bool(os.environ.get("RENDER"))
+    if is_gunicorn or is_render:
+        _db_initialized = True
+        return
+
+    # In local development, respect AUTO_INIT_DB setting if explicitly disabled
+    auto_init_val = os.environ.get("AUTO_INIT_DB", "").strip().strip("'\"").lower()
+    if auto_init_val in ("0", "false", "no", "off"):
         _db_initialized = True
         return
 
@@ -1117,6 +1131,8 @@ def init_db():
     add_column_if_not_exists(cur, "products", "applications", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "products", "is_active", "INTEGER NOT NULL DEFAULT 1")
 
+    conn.commit()
+
     # Create targeted performance indexes across PostgreSQL, MySQL, and SQLite
     create_index_if_not_exists(cur, "idx_courses_grade", "courses", ["grade"])
     create_index_if_not_exists(cur, "idx_learning_categories_slug", "learning_categories", ["slug"])
@@ -1137,6 +1153,8 @@ def init_db():
     create_index_if_not_exists(cur, "idx_audit_logs_user", "audit_logs", ["user_id"])
     create_index_if_not_exists(cur, "idx_products_slug", "products", ["slug"])
     create_index_if_not_exists(cur, "idx_products_is_active", "products", ["is_active"])
+
+    conn.commit()
 
     # Create orders table (Phase 2 Guest Checkout & Orders Management)
     cur.execute(

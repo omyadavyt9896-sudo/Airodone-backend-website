@@ -1,14 +1,60 @@
 document.addEventListener("DOMContentLoaded", function () {
   const navToggle = document.getElementById("navToggle");
   const mainNav = document.getElementById("mainNav");
+  const navBackdrop = document.getElementById("navBackdrop");
+
+  const closeMobileNav = () => {
+    if (navToggle && mainNav) {
+      navToggle.classList.remove("open");
+      navToggle.setAttribute("aria-expanded", "false");
+      mainNav.classList.remove("open");
+      document.body.classList.remove("nav-open");
+    }
+  };
+
+  const openMobileNav = () => {
+    if (navToggle && mainNav) {
+      navToggle.classList.add("open");
+      navToggle.setAttribute("aria-expanded", "true");
+      mainNav.classList.add("open");
+      document.body.classList.add("nav-open");
+    }
+  };
 
   if (navToggle && mainNav) {
     navToggle.addEventListener("click", () => {
-      const isOpen = navToggle.classList.toggle("open");
+      const isOpen = navToggle.classList.contains("open");
       if (isOpen) {
-        mainNav.classList.add("open");
+        closeMobileNav();
       } else {
-        mainNav.classList.remove("open");
+        openMobileNav();
+      }
+    });
+
+    // Close on navigation link click
+    mainNav.querySelectorAll("a").forEach((link) => {
+      link.addEventListener("click", () => {
+        closeMobileNav();
+      });
+    });
+
+    // Close on backdrop click
+    if (navBackdrop) {
+      navBackdrop.addEventListener("click", closeMobileNav);
+    }
+
+    // Close on Escape key
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && navToggle.classList.contains("open")) {
+        closeMobileNav();
+        navToggle.focus();
+      }
+    });
+
+    // Close on window resize to desktop
+    window.addEventListener("resize", () => {
+      if (window.innerWidth >= 992 && navToggle.classList.contains("open")) {
+        closeMobileNav();
       }
     });
   }
@@ -28,7 +74,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   );
 
-  document.querySelectorAll(".section, .hero, .page-hero").forEach((el) => {
+  document.querySelectorAll(".section, .page-hero").forEach((el) => {
     el.classList.add("pre-animate");
     observer.observe(el);
   });

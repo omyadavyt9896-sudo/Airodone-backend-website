@@ -11,9 +11,9 @@ STEM workshops designed for schools and institutions.{% endblock %}
             <div class="hero-tagline-pill hero-badge-animate">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> AI &bull; Robotics &bull; Drones &bull; STEM Education
             </div>
-            <h1 class="hero-title-animate">Empowering Schools with AI, Robotics &amp; Drone Technology</h1>
+            <h1 class="hero-title-animate">Building Future-Ready Skills with AI, Robotics &amp; Emerging Technology</h1>
             <p class="hero-desc-animate">
-                We partner with schools and training institutions to design, setup, and manage practical STEM and Atal Tinkering Labs (ATL) &mdash; equipping students with hands-on technical skills for the future.
+                Hands-on learning programs, technology labs, industry-ready courses and STEM solutions for schools, colleges and professionals.
             </p>
             <div class="hero-actions hero-actions-animate">
                 <a href="{{ url_for('learn') }}" class="btn btn-primary hero-btn-primary">Explore Learn <span class="btn-arrow" aria-hidden="true">&rarr;</span></a>
@@ -40,11 +40,17 @@ STEM workshops designed for schools and institutions.{% endblock %}
             <div class="hero-image-stack">
                 <div class="hero-image-primary hero-image-primary-animate">
                     <img src="{{ url_for('static', filename='images/hero/hero.jpg') }}"
-                        alt="Students working in an innovation lab">
+                        alt="Students working in an innovation lab"
+                        width="600"
+                        height="400"
+                        loading="eager">
                 </div>
                 <div class="hero-image-secondary hero-image-secondary-animate">
                     <img src="{{ url_for('static', filename='images/services/robotics.jpg') }}"
-                        alt="Hands-on robotics learning">
+                        alt="Hands-on robotics learning"
+                        width="400"
+                        height="260"
+                        loading="eager">
                 </div>
             </div>
         </div>

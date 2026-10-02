@@ -381,7 +381,9 @@ def create_raw_db_connection():
             raise ImportError("PyMySQL driver is required for MySQL connections. Install with 'pip install PyMySQL'.")
         clean_url = db_url.replace("mysql+pymysql://", "mysql://")
         parsed = urllib.parse.urlparse(clean_url)
-        password = urllib.parse.unquote(parsed.password) if parsed.password else ""
+        connect_timeout = int(os.environ.get("DB_CONNECT_TIMEOUT", 10))
+        read_timeout = int(os.environ.get("DB_READ_TIMEOUT", 15))
+        write_timeout = int(os.environ.get("DB_WRITE_TIMEOUT", 15))
         return pymysql.connect(
             host=parsed.hostname or "localhost",
             port=parsed.port or 3306,
@@ -389,9 +391,9 @@ def create_raw_db_connection():
             password=password,
             database=parsed.path.lstrip("/"),
             cursorclass=pymysql.cursors.DictCursor,
-            connect_timeout=20,
-            read_timeout=60,
-            write_timeout=60,
+            connect_timeout=connect_timeout,
+            read_timeout=read_timeout,
+            write_timeout=write_timeout,
             charset="utf8mb4",
             autocommit=True
         )
@@ -470,7 +472,7 @@ def close_db_connection(exception=None):
             app.logger.error(f"Error closing per-request DB connection: {e}")
 
 def add_column_if_not_exists(cur, table, column, col_type):
-    """Safely execute ALTER TABLE ADD COLUMN across PostgreSQL, SQLite, and MySQL."""
+    """Safely execute ALTER TABLE ADD COLUMN across PostgreSQL, SQLite, and MySQL without slow metadata scans."""
     db_type = get_db_type()
     if db_type == "postgres":
         cur.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {col_type};")
@@ -481,77 +483,161 @@ def add_column_if_not_exists(cur, table, column, col_type):
             existing_cols = [row["name"] if isinstance(row, dict) else row[1] for row in rows]
             if column not in existing_cols:
                 cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type};")
-        except Exception:
-            try:
-                cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type};")
-            except Exception:
-                pass
-    elif db_type == "mysql":
-        try:
-            cur.execute(
-                "SELECT COUNT(*) as cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = %s",
-                (table, column)
-            )
-            res = cur.fetchone()
-            cnt = res["cnt"] if (isinstance(res, dict) and "cnt" in res) else (res[0] if res else 0)
-            if cnt == 0:
-                cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type};")
         except Exception as e:
-            if "1060" in str(e) or "duplicate" in str(e).lower():
+            if "no such table" in str(e).lower():
+                raise e
+    elif db_type == "mysql":
+        # Direct execution: MySQL throws error 1060 (ER_DUP_FIELDNAME) if column already exists.
+        # This completely avoids slow information_schema.COLUMNS metadata locking.
+        try:
+            cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type};")
+        except Exception as e:
+            # Re-raise connection lost errors immediately (never swallow connection failures)
+            if hasattr(e, "args") and len(e.args) > 0 and e.args[0] in (2002, 2003, 2006, 2013):
+                raise e
+
+            # Check if this is duplicate column error (1060)
+            is_dup = False
+            if hasattr(e, "args") and len(e.args) > 0 and e.args[0] == 1060:
+                is_dup = True
+            elif "1060" in str(e) or "duplicate column" in str(e).lower():
+                is_dup = True
+
+            if is_dup:
                 pass
             else:
-                # Direct ALTER attempt fallback in case information_schema permissions are restricted
+                # Secondary validation: check if column already exists via fast single-table probe
+                col_exists = False
                 try:
-                    cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type};")
-                except Exception as e2:
-                    if "1060" in str(e2) or "duplicate" in str(e2).lower():
-                        pass
-                    else:
-                        raise e2
+                    cur.execute(f"SHOW COLUMNS FROM {table} LIKE %s", (column,))
+                    col_exists = bool(cur.fetchall())
+                except Exception:
+                    pass
+
+                if col_exists:
+                    pass
+                else:
+                    # Column does not exist and error was not 1060: do not hide unrelated database errors
+                    raise e
 
 def create_index_if_not_exists(cur, index_name, table, columns):
-    """Safely create database index if it does not already exist across PostgreSQL, MySQL, and SQLite."""
+    """Safely create database index across PostgreSQL, MySQL, and SQLite without slow information_schema scans."""
     db_type = get_db_type()
     cols_str = ", ".join(columns)
     if db_type in ("postgres", "sqlite"):
         cur.execute(f"CREATE INDEX IF NOT EXISTS {index_name} ON {table} ({cols_str});")
     elif db_type == "mysql":
+        # Direct execution: MySQL throws error 1061 (ER_DUP_KEYNAME) if index already exists.
+        # Completely eliminates slow information_schema.STATISTICS query hangs on cloud databases (Render/RDS).
         try:
-            cur.execute(
-                "SELECT COUNT(*) as cnt FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND INDEX_NAME = %s",
-                (table, index_name)
-            )
-            res = cur.fetchone()
-            cnt = res["cnt"] if (isinstance(res, dict) and "cnt" in res) else (res[0] if res else 0)
-            if cnt == 0:
-                cur.execute(f"CREATE INDEX {index_name} ON {table} ({cols_str});")
+            cur.execute(f"CREATE INDEX {index_name} ON {table} ({cols_str});")
         except Exception as e:
-            if "1061" in str(e) or "duplicate" in str(e).lower():
+            # Re-raise connection lost errors immediately (never swallow connection failures)
+            if hasattr(e, "args") and len(e.args) > 0 and e.args[0] in (2002, 2003, 2006, 2013):
+                raise e
+
+            # Check if this is duplicate key error (1061)
+            is_dup = False
+            if hasattr(e, "args") and len(e.args) > 0 and e.args[0] == 1061:
+                is_dup = True
+            elif "1061" in str(e) or "duplicate key" in str(e).lower() or "already exists" in str(e).lower():
+                is_dup = True
+
+            if is_dup:
                 pass
             else:
+                # Secondary validation: check if index already exists via fast single-table probe
+                idx_exists = False
                 try:
-                    cur.execute(f"CREATE INDEX {index_name} ON {table} ({cols_str});")
-                except Exception as e2:
-                    if "1061" in str(e2) or "duplicate" in str(e2).lower():
-                        pass
-                    else:
-                        raise e2
+                    cur.execute(f"SHOW INDEX FROM {table} WHERE Key_name = %s", (index_name,))
+                    idx_exists = bool(cur.fetchall())
+                except Exception:
+                    pass
 
+                if idx_exists:
+                    pass
+                else:
+                    # Index does not exist and error was not 1061: do not hide unrelated database errors
+                    raise e
+
+CURRENT_SCHEMA_VERSION = 1
 _db_initialized = False
+
+def is_schema_initialized():
+    """
+    Lightweight check verifying if the database schema is already initialized to CURRENT_SCHEMA_VERSION.
+    Only returns True if schema_version exists AND has recorded version >= CURRENT_SCHEMA_VERSION.
+    Never uses presence of business tables (such as users) to infer schema status.
+    If schema_version does not exist or version is lower, returns False to trigger safe migration pass.
+    """
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = get_db_cursor(conn)
+        cur.execute("SELECT version FROM schema_version WHERE version >= %s LIMIT 1;", (CURRENT_SCHEMA_VERSION,))
+        row = cur.fetchone()
+        return bool(row)
+    except Exception:
+        # Table schema_version does not exist yet (or DB connection unreachable)
+        if conn:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        return False
+    finally:
+        if cur:
+            try:
+                cur.close()
+            except Exception:
+                pass
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 def ensure_db_initialized():
     """Idempotently ensure database schema is initialized and migrated across all supported databases."""
     global _db_initialized
-    if not _db_initialized:
-        try:
-            init_db()
-            _db_initialized = True
-        except Exception as e:
-            app.logger.warning(f"Database initialization / schema migration notice: {e}")
+    if _db_initialized:
+        return
+
+    # If the schema is already initialized, mark as initialized immediately and avoid redundant DDL runs.
+    if is_schema_initialized():
+        _db_initialized = True
+        return
+
+    try:
+        init_db()
+        _db_initialized = True
+    except Exception as e:
+        app.logger.exception(f"Database initialization / schema migration failed: {e}")
+        raise e
 
 @app.before_request
 def auto_init_db_before_request():
-    """Ensure database tables and schema migrations have executed before serving requests."""
+    """
+    Guard for incoming HTTP requests:
+    - Never block health-checks (HEAD /) or static asset requests.
+    - If AUTO_INIT_DB is disabled (recommended in production with pre-deployed DB), skip.
+    - If DB is already initialized, returns in 0ms.
+    - Only runs initialization if the database schema is confirmed to be missing.
+    """
+    global _db_initialized
+    if _db_initialized:
+        return
+
+    # Fast bypass for Render health checks and lightweight probes
+    if request.method == "HEAD" or request.path in ("/favicon.ico", "/robots.txt"):
+        return
+
+    # Allow disabling request-time DDL via environment variable
+    if os.environ.get("AUTO_INIT_DB", "true").lower() in ("0", "false", "no", "off"):
+        _db_initialized = True
+        return
+
     ensure_db_initialized()
 
 def init_db():
@@ -1193,6 +1279,25 @@ def init_db():
 
     # Seed initial 6 institutional solutions if not present
     seed_initial_solutions(cur, conn)
+
+    # Stamp schema_version sentinel table to mark complete initialization
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS schema_version (
+            version INTEGER PRIMARY KEY,
+            initialized_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.commit()
+    cur.execute("SELECT version FROM schema_version WHERE version = %s", (CURRENT_SCHEMA_VERSION,))
+    if not cur.fetchone():
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute(
+            "INSERT INTO schema_version (version, initialized_at) VALUES (%s, %s)",
+            (CURRENT_SCHEMA_VERSION, now_str)
+        )
+        conn.commit()
 
     cur.close()
     conn.close()
@@ -10016,9 +10121,8 @@ def admin_reorder_solution_item(solution_id, item_id):
 
 
 @app.cli.command("init-db")
-
 def init_db_command():
-    """Clear existing data and create new tables."""
+    """Safely create tables, run schema migrations, and seed initial data if not present (non-destructive)."""
     init_db()
     print("Database initialized successfully.")
 

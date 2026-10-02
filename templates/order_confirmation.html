@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Order Confirmed — {{ order.order_number }} | airodrone{% endblock %}
+
+{% block content %}
+<section style="background: var(--color-bg-alt, #f8fafc); padding: 3rem 0 5rem 0;">
+    <div class="container" style="max-width: 720px; margin: 0 auto;">
+        
+        <div style="background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 2.5rem 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center;">
+            
+            <!-- Success Badge -->
+            <div style="width: 72px; height: 72px; background: #dcfce7; color: #16a34a; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem auto; font-size: 2.2rem; font-weight: 800;">
+                ✓
+            </div>
+
+            <h1 style="font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem;">
+                Payment Successful
+            </h1>
+            <p style="font-size: 1.1rem; color: #475569; margin-bottom: 2rem;">
+                Thank you for your order! Your STEM hardware kit purchase has been confirmed.
+            </p>
+
+            {% if 'Mock' in order.payment_provider or order.payment_provider == 'Development Mock' %}
+            <div style="background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 0.75rem 1rem; border-radius: 8px; font-weight: 700; margin-bottom: 1.5rem; font-size: 0.95rem;">
+                Development/Test Payment — No Real Money Charged.
+            </div>
+            {% endif %}
+
+            <!-- Order Information Box -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; text-align: left; margin-bottom: 2rem;">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <div>
+                        <span style="font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; display: block;">Order Number</span>
+                        <span style="font-size: 1.2rem; font-weight: 800; color: #2563eb;">{{ order.order_number }}</span>
+                    </div>
+                    <div>
+                        <span style="background: #dcfce7; color: #15803d; font-weight: 700; font-size: 0.85rem; padding: 0.35rem 0.85rem; border-radius: 6px;">
+                            Payment {{ order.payment_status }}
+                        </span>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; font-size: 0.95rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <span style="color: #64748b; font-size: 0.85rem; display: block;">Product</span>
+                        <strong style="color: #0f172a; font-size: 1.05rem;">{{ order.product_name_snapshot }}</strong>
+                    </div>
+                    <div>
+                        <span style="color: #64748b; font-size: 0.85rem; display: block;">Amount Paid</span>
+                        <strong style="color: #2563eb; font-size: 1.1rem;">{{ order.total_amount | format_price }}</strong>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; font-size: 0.95rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <span style="color: #64748b; font-size: 0.85rem; display: block;">Shipping</span>
+                        <strong style="color: #0f172a;">
+                            {% if order.shipping_charge_snapshot == 0 %}
+                            Free Shipping
+                            {% else %}
+                            {{ order.shipping_charge_snapshot | format_price }}
+                            {% endif %}
+                        </strong>
+                    </div>
+                    <div>
+                        <span style="color: #64748b; font-size: 0.85rem; display: block;">Order Status</span>
+                        <strong style="color: #0f172a;">{{ order.order_status }}</strong>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 1rem; margin-top: 0.5rem;">
+                    <span style="color: #64748b; font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Delivery Address</span>
+                    <div style="color: #334155; font-size: 0.95rem; line-height: 1.5;">
+                        <strong>{{ order.customer_name }}</strong> ({{ order.customer_phone }})<br>
+                        {{ order.address }}, {{ order.city }}, {{ order.state }} - {{ order.pincode }}
+                        {% if order.landmark %}<br><span style="color: #64748b; font-size: 0.85rem;">Landmark: {{ order.landmark }}</span>{% endif %}
+                    </div>
+                </div>
+
+            </div>
+
+            <a href="{{ url_for('public_products') }}" class="btn btn-primary" style="padding: 0.85rem 2rem; font-size: 1.05rem; font-weight: 700; border-radius: 10px; background: #2563eb; color: #ffffff; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+                &larr; Back to Products
+            </a>
+
+        </div>
+
+    </div>
+</section>
+{% endblock %}

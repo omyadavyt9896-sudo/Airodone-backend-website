@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Questions — {{ quiz.title }} | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_courses') }}">Course Management</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_course_detail', course_id=quiz.course_id) }}">{{ quiz.course_title }}</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ quiz.title }} Questions</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>Manage Quiz Questions</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    Quiz: <strong>{{ quiz.title }}</strong> &bull; Passing Score: <strong>{{ quiz.passing_score }}%</strong> &bull; Max Attempts: <strong>{{ quiz.max_attempts }}</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 1.75rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="admin-action-bar">
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <a href="{{ url_for('admin_add_question', quiz_id=quiz.id) }}" class="btn btn-primary">
+                    + Add Question
+                </a>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="{{ url_for('admin_edit_quiz', quiz_id=quiz.id) }}" class="btn btn-outline btn-sm">Edit Quiz Settings</a>
+                <a href="{{ url_for('admin_course_detail', course_id=quiz.course_id) }}" class="btn btn-outline btn-sm">&larr; Back to Course</a>
+            </div>
+        </div>
+
+        {% if questions %}
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+            {% for q in questions %}
+            <div class="card admin-module-card-v2" style="margin-bottom: 0;">
+                <div class="admin-module-header-v2">
+                    <div class="admin-module-title-left">
+                        <span class="video-seq-badge">#{{ q.sequence }}</span>
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.1rem;">{{ q.question_text }}</h3>
+                        </div>
+                    </div>
+                    <div class="admin-module-actions">
+                        <span class="badge-status badge-active">Correct: Option {{ q.correct_option }}</span>
+                        <span class="badge-status {{ 'badge-active' if q.is_active else 'badge-inactive' }}">{{ 'Active' if q.is_active else 'Inactive' }}</span>
+                        <a href="{{ url_for('admin_edit_question', question_id=q.id) }}" class="btn btn-secondary btn-sm">Edit</a>
+                        <form action="{{ url_for('admin_delete_question', question_id=q.id) }}" method="POST" onsubmit="return confirm('Delete this question?');" style="display: inline;">
+                            <button type="submit" class="btn btn-outline btn-sm btn-destructive">Delete</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="admin-module-body-v2">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; margin-bottom: 0.75rem;">
+                        <div style="padding: 0.5rem 0.75rem; background: var(--color-bg-subtle); border-radius: var(--radius-sm); font-size: 0.875rem; {% if q.correct_option == 'A' %}border: 1px solid #16a34a; font-weight: 600;{% endif %}">
+                            <strong>A.</strong> {{ q.option_a }}
+                        </div>
+                        <div style="padding: 0.5rem 0.75rem; background: var(--color-bg-subtle); border-radius: var(--radius-sm); font-size: 0.875rem; {% if q.correct_option == 'B' %}border: 1px solid #16a34a; font-weight: 600;{% endif %}">
+                            <strong>B.</strong> {{ q.option_b }}
+                        </div>
+                        <div style="padding: 0.5rem 0.75rem; background: var(--color-bg-subtle); border-radius: var(--radius-sm); font-size: 0.875rem; {% if q.correct_option == 'C' %}border: 1px solid #16a34a; font-weight: 600;{% endif %}">
+                            <strong>C.</strong> {{ q.option_c }}
+                        </div>
+                        <div style="padding: 0.5rem 0.75rem; background: var(--color-bg-subtle); border-radius: var(--radius-sm); font-size: 0.875rem; {% if q.correct_option == 'D' %}border: 1px solid #16a34a; font-weight: 600;{% endif %}">
+                            <strong>D.</strong> {{ q.option_d }}
+                        </div>
+                    </div>
+                    {% if q.explanation %}
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">
+                        <strong>Explanation:</strong> {{ q.explanation }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No questions added to this quiz yet. Click <strong>+ Add Question</strong> to create the first question!</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

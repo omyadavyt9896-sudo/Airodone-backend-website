@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Teacher Course Assignment — {{ teacher.name }} | airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h1>Teacher Course Assignment</h1>
+                <p style="color: var(--color-text-muted);">Assign educational courses to <strong>{{ teacher.name }}</strong> ({{ teacher.email }}) for monitoring and evaluation access.</p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin_users', tab='teachers') }}" class="btn btn-outline btn-md">&larr; Back to Teachers List</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container" style="max-width: 900px; margin: 0 auto;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 1.5rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Assign New Course Card -->
+        <div class="card" style="padding: 1.5rem; margin-bottom: 2rem; border-radius: 12px; background: var(--card-bg, #ffffff);">
+            <h3 style="margin-bottom: 1rem; font-size: 1.2rem;">Assign New Course</h3>
+            {% if unassigned_courses and unassigned_courses|length > 0 %}
+            <form method="post" action="{{ url_for('admin_teacher_assign_courses', teacher_id=teacher.id) }}" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                <select name="course_id" class="form-input" style="flex: 1; min-width: 250px;" required>
+                    <option value="">-- Select Course to Assign --</option>
+                    {% for c in unassigned_courses %}
+                    <option value="{{ c.id }}">{{ c.title }} (Grade {{ c.grade }})</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary">Assign Course</button>
+            </form>
+            {% else %}
+            <p style="color: var(--color-text-muted); font-size: 0.95rem;">All active courses are currently assigned to this teacher.</p>
+            {% endif %}
+        </div>
+
+        <!-- Currently Assigned Courses -->
+        <h3 style="margin-bottom: 1rem; font-size: 1.25rem;">Currently Assigned Courses ({{ assigned_courses|length }})</h3>
+        {% if assigned_courses and assigned_courses|length > 0 %}
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Course ID</th>
+                        <th>Course Title</th>
+                        <th>Educational Grade</th>
+                        <th>Assigned On</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in assigned_courses %}
+                    <tr>
+                        <td><strong>#{{ c.id }}</strong></td>
+                        <td><strong>{{ c.title }}</strong></td>
+                        <td>Grade {{ c.grade }}</td>
+                        <td>{{ c.assigned_at }}</td>
+                        <td>
+                            <form method="post" action="{{ url_for('admin_teacher_remove_course', teacher_id=teacher.id, course_id=c.id) }}" onsubmit="return confirm('Remove course assignment for {{ c.title }}?');">
+                                <button type="submit" class="btn btn-outline btn-sm" style="color: var(--color-error, #ef4444); border-color: var(--color-error, #ef4444);">
+                                    Remove Access
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="color: var(--color-text-muted);">No courses assigned to this teacher yet.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

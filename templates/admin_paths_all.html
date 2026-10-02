@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+
+{% block title %}Learning Paths | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Learning Paths</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h1 style="margin: 0 0 0.4rem 0;">Learning Paths</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted); margin: 0;">
+                    Structured Grade 1–5 educational pathways grouped by Learning Category.
+                </p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <a href="{{ url_for('admin_add_learning_path') }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.45rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Add Learning Path
+                </a>
+                <a href="{{ url_for('admin_learning_categories') }}" class="btn btn-outline" style="display: inline-flex; align-items: center; gap: 0.45rem;">
+                    Manage Categories
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% set admin_active = 'paths' %}
+{% include "admin_nav.html" %}
+
+<section class="section" style="padding-top: 0.5rem; padding-bottom: 3.5rem;">
+    <div class="container" style="max-width: 1160px; margin: 0 auto;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category_type, message in messages %}
+        <div class="alert alert-{{ 'success' if category_type == 'success' else ('info' if category_type == 'info' else 'error') }}" style="margin-bottom: 1.5rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Top Overview Stats Strip -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <div class="card" style="padding: 1.25rem; display: flex; align-items: center; gap: 1rem; border-left: 4px solid var(--color-primary, #0284c7);">
+                <div style="font-size: 2rem; line-height: 1;">📚</div>
+                <div>
+                    <div style="font-size: 0.85rem; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Categories</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--color-text);">{{ categories|length }}</div>
+                </div>
+            </div>
+
+            <div class="card" style="padding: 1.25rem; display: flex; align-items: center; gap: 1rem; border-left: 4px solid #10b981;">
+                <div style="font-size: 2rem; line-height: 1;">🗺️</div>
+                <div>
+                    <div style="font-size: 0.85rem; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Learning Paths</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--color-text);" id="statTotalPaths">{{ total_paths_count }}</div>
+                </div>
+            </div>
+
+            <div class="card" style="padding: 1.25rem; display: flex; align-items: center; gap: 1rem; border-left: 4px solid #8b5cf6;">
+                <div style="font-size: 2rem; line-height: 1;">🎓</div>
+                <div>
+                    <div style="font-size: 0.85rem; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Courses Linked</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--color-text);">{{ total_courses_count }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="card" style="padding: 1.15rem 1.5rem; margin-bottom: 1.75rem; background: var(--color-bg-card, #ffffff);">
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center;">
+                <div style="display: flex; flex-wrap: wrap; gap: 0.85rem; align-items: center; flex: 1; min-width: 280px;">
+                    <!-- Real-time Search Input -->
+                    <div style="position: relative; flex: 1; min-width: 240px; max-width: 440px;">
+                        <input type="text" id="pathSearchInput" class="form-control" 
+                               placeholder="Search learning paths by name, grade, description..." 
+                               value="{{ search_query }}"
+                               style="padding-left: 2.4rem; border-radius: 8px; width: 100%;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                             style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--color-text-muted); pointer-events: none;">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </div>
+
+                    <!-- Category Filter Dropdown -->
+                    <div style="min-width: 210px;">
+                        <select id="categoryFilterSelect" class="form-control" style="border-radius: 8px; font-weight: 500;">
+                            <option value="all">All Categories ({{ categories|length }})</option>
+                            {% for c in all_categories %}
+                            <option value="{{ c.id }}" {% if selected_category_id == c.id %}selected{% endif %}>
+                                {{ c.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Accordion Expand / Collapse Quick Controls -->
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <button type="button" id="btnExpandAll" class="btn btn-outline btn-sm" style="font-size: 0.825rem; padding: 0.4rem 0.75rem;">
+                        Expand All
+                    </button>
+                    <button type="button" id="btnCollapseAll" class="btn btn-outline btn-sm" style="font-size: 0.825rem; padding: 0.4rem 0.75rem;">
+                        Collapse All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Search Feedback Strip -->
+            <div id="searchFeedback" style="display: none; margin-top: 0.75rem; font-size: 0.85rem; color: var(--color-text-muted);">
+                Showing <strong id="matchingPathsCount">0</strong> learning path(s) matching your filter.
+                <button type="button" id="btnClearSearch" style="background: none; border: none; color: var(--color-primary, #0284c7); cursor: pointer; text-decoration: underline; padding-left: 0.5rem; font-weight: 600;">Clear</button>
+            </div>
+        </div>
+
+        <!-- Category-First Grouped Learning Paths -->
+        {% if categories %}
+        <div id="categoriesContainer" style="display: flex; flex-direction: column; gap: 1.5rem;">
+            {% for cat in categories %}
+            {% set cat_icon = '📚' %}
+            {% set cat_name_lower = cat.name|lower %}
+            {% if 'ai' in cat_name_lower or 'artificial' in cat_name_lower %}
+                {% set cat_icon = '🤖' %}
+            {% elif 'coding' in cat_name_lower or 'program' in cat_name_lower %}
+                {% set cat_icon = '💻' %}
+            {% elif 'drone' in cat_name_lower %}
+                {% set cat_icon = '🚁' %}
+            {% elif 'robotic' in cat_name_lower %}
+                {% set cat_icon = '🦾' %}
+            {% elif 'web' in cat_name_lower or 'design' in cat_name_lower %}
+                {% set cat_icon = '🌐' %}
+            {% endif %}
+
+            <div class="category-block card" 
+                 data-category-id="{{ cat.id }}" 
+                 data-category-name="{{ cat.name|lower }}"
+                 style="overflow: hidden; border: 1px solid var(--color-border); border-radius: 12px; padding: 0;">
+                
+                <!-- Category Visual Header -->
+                <div class="category-header-bar" 
+                     data-toggle-target="cat-body-{{ cat.id }}"
+                     style="padding: 1.25rem 1.5rem; background: var(--color-bg-subtle, #f8fafc); border-bottom: 1px solid var(--color-border); cursor: pointer; user-select: none; transition: background 0.2s ease;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.9rem; flex: 1; min-width: 250px;">
+                            <span class="category-chevron" id="chevron-{{ cat.id }}" style="display: inline-flex; transition: transform 0.2s ease; font-size: 1.1rem; color: var(--color-text-muted);">
+                                ▼
+                            </span>
+                            <div style="font-size: 1.6rem; line-height: 1;">
+                                {{ cat_icon }}
+                            </div>
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                                    <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--color-text);">
+                                        {{ cat.name }}
+                                    </h2>
+                                    {% if not cat.is_active %}
+                                    <span class="badge-status badge-inactive" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">
+                                        Category Inactive
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                {% if cat.description %}
+                                <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0.2rem 0 0 0; max-width: 650px;">
+                                    {{ cat.description }}
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Counts & Actions -->
+                        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;" onclick="event.stopPropagation();">
+                            <span class="course-stat-pill" style="font-weight: 700; background: #e0f2fe; color: #0284c7; font-size: 0.85rem; padding: 0.35rem 0.75rem; border-radius: 9999px;">
+                                <span class="path-counter-val">{{ cat.total_paths }}</span> Learning Path{% if cat.total_paths != 1 %}s{% endif %}
+                            </span>
+                            <span class="course-stat-pill" style="font-weight: 600; background: #f1f5f9; color: #475569; font-size: 0.85rem; padding: 0.35rem 0.75rem; border-radius: 9999px;">
+                                {{ cat.path_courses_count }} Course{% if cat.path_courses_count != 1 %}s{% endif %}
+                            </span>
+
+                            <a href="{{ url_for('admin_add_learning_path', category_id=cat.id) }}" 
+                               class="btn btn-primary btn-sm" 
+                               style="font-size: 0.825rem; padding: 0.4rem 0.75rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                <span>+</span> Add Path
+                            </a>
+                            <a href="{{ url_for('admin_courses', category_id=cat.id) }}" 
+                               class="btn btn-outline btn-sm" 
+                               style="font-size: 0.825rem; padding: 0.4rem 0.75rem;">
+                                View Courses
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category Content Body (Collapsible) -->
+                <div id="cat-body-{{ cat.id }}" class="category-content-body" style="padding: 1.25rem 1.5rem; display: block;">
+                    {% if cat.paths %}
+                    <div class="paths-list" style="display: flex; flex-direction: column; gap: 1rem;">
+                        {% for p in cat.paths %}
+                        <div class="path-card" 
+                             data-path-id="{{ p.id }}"
+                             data-path-name="{{ p.name|lower }}"
+                             data-path-grade="{{ p.grade }}"
+                             data-path-grade-name="{{ p.grade_name|lower }}"
+                             data-path-slug="{{ p.slug|lower }}"
+                             data-path-desc="{{ (p.description or '')|lower }}"
+                             style="border: 1px solid var(--color-border); border-radius: 10px; padding: 1.15rem 1.25rem; background: var(--color-bg-card, #ffffff); transition: box-shadow 0.2s ease, transform 0.2s ease;">
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                                
+                                <!-- Left side: Grade Badge + Path Info -->
+                                <div style="display: flex; gap: 1.15rem; align-items: flex-start; flex: 1; min-width: 280px;">
+                                    <!-- Grade Badge Box -->
+                                    <div style="min-width: 96px; text-align: center; padding: 0.6rem 0.5rem; background: var(--color-bg-subtle, #f0f9ff); border: 1px solid #bae6fd; border-radius: 8px;">
+                                        <div style="font-weight: 800; font-size: 0.95rem; color: #0284c7; text-transform: uppercase; letter-spacing: 0.03em;">
+                                            Grade {{ p.grade }}
+                                        </div>
+                                        <div style="font-size: 0.72rem; color: var(--color-text-muted); font-weight: 500; margin-top: 0.15rem;">
+                                            {{ p.classes or ('Class ' ~ p.grade) }}
+                                        </div>
+                                    </div>
+
+                                    <!-- Details -->
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                                            <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0; color: var(--color-text);">
+                                                {{ p.name }}
+                                            </h3>
+                                            <span class="badge-status {{ 'badge-active' if p.is_active else 'badge-inactive' }}" style="font-size: 0.75rem; padding: 0.2rem 0.55rem;">
+                                                {{ 'Active' if p.is_active else 'Inactive' }}
+                                            </span>
+                                            
+                                            <!-- Course Count Pill with Quick Link -->
+                                            <a href="{{ url_for('admin_path_courses', path_id=p.id) }}" 
+                                               style="text-decoration: none;" 
+                                               title="View courses attached to this path">
+                                                <span class="course-stat-pill" style="font-weight: 700; background: {% if p.course_count > 0 %}#f0fdf4{% else %}#f8fafc{% endif %}; color: {% if p.course_count > 0 %}#16a34a{% else %}#64748b{% endif %}; border: 1px solid {% if p.course_count > 0 %}#bbf7d0{% else %}#e2e8f0{% endif %}; font-size: 0.78rem; padding: 0.2rem 0.6rem; border-radius: 9999px;">
+                                                    {{ p.course_count }} Course{% if p.course_count != 1 %}s{% endif %}
+                                                </span>
+                                            </a>
+                                        </div>
+
+                                        <div style="font-size: 0.8rem; color: var(--color-text-muted); font-family: monospace; margin: 0.25rem 0;">
+                                            Slug: <strong>{{ p.slug }}</strong> &bull; Public: <a href="{{ url_for('path_courses', category_slug=p.category_slug, path_slug=p.slug) }}" target="_blank" style="color: var(--color-primary, #0284c7); text-decoration: none;">/learn/category/{{ p.category_slug }}/{{ p.slug }} &nearr;</a>
+                                        </div>
+
+                                        {% if p.description %}
+                                        <p style="font-size: 0.88rem; color: var(--color-text-muted); margin: 0.35rem 0 0 0; line-height: 1.45; max-width: 680px;">
+                                            {{ p.description }}
+                                        </p>
+                                        {% else %}
+                                        <p style="font-size: 0.825rem; color: var(--color-text-muted); font-style: italic; margin: 0.35rem 0 0 0;">
+                                            No curriculum description provided yet.
+                                        </p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Right side: Comprehensive Actions -->
+                                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+                                    <!-- Manage Courses Button -->
+                                    <a href="{{ url_for('admin_path_courses', path_id=p.id) }}" 
+                                       class="btn btn-primary btn-sm" 
+                                       style="font-size: 0.825rem; padding: 0.4rem 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                                        Manage Courses
+                                    </a>
+
+                                    <!-- Add Course Quick Link -->
+                                    <a href="{{ url_for('admin_add_course', learning_path_id=p.id) }}" 
+                                       class="btn btn-outline btn-sm" 
+                                       style="font-size: 0.825rem; padding: 0.4rem 0.75rem;" 
+                                       title="Create a course directly under this path">
+                                        + Add Course
+                                    </a>
+
+                                    <!-- Edit Path Details -->
+                                    <a href="{{ url_for('admin_edit_learning_path', path_id=p.id) }}" 
+                                       class="btn btn-secondary btn-sm" 
+                                       style="font-size: 0.825rem; padding: 0.4rem 0.75rem;">
+                                        Edit
+                                    </a>
+
+                                    <!-- Toggle Active / Inactive -->
+                                    <form method="post" action="{{ url_for('admin_toggle_learning_path_active', path_id=p.id) }}" style="display: inline;" 
+                                          onsubmit="return confirm('Toggle status for {{ p.name|e }}?');">
+                                        <button type="submit" class="btn btn-outline btn-sm" style="font-size: 0.825rem; padding: 0.4rem 0.75rem;">
+                                            {{ 'Deactivate' if p.is_active else 'Activate' }}
+                                        </button>
+                                    </form>
+
+                                    <!-- Delete Path -->
+                                    <form method="post" action="{{ url_for('admin_delete_learning_path', path_id=p.id) }}" style="display: inline;" 
+                                          onsubmit="return confirm('Delete learning path {{ p.name|e }}? If courses are linked, it will be safely deactivated.');">
+                                        <button type="submit" class="btn btn-outline btn-sm btn-destructive" style="font-size: 0.825rem; padding: 0.4rem 0.75rem;">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <!-- Empty Category State -->
+                    <div style="text-align: center; padding: 2rem 1rem; background: var(--color-bg-subtle, #f8fafc); border-radius: 8px; border: 1px dashed var(--color-border);">
+                        <p style="margin: 0 0 0.75rem 0; color: var(--color-text-muted); font-size: 0.925rem;">
+                            No learning paths created for <strong>{{ cat.name }}</strong> yet.
+                        </p>
+                        <a href="{{ url_for('admin_add_learning_path', category_id=cat.id) }}" class="btn btn-primary btn-sm">
+                            + Add First Learning Path
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- No Categories in Database State -->
+        <div class="card" style="text-align: center; padding: 3rem 1.5rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📂</div>
+            <h2 style="font-size: 1.35rem; margin-bottom: 0.5rem; color: var(--color-text);">No Learning Categories Found</h2>
+            <p style="color: var(--color-text-muted); max-width: 500px; margin: 0 auto 1.5rem auto;">
+                Create learning categories first to group educational grade pathways.
+            </p>
+            <a href="{{ url_for('admin_add_learning_category') }}" class="btn btn-primary">
+                Create First Learning Category
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- No Search Results Found State -->
+        <div id="noSearchResults" class="card" style="display: none; text-align: center; padding: 3rem 1.5rem; margin-top: 1.5rem;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🔍</div>
+            <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--color-text);">No matching learning paths</h3>
+            <p style="color: var(--color-text-muted); margin-bottom: 1.25rem;">We couldn't find any learning paths matching your current search or category filter.</p>
+            <button type="button" id="btnResetFilters" class="btn btn-primary btn-sm">Reset Filters</button>
+        </div>
+    </div>
+</section>
+
+<!-- Interactive Real-time Search, Category Filter & Accordion Script -->
+<script>
+(function() {
+    const searchInput = document.getElementById('pathSearchInput');
+    const categorySelect = document.getElementById('categoryFilterSelect');
+    const btnExpandAll = document.getElementById('btnExpandAll');
+    const btnCollapseAll = document.getElementById('btnCollapseAll');
+    const btnClearSearch = document.getElementById('btnClearSearch');
+    const btnResetFilters = document.getElementById('btnResetFilters');
+    const searchFeedback = document.getElementById('searchFeedback');
+    const matchingPathsCount = document.getElementById('matchingPathsCount');
+    const noSearchResults = document.getElementById('noSearchResults');
+    const categoryBlocks = document.querySelectorAll('.category-block');
+
+    // 1. Accordion Header Click Handler
+    document.querySelectorAll('.category-header-bar').forEach(header => {
+        header.addEventListener('click', function(e) {
+            const targetId = this.getAttribute('data-toggle-target');
+            const body = document.getElementById(targetId);
+            const chevron = this.querySelector('.category-chevron');
+            if (!body) return;
+
+            const isCurrentlyOpen = body.style.display !== 'none';
+            if (isCurrentlyOpen) {
+                body.style.display = 'none';
+                if (chevron) chevron.style.transform = 'rotate(-90deg)';
+            } else {
+                body.style.display = 'block';
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
+            }
+        });
+    });
+
+    // 2. Expand All / Collapse All
+    if (btnExpandAll) {
+        btnExpandAll.addEventListener('click', function() {
+            categoryBlocks.forEach(block => {
+                if (block.style.display !== 'none') {
+                    const body = block.querySelector('.category-content-body');
+                    const chevron = block.querySelector('.category-chevron');
+                    if (body) body.style.display = 'block';
+                    if (chevron) chevron.style.transform = 'rotate(0deg)';
+                }
+            });
+        });
+    }
+
+    if (btnCollapseAll) {
+        btnCollapseAll.addEventListener('click', function() {
+            categoryBlocks.forEach(block => {
+                const body = block.querySelector('.category-content-body');
+                const chevron = block.querySelector('.category-chevron');
+                if (body) body.style.display = 'none';
+                if (chevron) chevron.style.transform = 'rotate(-90deg)';
+            });
+        });
+    }
+
+    // 3. Combined Filter Function (Category Dropdown + Real-time Search)
+    function applyFilters() {
+        const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+        const selectedCat = categorySelect ? categorySelect.value : 'all';
+
+        let totalMatching = 0;
+        let visibleCategories = 0;
+
+        categoryBlocks.forEach(block => {
+            const blockCatId = block.getAttribute('data-category-id');
+            const blockCatName = block.getAttribute('data-category-name');
+            const body = block.querySelector('.category-content-body');
+            const chevron = block.querySelector('.category-chevron');
+            const pathCards = block.querySelectorAll('.path-card');
+
+            // Category dropdown matching
+            const catMatches = (selectedCat === 'all' || selectedCat === blockCatId);
+
+            if (!catMatches) {
+                block.style.display = 'none';
+                return;
+            }
+
+            // Path-level matching against search query
+            let matchedPathsInBlock = 0;
+
+            if (!query) {
+                // No query: show all paths in this category
+                pathCards.forEach(card => card.style.display = '');
+                matchedPathsInBlock = pathCards.length;
+                totalMatching += pathCards.length;
+            } else {
+                // Search query active
+                pathCards.forEach(card => {
+                    const pName = card.getAttribute('data-path-name') || '';
+                    const pGrade = card.getAttribute('data-path-grade') || '';
+                    const pGradeName = card.getAttribute('data-path-grade-name') || '';
+                    const pSlug = card.getAttribute('data-path-slug') || '';
+                    const pDesc = card.getAttribute('data-path-desc') || '';
+
+                    const matches = pName.includes(query) || 
+                                    pGrade.includes(query) || 
+                                    pGradeName.includes(query) || 
+                                    pSlug.includes(query) || 
+                                    pDesc.includes(query) ||
+                                    blockCatName.includes(query);
+
+                    if (matches) {
+                        card.style.display = '';
+                        matchedPathsInBlock++;
+                        totalMatching++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            }
+
+            // If searching, hide category if no paths match
+            if (query && matchedPathsInBlock === 0) {
+                block.style.display = 'none';
+            } else {
+                block.style.display = 'block';
+                visibleCategories++;
+
+                // Auto-expand category if search is active or category specifically selected
+                if (query || selectedCat !== 'all') {
+                    if (body) body.style.display = 'block';
+                    if (chevron) chevron.style.transform = 'rotate(0deg)';
+                }
+            }
+        });
+
+        // Search feedback
+        if (query) {
+            if (searchFeedback) searchFeedback.style.display = 'block';
+            if (matchingPathsCount) matchingPathsCount.textContent = totalMatching;
+        } else {
+            if (searchFeedback) searchFeedback.style.display = 'none';
+        }
+
+        // Empty results message
+        if (noSearchResults) {
+            if (visibleCategories === 0) {
+                noSearchResults.style.display = 'block';
+            } else {
+                noSearchResults.style.display = 'none';
+            }
+        }
+    }
+
+    // Attach listeners
+    if (searchInput) {
+        searchInput.addEventListener('input', applyFilters);
+    }
+    if (categorySelect) {
+        categorySelect.addEventListener('change', applyFilters);
+    }
+    if (btnClearSearch) {
+        btnClearSearch.addEventListener('click', function() {
+            if (searchInput) searchInput.value = '';
+            applyFilters();
+        });
+    }
+    if (btnResetFilters) {
+        btnResetFilters.addEventListener('click', function() {
+            if (searchInput) searchInput.value = '';
+            if (categorySelect) categorySelect.value = 'all';
+            applyFilters();
+        });
+    }
+
+    // Initial run to honor any server-side query params
+    applyFilters();
+})();
+</script>
+{% endblock %}

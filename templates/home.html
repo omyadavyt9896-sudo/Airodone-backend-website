@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Home | airodrone{% endblock %}
+{% block meta_description %}Discover airodrone's AI, robotics, coding, electronics, drone, web design, ATL setup, and
+STEM workshops designed for schools and institutions.{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="container hero-inner">
+        <div class="hero-text">
+            <div class="hero-tagline-pill hero-badge-animate">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> AI &bull; Robotics &bull; Drones &bull; STEM Education
+            </div>
+            <h1 class="hero-title-animate">Empowering Schools with AI, Robotics &amp; Drone Technology</h1>
+            <p class="hero-desc-animate">
+                We partner with schools and training institutions to design, setup, and manage practical STEM and Atal Tinkering Labs (ATL) &mdash; equipping students with hands-on technical skills for the future.
+            </p>
+            <div class="hero-actions hero-actions-animate">
+                <a href="{{ url_for('learn') }}" class="btn btn-primary hero-btn-primary">Explore Learn <span class="btn-arrow" aria-hidden="true">&rarr;</span></a>
+                <a href="{{ url_for('solutions') }}" class="btn btn-secondary hero-btn-secondary">Explore Solutions <span class="btn-arrow" aria-hidden="true">&rarr;</span></a>
+            </div>
+            <div class="hero-meta hero-meta-animate">
+                <span class="hero-meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="hero-meta-icon"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                    ATL Setup
+                </span>
+                <span class="hero-meta-dot" aria-hidden="true">&bull;</span>
+                <span class="hero-meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="hero-meta-icon"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    Curriculum Design
+                </span>
+                <span class="hero-meta-dot" aria-hidden="true">&bull;</span>
+                <span class="hero-meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="hero-meta-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    Mentor Capacity Building
+                </span>
+            </div>
+        </div>
+        <div class="hero-media">
+            <div class="hero-image-stack">
+                <div class="hero-image-primary hero-image-primary-animate">
+                    <img src="{{ url_for('static', filename='images/hero/hero.jpg') }}"
+                        alt="Students working in an innovation lab">
+                </div>
+                <div class="hero-image-secondary hero-image-secondary-animate">
+                    <img src="{{ url_for('static', filename='images/services/robotics.jpg') }}"
+                        alt="Hands-on robotics learning">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section section-light">
+    <div class="container two-column">
+        <div class="column-text">
+            <h2>Why Choose Airodrone?</h2>
+            <p>
+                We build sustainable, high-impact STEM ecosystems tailored to your school's syllabus and NITI Aayog ATL guidelines. Our turnkey support combines equipment, mentor enablement, and structured activity calendars.
+            </p>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <h3>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 6px; color: var(--color-accent);"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        Curriculum-Aligned
+                    </h3>
+                    <p>NEP 2020-compliant modules across AI, Robotics, Coding, and Electronics.</p>
+                </div>
+                <div class="feature-item">
+                    <h3>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 6px; color: var(--color-accent);"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        End-to-End Enablement
+                    </h3>
+                    <p>Turnkey lab setup, equipment maintenance, teacher training, and event support.</p>
+                </div>
+                <div class="feature-item">
+                    <h3>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 6px; color: var(--color-accent);"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        Practical Skill Building
+                    </h3>
+                    <p>Project-driven activities encouraging computational thinking and problem solving.</p>
+                </div>
+            </div>
+        </div>
+        <div class="column-media grid-media">
+            <img src="{{ url_for('static', filename='images/services/ai.jpg') }}" alt="AI lab session with students">
+            <img src="{{ url_for('static', filename='images/services/robotics.jpg') }}"
+                alt="Students assembling a robot">
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="section-heading">
+            <h2>Explore Our Learning Programs</h2>
+            <p>Practical STEM learning programs designed to build future-ready technical skills.</p>
+        </div>
+
+        {% if categories %}
+        <div class="card-grid card-grid-3">
+            {% for cat in categories %}
+            <div class="card service-card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+                <a href="{{ url_for('category_paths', category_slug=cat.slug) }}" class="category-image-wrap" style="height: 200px; width: 100%; overflow: hidden; position: relative; background: var(--color-bg-subtle, #0f172a); display: block;" tabindex="-1" aria-hidden="true">
+                    {% set cat_img = category_image_url(cat.image) if cat.image else None %}
+                    {% if cat_img %}
+                    <img src="{{ cat_img }}" 
+                         alt="{{ cat.name }} program illustration" 
+                         class="category-card-img"
+                         style="width: 100%; height: 100%; object-fit: cover; display: block; transition: transform var(--transition-smooth, 0.3s ease);"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="category-fallback-svg" style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-accent);">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    </div>
+                    {% else %}
+                    <div class="category-fallback-svg" style="display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-accent);">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    </div>
+                    {% endif %}
+                </a>
+
+                <div style="padding: 1.75rem; display: flex; flex-direction: column; flex-grow: 1;">
+                    <h3 style="margin-bottom: 0.75rem; font-size: 1.25rem;">
+                        <a href="{{ url_for('category_paths', category_slug=cat.slug) }}" style="color: inherit; text-decoration: none;">
+                            {{ cat.name }}
+                        </a>
+                    </h3>
+                    <p style="margin-bottom: 1.5rem; flex-grow: 1; color: var(--color-text-muted); font-size: 0.95rem; line-height: 1.6;">
+                        {{ cat.description or 'Explore hands-on curriculum, interactive lessons, and project milestones across educational grades.' }}
+                    </p>
+                    <a href="{{ url_for('category_paths', category_slug=cat.slug) }}" class="card-link" aria-label="Learn more about {{ cat.name }}">
+                        Learn more <span aria-hidden="true">&rarr;</span>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="section-actions" style="text-align: center; margin-top: 3rem;">
+            <a href="{{ url_for('learn') }}" class="btn btn-primary btn-large">
+                View All Learning Programs &rarr;
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="section section-light">
+    <div class="container highlight-strip">
+        <div class="highlight-text">
+            <h2>Ready to activate your ATL or STEM lab?</h2>
+            <p>Share your institution's goals and we'll design a customized roadmap for your campus.</p>
+        </div>
+        <div class="highlight-action">
+            <a href="{{ url_for('contact') }}" class="btn btn-primary btn-cta">Talk to Us <span aria-hidden="true">&rarr;</span></a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

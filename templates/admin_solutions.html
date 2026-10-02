@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Institutional Solutions | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Solutions</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>Institutional Solutions Management</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    Manage school &amp; college programs, professional training tracks, ATL lab setups, workshops, and customizable included items.
+                </p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <a href="{{ url_for('solutions') }}" target="_blank" class="btn btn-outline" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <span>🌐</span> View Public Page
+                </a>
+                <a href="{{ url_for('admin_add_solution') }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <span>+</span> Add Solution
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% set admin_active = 'solutions' %}
+{% include "admin_nav.html" %}
+
+<section class="section" style="padding-top: 0.5rem;">
+    <div class="container" style="max-width: 1200px; margin: 0 auto;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 1.75rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="card profile-form-card" style="padding: 1.75rem; border-radius: 14px; background: var(--color-card-bg, #ffffff); border: 1px solid var(--color-border, #e2e8f0);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                    <h2 style="font-size: 1.25rem; margin: 0; color: var(--color-text);">All Solutions ({{ solutions | length }})</h2>
+                    <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: var(--color-text-muted);">Reorder, edit content, upload imagery, and configure bullet items for the public Solutions page.</p>
+                </div>
+                <span class="course-stat-pill" style="font-weight: 700; background: #e0f2fe; color: #0284c7;">
+                    {{ solutions | selectattr('is_active') | list | length }} Active / {{ solutions | length }} Total
+                </span>
+            </div>
+
+            {% if solutions %}
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.925rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--color-border); color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            <th style="padding: 0.75rem 0.5rem; width: 85px;">Order</th>
+                            <th style="padding: 0.75rem 0.5rem;">Solution</th>
+                            <th style="padding: 0.75rem 0.5rem;">Badge / Ideal For</th>
+                            <th style="padding: 0.75rem 0.5rem; text-align: center;">Included Items</th>
+                            <th style="padding: 0.75rem 0.5rem; text-align: center;">Status</th>
+                            <th style="padding: 0.75rem 0.5rem; text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in solutions %}
+                        <tr style="border-bottom: 1px solid var(--color-border);">
+                            <!-- Display Order & Reorder Controls -->
+                            <td style="padding: 1rem 0.5rem;">
+                                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                                    <span style="font-weight: 700; color: var(--color-text-muted); min-width: 20px;">#{{ s.display_order }}</span>
+                                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                                        {% if not loop.first %}
+                                        <form action="{{ url_for('admin_reorder_solution', solution_id=s.id) }}" method="POST" style="display: inline; margin: 0; line-height: 1;">
+                                            <input type="hidden" name="direction" value="up">
+                                            <button type="submit" title="Move Up" style="background: none; border: none; cursor: pointer; padding: 1px; color: var(--color-text-muted); font-size: 0.75rem; line-height: 1;">▲</button>
+                                        </form>
+                                        {% endif %}
+                                        {% if not loop.last %}
+                                        <form action="{{ url_for('admin_reorder_solution', solution_id=s.id) }}" method="POST" style="display: inline; margin: 0; line-height: 1;">
+                                            <input type="hidden" name="direction" value="down">
+                                            <button type="submit" title="Move Down" style="background: none; border: none; cursor: pointer; padding: 1px; color: var(--color-text-muted); font-size: 0.75rem; line-height: 1;">▼</button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Solution Info & Image -->
+                            <td style="padding: 1rem 0.5rem;">
+                                <div style="display: flex; align-items: center; gap: 0.85rem;">
+                                    {% set sol_img = image_url(s.image) if s.image else None %}
+                                    <div style="width: 50px; height: 50px; border-radius: 8px; overflow: hidden; background: #0f172a; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                                        {% if sol_img %}
+                                        <img src="{{ sol_img }}" alt="{{ s.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                        {% else %}
+                                        <span style="font-size: 1.25rem;">🎯</span>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 700; font-size: 1rem; color: var(--color-text);">
+                                            <a href="{{ url_for('admin_edit_solution', solution_id=s.id) }}" style="color: inherit; text-decoration: none;">
+                                                {{ s.title }}
+                                            </a>
+                                        </div>
+                                        <div style="font-size: 0.78rem; color: var(--color-text-muted); font-family: monospace;">
+                                            #{{ s.slug }}
+                                        </div>
+                                        {% if s.short_description %}
+                                        <div style="font-size: 0.82rem; color: var(--color-text-muted); margin-top: 0.2rem; max-width: 340px;">
+                                            {{ s.short_description[:80] }}{% if s.short_description|length > 80 %}...{% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Badge & Ideal For -->
+                            <td style="padding: 1rem 0.5rem;">
+                                {% if s.badge %}
+                                <div style="font-size: 0.72rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 0.15rem 0.5rem; border-radius: 4px; display: inline-block; margin-bottom: 0.35rem;">
+                                    {{ s.badge }}
+                                </div>
+                                {% endif %}
+                                {% if s.ideal_for %}
+                                <div style="font-size: 0.8rem; color: var(--color-text-muted); max-width: 250px;">
+                                    {{ s.ideal_for[:65] }}{% if s.ideal_for|length > 65 %}...{% endif %}
+                                </div>
+                                {% endif %}
+                            </td>
+
+                            <!-- Included Items Count -->
+                            <td style="padding: 1rem 0.5rem; text-align: center;">
+                                <a href="{{ url_for('admin_edit_solution', solution_id=s.id) }}#items-section" style="text-decoration: none;">
+                                    <span class="course-stat-pill" style="font-weight: 600; background: #f1f5f9; color: #334155; font-size: 0.82rem; cursor: pointer;">
+                                        {{ s.item_count }} Item{% if s.item_count != 1 %}s{% endif %} &rarr;
+                                    </span>
+                                </a>
+                            </td>
+
+                            <!-- Active Status -->
+                            <td style="padding: 1rem 0.5rem; text-align: center;">
+                                <span class="badge-status {{ 'badge-active' if s.is_active else 'badge-inactive' }}" style="font-size: 0.78rem; padding: 0.25rem 0.6rem; border-radius: 6px;">
+                                    {{ 'Active' if s.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+
+                            <!-- Actions -->
+                            <td style="padding: 1rem 0.5rem; text-align: right;">
+                                <div style="display: inline-flex; gap: 0.35rem; align-items: center; justify-content: flex-end; flex-wrap: wrap;">
+                                    <a href="{{ url_for('admin_edit_solution', solution_id=s.id) }}" class="btn" style="padding: 0.35rem 0.7rem; font-size: 0.82rem; font-weight: 600; border-radius: 6px; background: #f1f5f9; color: #334155; text-decoration: none; border: 1px solid #cbd5e1;">
+                                        Edit
+                                    </a>
+
+                                    <form action="{{ url_for('admin_toggle_solution_active', solution_id=s.id) }}" method="POST" style="display: inline; margin: 0;">
+                                        <button type="submit" class="btn" style="padding: 0.35rem 0.7rem; font-size: 0.82rem; font-weight: 600; border-radius: 6px; background: {{ '#fef3c7' if s.is_active else '#dcfce7' }}; color: {{ '#92400e' if s.is_active else '#166534' }}; border: 1px solid {{ '#fde68a' if s.is_active else '#bbf7d0' }}; cursor: pointer;">
+                                            {{ 'Deactivate' if s.is_active else 'Activate' }}
+                                        </button>
+                                    </form>
+
+                                    <form action="{{ url_for('admin_delete_solution', solution_id=s.id) }}" method="POST" style="display: inline; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this solution and all its included items?');">
+                                        <button type="submit" class="btn" style="padding: 0.35rem 0.7rem; font-size: 0.82rem; font-weight: 600; border-radius: 6px; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; cursor: pointer;">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 3rem 1rem; color: var(--color-text-muted);">
+                <p style="margin-bottom: 1rem;">No solutions created yet.</p>
+                <a href="{{ url_for('admin_add_solution') }}" class="btn btn-primary">
+                    Create First Solution
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

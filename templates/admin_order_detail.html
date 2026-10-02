@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Order Details — {{ order.order_number }} | airodrone Admin{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h1>Order Details</h1>
+                <p>Order Number: <strong style="color: #60a5fa;">{{ order.order_number }}</strong> &bull; Created: {{ order.created_at }}</p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin_orders') }}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                    &larr; Back to Orders List
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container" style="max-width: 900px; margin: 0 auto;">
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}" style="margin-bottom: 1.5rem;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 2rem; align-items: start;">
+            
+            <!-- LEFT COLUMN: Customer & Order Snapshots -->
+            <div style="display: grid; gap: 1.5rem;">
+                
+                <!-- CUSTOMER INFORMATION -->
+                <div style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+                    <h3 style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 1rem; border-bottom: 2px solid #2563eb; padding-bottom: 0.4rem; display: inline-block;">
+                        CUSTOMER INFORMATION
+                    </h3>
+                    <div style="font-size: 0.95rem; line-height: 1.6; color: #334155;">
+                        <div><strong style="color: #64748b; font-size: 0.85rem; display: inline-block; width: 80px;">Name:</strong> {{ order.customer_name }}</div>
+                        <div><strong style="color: #64748b; font-size: 0.85rem; display: inline-block; width: 80px;">Email:</strong> {{ order.customer_email }}</div>
+                        <div><strong style="color: #64748b; font-size: 0.85rem; display: inline-block; width: 80px;">Phone:</strong> {{ order.customer_phone }}</div>
+                    </div>
+                </div>
+
+                <!-- DELIVERY ADDRESS -->
+                <div style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+                    <h3 style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 1rem; border-bottom: 2px solid #2563eb; padding-bottom: 0.4rem; display: inline-block;">
+                        DELIVERY ADDRESS
+                    </h3>
+                    <div style="font-size: 0.95rem; line-height: 1.6; color: #334155;">
+                        <div>{{ order.address }}</div>
+                        <div>{{ order.city }}, {{ order.state }} - <strong>{{ order.pincode }}</strong></div>
+                        {% if order.landmark %}
+                        <div style="margin-top: 0.4rem; color: #64748b; font-size: 0.85rem;">
+                            <strong>Landmark:</strong> {{ order.landmark }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- PAYMENT DETAILS -->
+                <div style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+                    <h3 style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 1rem; border-bottom: 2px solid #2563eb; padding-bottom: 0.4rem; display: inline-block;">
+                        PAYMENT INFORMATION
+                    </h3>
+                    <div style="font-size: 0.95rem; line-height: 1.7; color: #334155;">
+                        <div><strong style="color: #64748b; font-size: 0.85rem; display: inline-block; width: 140px;">Provider:</strong> {{ order.payment_provider }} (UPI / QR)</div>
+                        <div>
+                            <strong style="color: #64748b; font-size: 0.85rem; display: inline-block; width: 140px;">Payment Status:</strong> 
+                            {% if order.payment_status == 'Paid' %}
+                            <span style="background: #dcfce7; color: #15803d; font-size: 0.8rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px;">Paid</span>
+                            {% else %}
+                            <span style="background: #fee2e2; color: #b91c1c; font-size: 0.8rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px;">{{ order.payment_status }}</span>
+                            {% endif %}
+                        </div>
+                        <div><strong style="color: #64748b; font-size: 0.85rem; display: inline-block; width: 140px;">Razorpay Order ID:</strong> {{ order.razorpay_order_id or 'N/A' }}</div>
+                        <div><strong style="color: #64748b; font-size: 0.85rem; display: inline-block; width: 140px;">Razorpay Payment ID:</strong> {{ order.razorpay_payment_id or 'N/A' }}</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Order Line Item & Status Updater -->
+            <div style="display: grid; gap: 1.5rem;">
+                
+                <!-- PRODUCT & PRICE SUMMARY -->
+                <div style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+                    <h3 style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 1rem; border-bottom: 2px solid #2563eb; padding-bottom: 0.4rem; display: inline-block;">
+                        PRODUCT & PRICE SNAPSHOT
+                    </h3>
+
+                    <div style="margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid #f1f5f9;">
+                        <div style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin-bottom: 0.25rem;">
+                            {{ order.product_name_snapshot }}
+                        </div>
+                        <div style="font-size: 0.85rem; color: #64748b; font-weight: 600;">
+                            Quantity: 1
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.95rem; margin-bottom: 1.25rem;">
+                        <div style="display: flex; justify-content: space-between; color: #475569;">
+                            <span>Product Price</span>
+                            <span style="font-weight: 700; color: #0f172a;">{{ order.product_price_snapshot | format_price }}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; color: #475569;">
+                            <span>Shipping</span>
+                            {% if order.shipping_charge_snapshot == 0 %}
+                            <span style="font-weight: 700; color: #16a34a;">Free Shipping</span>
+                            {% else %}
+                            <span style="font-weight: 700; color: #0f172a;">{{ order.shipping_charge_snapshot | format_price }}</span>
+                            {% endif %}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; color: #475569;">
+                            <span>GST</span>
+                            <span style="background: #e0f2fe; color: #0369a1; font-size: 0.75rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 4px;">Included</span>
+                        </div>
+                    </div>
+
+                    <div style="border-top: 2px dashed #cbd5e1; padding-top: 1rem; display: flex; justify-content: space-between; align-items: baseline;">
+                        <span style="font-size: 1.05rem; font-weight: 800; color: #0f172a;">Total Amount</span>
+                        <span style="font-size: 1.6rem; font-weight: 800; color: #2563eb;">{{ order.total_amount | format_price }}</span>
+                    </div>
+                </div>
+
+                <!-- ORDER STATUS UPDATER -->
+                <div style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+                    <h3 style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 1rem; border-bottom: 2px solid #2563eb; padding-bottom: 0.4rem; display: inline-block;">
+                        UPDATE ORDER STATUS
+                    </h3>
+
+                    <form action="{{ url_for('admin_update_order_status', order_id=order.id) }}" method="POST">
+                        <div style="margin-bottom: 1.25rem;">
+                            <label for="order_status" style="display: block; font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 0.4rem;">
+                                Current Order Status
+                            </label>
+                            <select id="order_status" name="order_status" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; color: #0f172a; font-weight: 600;">
+                                {% set statuses = ['Pending Payment', 'Paid', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Refunded'] %}
+                                {% for s in statuses %}
+                                <option value="{{ s }}" {% if order.order_status == s %}selected{% endif %}>{{ s }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-size: 1rem; font-weight: 700; border-radius: 8px; background: #2563eb; color: #fff; border: none; cursor: pointer;">
+                            Update Status
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</section>
+{% endblock %}

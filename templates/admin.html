@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if current_user.is_admin() %}Admin Dashboard — Full Access{% elif current_user.is_sub_admin() %}Sub-Admin Dashboard — Operations{% else %}Teacher Console — Academic Evaluation{% endif %} | airodrone
+{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h1>
+                    {% if current_user.is_admin() %}
+                        Admin Console &amp; Dashboard
+                    {% elif current_user.is_sub_admin() %}
+                        Sub-Admin Operations Console
+                    {% else %}
+                        Teacher Academic Console
+                    {% endif %}
+                </h1>
+                <p style="color: var(--color-text-muted); font-size: 1.05rem; max-width: 680px; margin: 0.25rem 0 0 0;">
+                    {% if current_user.is_admin() %}
+                        Full system control: Manage curriculum, courses, learning pathways, users, enrollments, orders, and system logs.
+                    {% elif current_user.is_sub_admin() %}
+                        Operational control: Manage student enrollments, curriculum, course assignments, and academic evaluations.
+                    {% else %}
+                        Academic console: View assigned courses, track student learning progression, and evaluate project milestones.
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <span class="badge-status badge-active" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                    {% if current_user.is_admin() %}
+                        ADMIN &bull; Full Access
+                    {% elif current_user.is_sub_admin() %}
+                        SUB-ADMIN &bull; Operations
+                    {% else %}
+                        TEACHER &bull; Academic
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% set admin_active = 'dashboard' %}
+{% include "admin_nav.html" %}
+
+<section class="section" style="padding-top: 0.5rem;">
+    <div class="container" style="max-width: 1200px; margin: 0 auto;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}" style="margin-bottom: 1.5rem;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Main Dashboard Summary Metrics Grid -->
+        {% if current_user.is_admin() or current_user.is_sub_admin() %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem;">
+            
+            <!-- Courses Card -->
+            <div class="card" style="padding: 1.25rem; border-radius: 10px; border-top: 4px solid #0284c7; background: var(--color-bg-card, #ffffff);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Total Courses</div>
+                    <span style="font-size: 0.75rem; background: #e0f2fe; color: #0284c7; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">{{ published_courses }} Active</span>
+                </div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-text); line-height: 1;">{{ total_courses }}</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.5rem;">
+                    <a href="{{ url_for('admin_courses') }}" style="color: #0284c7; text-decoration: none; font-weight: 600;">Manage Courses &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Published Courses Card -->
+            <div class="card" style="padding: 1.25rem; border-radius: 10px; border-top: 4px solid #16a34a; background: var(--color-bg-card, #ffffff);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Published Courses</div>
+                    <span style="font-size: 0.75rem; background: #dcfce7; color: #15803d; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">Live in Catalogue</span>
+                </div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-text); line-height: 1;">{{ published_courses }}</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.5rem;">
+                    {{ draft_courses }} in Draft / Inactive
+                </div>
+            </div>
+
+            <!-- Learning Domains Card -->
+            <div class="card" style="padding: 1.25rem; border-radius: 10px; border-top: 4px solid #8b5cf6; background: var(--color-bg-card, #ffffff);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Learning Domains</div>
+                    <span style="font-size: 0.75rem; background: #ede9fe; color: #7c3aed; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">Categories</span>
+                </div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-text); line-height: 1;">{{ total_categories }}</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.5rem;">
+                    <a href="{{ url_for('admin_learning_categories') }}" style="color: #7c3aed; text-decoration: none; font-weight: 600;">View Categories &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Learning Paths Card -->
+            <div class="card" style="padding: 1.25rem; border-radius: 10px; border-top: 4px solid #06b6d4; background: var(--color-bg-card, #ffffff);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Learning Paths</div>
+                    <span style="font-size: 0.75rem; background: #cffafe; color: #0891b2; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">Grades 1–5</span>
+                </div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-text); line-height: 1;">{{ total_learning_paths }}</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.5rem;">
+                    <a href="{{ url_for('admin_learning_paths') }}" style="color: #0891b2; text-decoration: none; font-weight: 600;">View Paths &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Total Students Card -->
+            <div class="card" style="padding: 1.25rem; border-radius: 10px; border-top: 4px solid #3b82f6; background: var(--color-bg-card, #ffffff);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Total Students</div>
+                    <span style="font-size: 0.75rem; background: #dbeafe; color: #1d4ed8; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">Enrolled</span>
+                </div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-text); line-height: 1;">{{ total_students }}</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.5rem;">
+                    {{ total_teachers }} Teachers &bull; {{ total_subadmins }} Sub-Admins
+                </div>
+            </div>
+
+            <!-- Active Enrollments Card -->
+            <div class="card" style="padding: 1.25rem; border-radius: 10px; border-top: 4px solid #10b981; background: var(--color-bg-card, #ffffff);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Course Enrollments</div>
+                    <span style="font-size: 0.75rem; background: #d1fae5; color: #047857; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">Assigned</span>
+                </div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-text); line-height: 1;">{{ total_enrollments }}</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.5rem;">
+                    <a href="{{ url_for('admin_enrollments') }}" style="color: #047857; text-decoration: none; font-weight: 600;">Manage Enrollments &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Certificates Issued Card -->
+            <div class="card" style="padding: 1.25rem; border-radius: 10px; border-top: 4px solid #f59e0b; background: var(--color-bg-card, #ffffff);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Certificates Issued</div>
+                    <span style="font-size: 0.75rem; background: #fef3c7; color: #b45309; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">Milestones</span>
+                </div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-text); line-height: 1;">{{ total_certificates }}</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.5rem;">
+                    <a href="{{ url_for('admin_certificates') }}" style="color: #b45309; text-decoration: none; font-weight: 600;">View Issued &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Pending Evaluations Card -->
+            <div class="card" style="padding: 1.25rem; border-radius: 10px; border-top: 4px solid #ef4444; background: var(--color-bg-card, #ffffff);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Pending Evaluations</div>
+                    <span style="font-size: 0.75rem; background: #fee2e2; color: #b91c1c; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">Submissions</span>
+                </div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-text); line-height: 1;">{{ pending_evaluations }}</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.5rem;">
+                    Projects awaiting review
+                </div>
+            </div>
+
+        </div>
+        {% endif %}
+
+        {% if current_user.is_teacher() %}
+        <div style="margin-bottom: 3rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+                <h2 style="margin: 0; font-size: 1.5rem; color: var(--color-text);">My Assigned Courses</h2>
+                <span class="course-stat-pill" style="font-weight: 700; background: #e0f2fe; color: #0284c7;">
+                    {{ teacher_courses|length }} Course{% if teacher_courses|length != 1 %}s{% endif %} Assigned
+                </span>
+            </div>
+
+            {% if teacher_courses %}
+            <div class="card-grid card-grid-3" style="margin-bottom: 1.5rem;">
+                {% for c in teacher_courses %}
+                <article class="card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 1.5rem;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span class="badge-status badge-active" style="font-size: 0.75rem;">
+                                {{ c.category_name or 'STEM Domain' }}
+                            </span>
+                            <span style="font-size: 0.8rem; font-weight: 700; color: var(--color-accent);">
+                                Grade {{ c.grade }}
+                            </span>
+                        </div>
+                        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem; color: var(--color-text);">
+                            {{ c.title }}
+                        </h3>
+                        {% if c.short_description %}
+                        <p style="font-size: 0.875rem; color: var(--color-text-muted); margin-bottom: 1rem;">
+                            {{ c.short_description[:90] }}{% if c.short_description|length > 90 %}...{% endif %}
+                        </p>
+                        {% endif %}
+                        <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">
+                            📘 {{ c.module_count or 0 }} Modules &bull; 🎬 {{ c.video_count or 0 }} Videos
+                        </div>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('admin_course_detail', course_id=c.id) }}" class="btn btn-primary btn-sm" style="width: 100%; text-align: center; justify-content: center; border-radius: 6px;">
+                            Open Course &rarr;
+                        </a>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="card" style="padding: 2rem; text-align: center; color: var(--color-text-muted); margin-bottom: 2rem;">
+                <p style="margin-bottom: 0;">No courses assigned to your account yet. Contact an administrator to assign courses.</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Quick Access Console Management Grid -->
+        {% if current_user.is_admin() or current_user.is_sub_admin() %}
+        <div style="border-bottom: 2px solid var(--color-border); padding-bottom: 0.75rem; margin-bottom: 1.75rem;">
+            <h2 style="margin: 0; font-size: 1.35rem; color: var(--color-text);">Console Management Hub</h2>
+            <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: var(--color-text-muted);">Quick operational links for managing curriculum, users, and platform data.</p>
+        </div>
+
+        <div class="card-grid card-grid-3" style="margin-bottom: 3rem;">
+            
+            <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">📚 Course Management</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Manage all STEM courses, curriculum modules, lessons, quizzes, and projects.</p>
+                </div>
+                <a href="{{ url_for('admin_courses') }}" class="card-link" style="margin-top: 1rem;">
+                    Manage Courses ({{ total_courses }})
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+
+            <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">🏷️ Learning Categories</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Configure top-level technology domains shown to students across the website.</p>
+                </div>
+                <a href="{{ url_for('admin_learning_categories') }}" class="card-link" style="margin-top: 1rem;">
+                    Manage Categories ({{ total_categories }})
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+
+            <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">🛤️ Learning Paths</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Manage progressive Grade 1–5 pathways structured under each technology domain.</p>
+                </div>
+                <a href="{{ url_for('admin_learning_paths') }}" class="card-link" style="margin-top: 1rem;">
+                    Manage Learning Paths ({{ total_learning_paths }})
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+
+            <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">👥 Users &amp; Students</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Manage student accounts, teacher credentials, and sub-administrator roles.</p>
+                </div>
+                <a href="{{ url_for('admin_users') }}" class="card-link" style="margin-top: 1rem;">
+                    Manage Users ({{ total_users }})
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+
+            <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">🎓 Course Enrollments</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Track, assign, and manage student course permissions and access.</p>
+                </div>
+                <a href="{{ url_for('admin_enrollments') }}" class="card-link" style="margin-top: 1rem;">
+                    View Enrollments ({{ total_enrollments }})
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+
+            <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">📜 Student Certificates</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Review and download official verified completion credentials issued to students.</p>
+                </div>
+                <a href="{{ url_for('admin_certificates') }}" class="card-link" style="margin-top: 1rem;">
+                    View Certificates ({{ total_certificates }})
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+
+            <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">🛍️ Product Hardware Kits</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Manage STEM kits, drone equipment, pricing, availability, and specs.</p>
+                </div>
+                <a href="{{ url_for('admin_products') }}" class="card-link" style="margin-top: 1rem;">
+                    Manage Products ({{ total_products }})
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+
+            <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">📦 Customer Orders</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Monitor kit orders, customer payment verifications, and delivery dispatch details.</p>
+                </div>
+                <a href="{{ url_for('admin_orders') }}" class="card-link" style="margin-top: 1rem;">
+                    Manage Orders ({{ total_orders }})
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+
+            <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">🎯 Institutional Solutions</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Manage School &amp; College programs, training, lab setups, and workshops content.</p>
+                </div>
+                <a href="{{ url_for('admin_solutions') }}" class="card-link" style="margin-top: 1rem;">
+                    Manage Solutions ({{ total_solutions }})
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+
+            {% if current_user.is_admin() %}
+            <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">⚙️ Catalogue Settings</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Customize catalogue hero badges, titles, descriptions, and banner artwork.</p>
+                </div>
+                <a href="{{ url_for('admin_learning_catalogue_settings') }}" class="card-link" style="margin-top: 1rem;">
+                    System Settings
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+
+            <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">📋 Audit Logs</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Review administrative security activity, role updates, and user modifications.</p>
+                </div>
+                <a href="{{ url_for('admin_audit_logs') }}" class="card-link" style="margin-top: 1rem;">
+                    View Audit Trail
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+            {% endif %}
+
+            <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">✉️ Contact Enquiries</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Review contact requests submitted through the website contact form.</p>
+                </div>
+                <a href="{{ url_for('admin_contacts') }}" class="card-link" style="margin-top: 1rem;">
+                    View Inquiries ({{ submissions|length }})
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+        </div>
+        {% endif %}
+
+        {% if current_user.is_admin() and audit_logs and audit_logs|length > 0 %}
+        <div style="border-bottom: 2px solid var(--color-border); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+            <h2 style="margin: 0; font-size: 1.35rem; color: var(--color-text);">Recent System Audit Trail</h2>
+        </div>
+        <div class="table-wrapper" style="margin-bottom: 2.5rem;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Admin User</th>
+                        <th>Action</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in audit_logs %}
+                    <tr>
+                        <td style="white-space: nowrap; font-size: 0.85rem; color: var(--color-text-muted);">{{ log.timestamp }}</td>
+                        <td><strong>{{ log.user_name or 'System' }}</strong></td>
+                        <td><span class="badge-status badge-active" style="font-size: 0.8rem;">{{ log.action|upper }}</span></td>
+                        <td style="font-size: 0.9rem;">{{ log.details }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if submissions and submissions|length > 0 and (current_user.is_admin() or current_user.is_sub_admin()) %}
+        <div style="border-bottom: 2px solid var(--color-border); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+            <h2 style="margin: 0; font-size: 1.35rem; color: var(--color-text);">Recent Contact Inquiries</h2>
+        </div>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Subject</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in submissions[:5] %}
+                    <tr>
+                        <td>#{{ row.id }}</td>
+                        <td><strong>{{ row.name }}</strong></td>
+                        <td><a href="mailto:{{ row.email }}">{{ row.email }}</a></td>
+                        <td>{{ row.phone or '-' }}</td>
+                        <td>{{ row.subject or '-' }}</td>
+                        <td>{{ row.created_at[:10] if row.created_at else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

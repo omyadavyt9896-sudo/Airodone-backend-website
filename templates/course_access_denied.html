@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied — Course Access Required | airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <h1>Course Access Required</h1>
+            <p>Private Student Platform</p>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container" style="max-width: 600px; margin: 0 auto; text-align: center;">
+        <div class="card profile-form-card" style="padding: 2.5rem 1.5rem;">
+            <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(239, 68, 68, 0.1); color: var(--color-error, #ef4444); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; border: 1px solid rgba(239, 68, 68, 0.2);">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+            </div>
+            <h2 style="font-size: 1.35rem; margin-bottom: 0.75rem;">Access Restricted</h2>
+            <p style="color: var(--color-text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.75rem;">
+                You don't currently have access to this course. Course enrollment is managed by your Airodrone administrator. Please contact your administrator to request access.
+            </p>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">
+                &larr; Back to Dashboard
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

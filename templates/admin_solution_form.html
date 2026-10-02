@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+
+{% block title %}{% if solution %}Edit Solution: {{ solution.title }}{% else %}Add Solution{% endif %} | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_solutions') }}">Solutions</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{% if solution %}Edit: {{ solution.title }}{% else %}New Solution{% endif %}</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>{% if solution %}Edit Solution: {{ solution.title }}{% else %}Create New Solution{% endif %}</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    {% if solution %}Configure solution descriptions, imagery, calls-to-action, and 'What is Included' items.{% else %}Set up a new institutional STEM solution to present on the website.{% endif %}
+                </p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <a href="{{ url_for('admin_solutions') }}" class="btn btn-outline" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    &larr; Back to Solutions
+                </a>
+                {% if solution %}
+                <a href="{{ url_for('solutions') }}#{{ solution.slug }}" target="_blank" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <span>🌐</span> View on Public Site &rarr;
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+{% set admin_active = 'solutions' %}
+{% include "admin_nav.html" %}
+
+<section class="section" style="padding-top: 0.5rem;">
+    <div class="container" style="max-width: 1000px; margin: 0 auto;">
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 1.75rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% if error %}
+        <div class="alert alert-error" style="margin-bottom: 1.75rem;">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- Main Solution Details Card -->
+        <div class="card profile-form-card" style="padding: 2rem; border-radius: 14px; background: var(--color-card-bg, #ffffff); border: 1px solid var(--color-border, #e2e8f0); margin-bottom: 2.5rem;">
+            <div style="border-bottom: 1px solid var(--color-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.35rem; margin: 0; color: var(--color-text);">Solution Information</h2>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.88rem; color: var(--color-text-muted);">
+                    Basic details, overview summary, and anchor links.
+                </p>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data">
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label for="title" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text);">
+                            Solution Title <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input type="text" id="title" name="title" required value="{{ solution.title if solution else '' }}" placeholder="e.g. School Programs" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-size: 0.95rem;">
+                    </div>
+
+                    <div>
+                        <label for="display_order" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text);">
+                            Display Order
+                        </label>
+                        <input type="number" id="display_order" name="display_order" value="{{ solution.display_order if solution else 1 }}" min="1" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-size: 0.95rem;">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label for="slug" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text);">
+                            URL Slug &amp; Section Anchor
+                        </label>
+                        <input type="text" id="slug" name="slug" value="{{ solution.slug if solution else '' }}" placeholder="e.g. school-programs" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-size: 0.95rem;">
+                        <small style="color: var(--color-text-muted); font-size: 0.78rem;">Used as <code>#slug</code> anchor on /solutions. Leave blank to generate automatically.</small>
+                    </div>
+
+                    <div>
+                        <label for="badge" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text);">
+                            Badge / Category Pill
+                        </label>
+                        <input type="text" id="badge" name="badge" value="{{ solution.badge if solution else '' }}" placeholder="e.g. K-12 CURRICULUM & ATL TRACKS" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-size: 0.95rem;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="short_description" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text);">
+                        Short Description (Overview Card)
+                    </label>
+                    <textarea id="short_description" name="short_description" rows="2" placeholder="Brief summary displayed on the top Solutions Overview grid..." style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-size: 0.95rem; resize: vertical;">{{ solution.short_description if solution else '' }}</textarea>
+                </div>
+
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="description" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text);">
+                        Full Description (Detailed Section)
+                    </label>
+                    <textarea id="description" name="description" rows="4" placeholder="Detailed explanation shown in the dedicated solution section..." style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-size: 0.95rem; resize: vertical;">{{ solution.description if solution else '' }}</textarea>
+                </div>
+
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="ideal_for" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text);">
+                        Ideal For Audience
+                    </label>
+                    <textarea id="ideal_for" name="ideal_for" rows="2" placeholder="e.g. K-12 Schools, CBSE/ICSE institutions, Atal Tinkering Labs (ATL)..." style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-size: 0.95rem; resize: vertical;">{{ solution.ideal_for if solution else '' }}</textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label for="cta_text" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text);">
+                            CTA Button Text
+                        </label>
+                        <input type="text" id="cta_text" name="cta_text" value="{{ solution.cta_text if solution and solution.cta_text else 'Get in Touch' }}" placeholder="e.g. Talk to Us About School Programs" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-size: 0.95rem;">
+                    </div>
+
+                    <div>
+                        <label for="cta_url" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text);">
+                            CTA Button URL
+                        </label>
+                        <input type="text" id="cta_url" name="cta_url" value="{{ solution.cta_url if solution and solution.cta_url else '/contact' }}" placeholder="e.g. /contact" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-size: 0.95rem;">
+                    </div>
+                </div>
+
+                <!-- Image Upload & Preview -->
+                <div style="margin-bottom: 1.5rem; padding: 1.25rem; background: var(--color-bg-subtle, #f8fafc); border-radius: 8px; border: 1px dashed var(--color-border);">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--color-text);">
+                        Solution Section Image
+                    </label>
+
+                    {% if solution and solution.image %}
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        {% set curr_img = image_url(solution.image) %}
+                        {% if curr_img %}
+                        <div style="width: 100px; height: 70px; border-radius: 6px; overflow: hidden; background: #0f172a; flex-shrink: 0;">
+                            <img src="{{ curr_img }}" alt="{{ solution.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        {% endif %}
+                        <div>
+                            <div style="font-size: 0.85rem; font-weight: 600; color: var(--color-text);">Current Image:</div>
+                            <code style="font-size: 0.78rem; word-break: break-all;">{{ solution.image }}</code>
+                            <div style="margin-top: 0.35rem;">
+                                <label style="font-size: 0.82rem; color: #dc2626; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                    <input type="checkbox" name="remove_image" value="1">
+                                    Remove image on save
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div>
+                        <label for="image" style="font-size: 0.85rem; color: var(--color-text-muted); display: block; margin-bottom: 0.35rem;">
+                            {% if solution and solution.image %}Upload new image to replace:{% else %}Choose image file:{% endif %}
+                        </label>
+                        <input type="file" id="image" name="image" accept="image/jpeg,image/png,image/webp,image/jpg" style="font-size: 0.9rem;">
+                        <small style="display: block; color: var(--color-text-muted); margin-top: 0.35rem; font-size: 0.75rem;">Allowed formats: JPG, PNG, WEBP. Max size: 5 MB.</small>
+                    </div>
+                </div>
+
+                <!-- Active Status Toggle -->
+                <div style="margin-bottom: 1.75rem;">
+                    <label style="display: inline-flex; align-items: center; gap: 0.6rem; cursor: pointer; font-weight: 600; color: var(--color-text);">
+                        <input type="checkbox" name="is_active" value="1" {% if not solution or solution.is_active %}checked{% endif %} style="width: 18px; height: 18px;">
+                        <span>Active on Website</span>
+                    </label>
+                    <small style="display: block; color: var(--color-text-muted); font-size: 0.8rem; margin-top: 0.2rem; margin-left: 1.8rem;">
+                        When unchecked, this solution and its items will not appear on the public /solutions page.
+                    </small>
+                </div>
+
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.75rem; font-weight: 600; border-radius: 8px;">
+                        {% if solution %}Save Solution Details{% else %}Create Solution{% endif %}
+                    </button>
+                    <a href="{{ url_for('admin_solutions') }}" class="btn btn-outline">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        {% if solution %}
+        <!-- "What is Included" Items Card -->
+        <div id="items-section" class="card profile-form-card" style="padding: 2rem; border-radius: 14px; background: var(--color-card-bg, #ffffff); border: 1px solid var(--color-border, #e2e8f0); scroll-margin-top: 80px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                    <h2 style="font-size: 1.35rem; margin: 0; color: var(--color-text);">"What is Included" Items ({{ items | length }})</h2>
+                    <p style="margin: 0.25rem 0 0 0; font-size: 0.88rem; color: var(--color-text-muted);">
+                        Bullet points presented under <em>What is Included:</em> for {{ solution.title }}.
+                    </p>
+                </div>
+                <button type="button" onclick="openAddItemModal()" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1rem; font-size: 0.88rem;">
+                    <span>+</span> Add Included Item
+                </button>
+            </div>
+
+            {% if items %}
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.925rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--color-border); color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            <th style="padding: 0.65rem 0.5rem; width: 80px;">Order</th>
+                            <th style="padding: 0.65rem 0.5rem; width: 220px;">Title</th>
+                            <th style="padding: 0.65rem 0.5rem;">Description</th>
+                            <th style="padding: 0.65rem 0.5rem; text-align: center; width: 90px;">Status</th>
+                            <th style="padding: 0.65rem 0.5rem; text-align: right; width: 180px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for it in items %}
+                        <tr style="border-bottom: 1px solid var(--color-border);">
+                            <!-- Order & Reorder -->
+                            <td style="padding: 0.85rem 0.5rem;">
+                                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                                    <span style="font-weight: 700; color: var(--color-text-muted); min-width: 18px;">#{{ it.display_order }}</span>
+                                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                                        {% if not loop.first %}
+                                        <form action="{{ url_for('admin_reorder_solution_item', solution_id=solution.id, item_id=it.id) }}" method="POST" style="display: inline; margin: 0; line-height: 1;">
+                                            <input type="hidden" name="direction" value="up">
+                                            <button type="submit" title="Move Up" style="background: none; border: none; cursor: pointer; padding: 1px; color: var(--color-text-muted); font-size: 0.75rem; line-height: 1;">▲</button>
+                                        </form>
+                                        {% endif %}
+                                        {% if not loop.last %}
+                                        <form action="{{ url_for('admin_reorder_solution_item', solution_id=solution.id, item_id=it.id) }}" method="POST" style="display: inline; margin: 0; line-height: 1;">
+                                            <input type="hidden" name="direction" value="down">
+                                            <button type="submit" title="Move Down" style="background: none; border: none; cursor: pointer; padding: 1px; color: var(--color-text-muted); font-size: 0.75rem; line-height: 1;">▼</button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Title -->
+                            <td style="padding: 0.85rem 0.5rem; font-weight: 700; color: var(--color-text);">
+                                {{ it.title }}
+                            </td>
+
+                            <!-- Description -->
+                            <td style="padding: 0.85rem 0.5rem; color: var(--color-text-muted); font-size: 0.88rem; line-height: 1.5;">
+                                {{ it.description or '—' }}
+                            </td>
+
+                            <!-- Status -->
+                            <td style="padding: 0.85rem 0.5rem; text-align: center;">
+                                <span class="badge-status {{ 'badge-active' if it.is_active else 'badge-inactive' }}" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px;">
+                                    {{ 'Active' if it.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+
+                            <!-- Actions -->
+                            <td style="padding: 0.85rem 0.5rem; text-align: right;">
+                                <div style="display: inline-flex; gap: 0.35rem; align-items: center; justify-content: flex-end;">
+                                    <button type="button" onclick="openEditItemModal({{ it.id }}, '{{ it.title|escape }}', '{{ (it.description or '')|escape }}', {{ it.display_order }}, {{ 1 if it.is_active else 0 }})" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; font-weight: 600; border-radius: 6px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; cursor: pointer;">
+                                        Edit
+                                    </button>
+
+                                    <form action="{{ url_for('admin_toggle_solution_item_active', solution_id=solution.id, item_id=it.id) }}" method="POST" style="display: inline; margin: 0;">
+                                        <button type="submit" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; font-weight: 600; border-radius: 6px; background: {{ '#fef3c7' if it.is_active else '#dcfce7' }}; color: {{ '#92400e' if it.is_active else '#166534' }}; border: 1px solid {{ '#fde68a' if it.is_active else '#bbf7d0' }}; cursor: pointer;">
+                                            {{ 'Hide' if it.is_active else 'Show' }}
+                                        </button>
+                                    </form>
+
+                                    <form action="{{ url_for('admin_delete_solution_item', solution_id=solution.id, item_id=it.id) }}" method="POST" style="display: inline; margin: 0;" onsubmit="return confirm('Delete this included item?');">
+                                        <button type="submit" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; font-weight: 600; border-radius: 6px; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; cursor: pointer;">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 2.5rem 1rem; color: var(--color-text-muted);">
+                <p style="margin-bottom: 1rem;">No included items added yet for this solution.</p>
+                <button type="button" onclick="openAddItemModal()" class="btn btn-primary" style="padding: 0.6rem 1.25rem;">
+                    + Add First Included Item
+                </button>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Add Item Modal -->
+        <div id="addItemModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+            <div style="background: var(--color-card-bg, #ffffff); border-radius: 12px; border: 1px solid var(--color-border); width: 90%; max-width: 540px; padding: 1.75rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+                    <h3 style="margin: 0; font-size: 1.2rem; color: var(--color-text);">Add Included Item</h3>
+                    <button type="button" onclick="closeAddItemModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--color-text-muted); line-height: 1;">&times;</button>
+                </div>
+
+                <form action="{{ url_for('admin_add_solution_item', solution_id=solution.id) }}" method="POST">
+                    <div style="margin-bottom: 1rem;">
+                        <label for="new_item_title" style="display: block; font-weight: 600; margin-bottom: 0.35rem; color: var(--color-text);">
+                            Item Title <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input type="text" id="new_item_title" name="title" required placeholder="e.g. AI & Machine Learning" style="width: 100%; padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-size: 0.95rem;">
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label for="new_item_desc" style="display: block; font-weight: 600; margin-bottom: 0.35rem; color: var(--color-text);">
+                            Item Description
+                        </label>
+                        <textarea id="new_item_desc" name="description" rows="3" placeholder="e.g. Foundational awareness, visual block-based logic, and intelligent algorithms." style="width: 100%; padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-size: 0.95rem; resize: vertical;"></textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                        <div>
+                            <label for="new_item_order" style="display: block; font-weight: 600; margin-bottom: 0.35rem; color: var(--color-text);">
+                                Display Order
+                            </label>
+                            <input type="number" id="new_item_order" name="display_order" value="{{ (items|length) + 1 }}" min="1" style="width: 100%; padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-size: 0.95rem;">
+                        </div>
+
+                        <div style="display: flex; align-items: center; padding-top: 1.5rem;">
+                            <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; color: var(--color-text); font-size: 0.9rem;">
+                                <input type="checkbox" name="is_active" value="1" checked style="width: 16px; height: 16px;">
+                                <span>Active / Visible</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                        <button type="button" onclick="closeAddItemModal()" class="btn btn-outline" style="padding: 0.6rem 1.25rem;">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.5rem;">
+                            Add Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Item Modal -->
+        <div id="editItemModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+            <div style="background: var(--color-card-bg, #ffffff); border-radius: 12px; border: 1px solid var(--color-border); width: 90%; max-width: 540px; padding: 1.75rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+                    <h3 style="margin: 0; font-size: 1.2rem; color: var(--color-text);">Edit Included Item</h3>
+                    <button type="button" onclick="closeEditItemModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--color-text-muted); line-height: 1;">&times;</button>
+                </div>
+
+                <form id="editItemForm" method="POST">
+                    <div style="margin-bottom: 1rem;">
+                        <label for="edit_item_title" style="display: block; font-weight: 600; margin-bottom: 0.35rem; color: var(--color-text);">
+                            Item Title <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input type="text" id="edit_item_title" name="title" required style="width: 100%; padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-size: 0.95rem;">
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label for="edit_item_desc" style="display: block; font-weight: 600; margin-bottom: 0.35rem; color: var(--color-text);">
+                            Item Description
+                        </label>
+                        <textarea id="edit_item_desc" name="description" rows="3" style="width: 100%; padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-size: 0.95rem; resize: vertical;"></textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                        <div>
+                            <label for="edit_item_order" style="display: block; font-weight: 600; margin-bottom: 0.35rem; color: var(--color-text);">
+                                Display Order
+                            </label>
+                            <input type="number" id="edit_item_order" name="display_order" min="1" style="width: 100%; padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-size: 0.95rem;">
+                        </div>
+
+                        <div style="display: flex; align-items: center; padding-top: 1.5rem;">
+                            <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; color: var(--color-text); font-size: 0.9rem;">
+                                <input type="checkbox" id="edit_item_active" name="is_active" value="1" style="width: 16px; height: 16px;">
+                                <span>Active / Visible</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                        <button type="button" onclick="closeEditItemModal()" class="btn btn-outline" style="padding: 0.6rem 1.25rem;">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.5rem;">
+                            Update Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            function openAddItemModal() {
+                const m = document.getElementById('addItemModal');
+                if (m) {
+                    m.style.display = 'flex';
+                    document.getElementById('new_item_title').focus();
+                }
+            }
+
+            function closeAddItemModal() {
+                const m = document.getElementById('addItemModal');
+                if (m) m.style.display = 'none';
+            }
+
+            function openEditItemModal(itemId, title, desc, order, isActive) {
+                const m = document.getElementById('editItemModal');
+                const form = document.getElementById('editItemForm');
+                if (m && form) {
+                    form.action = "{{ url_for('admin_edit_solution_item', solution_id=solution.id, item_id=0) }}".replace('/0/edit', '/' + itemId + '/edit');
+                    document.getElementById('edit_item_title').value = title;
+                    document.getElementById('edit_item_desc').value = desc;
+                    document.getElementById('edit_item_order').value = order;
+                    document.getElementById('edit_item_active').checked = (isActive === 1);
+                    m.style.display = 'flex';
+                    document.getElementById('edit_item_title').focus();
+                }
+            }
+
+            function closeEditItemModal() {
+                const m = document.getElementById('editItemModal');
+                if (m) m.style.display = 'none';
+            }
+
+            // Close modals when clicking outside
+            window.onclick = function(event) {
+                const addM = document.getElementById('addItemModal');
+                const editM = document.getElementById('editItemModal');
+                if (event.target === addM) closeAddItemModal();
+                if (event.target === editM) closeEditItemModal();
+            };
+        </script>
+        {% endif %}
+
+    </div>
+</section>
+{% endblock %}

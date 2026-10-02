@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} — STEM Product Details | airodrone{% endblock %}
+
+{% block meta_description %}{{ product.short_description or product.name }}{% endblock %}
+
+{% block content %}
+<section style="background: var(--color-bg-alt, #f8fafc); padding: 2.5rem 0 4rem 0;">
+    <div class="container">
+        <!-- Breadcrumb Navigation -->
+        <nav style="margin-bottom: 1.75rem;">
+            <a href="{{ url_for('public_products') }}" style="color: #2563eb; text-decoration: none; font-weight: 600; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                &larr; Back to Products Catalogue
+            </a>
+        </nav>
+
+        <!-- Main Product Detail Header Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 2.5rem; background: var(--color-card-bg, #ffffff); border-radius: 16px; border: 1px solid var(--color-border, #e2e8f0); padding: 2rem; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); margin-bottom: 3rem;">
+            
+            <!-- LEFT: Product Image -->
+            <div style="background: #0f172a; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; min-height: 340px; position: relative;">
+                {% set img_url = image_url(product.image) %}
+                {% if img_url %}
+                <img src="{{ img_url }}" alt="{{ product.name }}" style="width: 100%; height: 100%; max-height: 420px; object-fit: contain; padding: 1rem;">
+                {% else %}
+                <div style="color: #94a3b8; font-size: 1rem; font-weight: 500;">No Product Image Available</div>
+                {% endif %}
+            </div>
+
+            <!-- RIGHT: Product Info -->
+            <div style="display: flex; flex-direction: column; justify-content: center;">
+                
+                <!-- Status Badges -->
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                    {% if product.availability == 'Available' %}
+                    <span style="background: #dcfce7; color: #15803d; font-size: 0.85rem; font-weight: 700; padding: 0.35rem 0.85rem; border-radius: 6px;">
+                        ✓ Available
+                    </span>
+                    {% else %}
+                    <span style="background: #fee2e2; color: #b91c1c; font-size: 0.85rem; font-weight: 700; padding: 0.35rem 0.85rem; border-radius: 6px;">
+                        Out of Stock
+                    </span>
+                    {% endif %}
+
+                    {% if product.shipping_free %}
+                    <span style="background: #e0f2fe; color: #0284c7; font-size: 0.85rem; font-weight: 700; padding: 0.35rem 0.85rem; border-radius: 6px;">
+                        ✓ Free Shipping
+                    </span>
+                    {% else %}
+                    <span style="background: #f1f5f9; color: #475569; font-size: 0.85rem; font-weight: 700; padding: 0.35rem 0.85rem; border-radius: 6px;">
+                        + {{ product.shipping_charge | format_price }} Shipping
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Product Name -->
+                <h1 style="font-size: 2.2rem; font-weight: 800; color: var(--color-text, #0b1220); margin: 0 0 1rem 0; line-height: 1.25;">
+                    {{ product.name }}
+                </h1>
+
+                <!-- Price -->
+                <div style="margin-bottom: 1.25rem;">
+                    <span style="font-size: 0.85rem; text-transform: uppercase; font-weight: 700; color: #64748b; display: block;">Price</span>
+                    <span style="font-size: 2.2rem; font-weight: 800; color: #2563eb;">
+                        {{ product.price | format_price }}
+                    </span>
+                </div>
+
+                <!-- Short Description -->
+                {% if product.short_description %}
+                <p style="font-size: 1.05rem; color: var(--color-text-muted, #475569); line-height: 1.6; margin-bottom: 2rem;">
+                    {{ product.short_description }}
+                </p>
+                {% endif %}
+
+                <!-- Buy Now Button -->
+                <div>
+                    {% if product.availability == 'Available' %}
+                    <a href="{{ url_for('checkout_page', product_id=product.id) }}" class="btn btn-primary" style="padding: 0.85rem 2rem; font-size: 1.1rem; font-weight: 700; border-radius: 10px; background: #2563eb; color: #ffffff; text-decoration: none; border: none; cursor: pointer; transition: background 0.2s ease; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                        Buy Now
+                    </a>
+                    {% else %}
+                    <button type="button" disabled style="padding: 0.85rem 2rem; font-size: 1.05rem; font-weight: 700; border-radius: 10px; background: #cbd5e1; color: #64748b; border: none; cursor: not-allowed; display: inline-flex; align-items: center; gap: 0.5rem;">
+                        Currently Unavailable
+                    </button>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Detailed Specifications Sections -->
+        <div style="display: grid; gap: 2rem;">
+            
+            <!-- ABOUT THIS PRODUCT -->
+            <div style="background: var(--color-card-bg, #ffffff); border-radius: 14px; border: 1px solid var(--color-border, #e2e8f0); padding: 2rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);">
+                <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--color-text, #0b1220); margin-top: 0; margin-bottom: 1rem; border-bottom: 2px solid #2563eb; padding-bottom: 0.5rem; display: inline-block;">
+                    ABOUT THIS PRODUCT
+                </h2>
+                <div style="font-size: 1.02rem; color: var(--color-text-muted, #334155); line-height: 1.7; whitespace: pre-line;">
+                    {{ product.description or 'No detailed description available.' }}
+                </div>
+            </div>
+
+            <!-- WHAT'S INCLUDED -->
+            {% set components_list = product.components | parse_list %}
+            {% if components_list %}
+            <div style="background: var(--color-card-bg, #ffffff); border-radius: 14px; border: 1px solid var(--color-border, #e2e8f0); padding: 2rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);">
+                <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--color-text, #0b1220); margin-top: 0; margin-bottom: 1.25rem; border-bottom: 2px solid #0284c7; padding-bottom: 0.5rem; display: inline-block;">
+                    WHAT'S INCLUDED
+                </h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.85rem;">
+                    {% for item in components_list %}
+                    <div style="display: flex; align-items: flex-start; gap: 0.65rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem 1rem;">
+                        <span style="color: #2563eb; font-weight: 800; font-size: 1.1rem; line-height: 1;">✓</span>
+                        <span style="font-size: 0.95rem; color: #1e293b; font-weight: 500; line-height: 1.4;">{{ item }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- APPLICATIONS -->
+            {% set applications_list = product.applications | parse_list %}
+            {% if applications_list %}
+            <div style="background: var(--color-card-bg, #ffffff); border-radius: 14px; border: 1px solid var(--color-border, #e2e8f0); padding: 2rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);">
+                <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--color-text, #0b1220); margin-top: 0; margin-bottom: 1.25rem; border-bottom: 2px solid #16a34a; padding-bottom: 0.5rem; display: inline-block;">
+                    APPLICATIONS
+                </h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.85rem;">
+                    {% for app_item in applications_list %}
+                    <div style="display: flex; align-items: center; gap: 0.65rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.85rem 1rem;">
+                        <span style="color: #16a34a; font-weight: 800; font-size: 1rem;">&bull;</span>
+                        <span style="font-size: 0.95rem; color: #14532d; font-weight: 600;">{{ app_item }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Bottom Buy Now Action Bar -->
+            <div style="background: #0f172a; border-radius: 14px; padding: 2rem; color: #ffffff; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;">
+                <div>
+                    <h3 style="font-size: 1.4rem; font-weight: 700; margin: 0 0 0.35rem 0; color: #ffffff;">Ready to build with {{ product.name }}?</h3>
+                    <p style="margin: 0; color: #94a3b8; font-size: 0.95rem;">Official airodrone STEM & Robotics Kit with direct technical support.</p>
+                </div>
+                <div>
+                    {% if product.availability == 'Available' %}
+                    <button type="button" onclick="showCheckoutNotice()" class="btn btn-primary" style="padding: 0.85rem 2.25rem; font-size: 1.1rem; font-weight: 700; border-radius: 10px; background: #2563eb; color: #ffffff; border: none; cursor: pointer; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);">
+                        Buy Now &bull; {{ product.price | format_price }}
+                    </button>
+                    {% else %}
+                    <button type="button" disabled style="padding: 0.85rem 2rem; font-size: 1.05rem; font-weight: 700; border-radius: 10px; background: #334155; color: #94a3b8; border: none; cursor: not-allowed;">
+                        Currently Unavailable
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Phase 1 Checkout Modal / Toast Notice -->
+<div id="checkoutNoticeModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 480px; width: 100%; padding: 2rem; text-align: center; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2); animation: fadeIn 0.2s ease-out;">
+        <div style="width: 60px; height: 60px; background: #eff6ff; color: #2563eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem auto;">
+            <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+        </div>
+        <h3 style="font-size: 1.4rem; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 0.75rem;">Checkout coming in next phase</h3>
+        <p style="font-size: 0.98rem; color: #64748b; line-height: 1.6; margin-bottom: 1.75rem;">
+            Product Catalogue Phase 1 is live! Payment gateway and direct checkout functionality will be enabled in Phase 2.
+        </p>
+        <button type="button" onclick="closeCheckoutNotice()" style="width: 100%; padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 8px; background: #2563eb; color: #ffffff; border: none; cursor: pointer;">
+            Got it, thanks!
+        </button>
+    </div>
+</div>
+
+<script>
+function showCheckoutNotice() {
+    document.getElementById('checkoutNoticeModal').style.display = 'flex';
+}
+function closeCheckoutNotice() {
+    document.getElementById('checkoutNoticeModal').style.display = 'none';
+}
+</script>
+{% endblock %}

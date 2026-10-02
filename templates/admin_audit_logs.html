@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}System Audit Logs | airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h1>System Audit Trail</h1>
+                <p style="color: var(--color-text-muted);">Immutable record of administrative, user-creation, role changes, and evaluation activities.</p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin') }}" class="btn btn-outline btn-md">&larr; Back to Panel</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        {% if logs and logs|length > 0 %}
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Timestamp</th>
+                        <th>Performed By</th>
+                        <th>Action</th>
+                        <th>Target Resource</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in logs %}
+                    <tr>
+                        <td><strong>#{{ l.id }}</strong></td>
+                        <td style="white-space: nowrap; font-size: 0.85rem; color: var(--color-text-muted);">{{ l.timestamp }}</td>
+                        <td>
+                            <strong>{{ l.user_name or 'System' }}</strong>
+                            {% if l.user_email %}<br><span style="font-size: 0.8rem; color: var(--color-text-muted);">{{ l.user_email }}</span>{% endif %}
+                        </td>
+                        <td>
+                            <span class="badge-status badge-active" style="font-size: 0.8rem;">{{ l.action|upper }}</span>
+                        </td>
+                        <td>{{ l.target_type|title or '&mdash;'|safe }} {% if l.target_id %}#{{ l.target_id }}{% endif %}</td>
+                        <td style="font-size: 0.9rem;">{{ l.details or '&mdash;'|safe }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="color: var(--color-text-muted);">No audit log entries recorded yet.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

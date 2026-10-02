@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Courses — {{ path.name }} | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_learning_paths') }}">Learning Paths</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_learning_paths', category_id=category.id) }}">{{ category.name }}</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ path.name }}</span>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Courses</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.35rem;">
+                    <span class="course-stat-pill" style="font-weight: 800; background: #e0f2fe; color: #0284c7; font-size: 0.85rem; padding: 0.3rem 0.7rem; border-radius: 9999px;">
+                        Grade {{ path.grade }} ({{ path.classes or 'Class ' ~ path.grade }})
+                    </span>
+                    <span class="badge-status badge-active" style="font-size: 0.8rem; padding: 0.3rem 0.7rem;">
+                        {{ category.name }}
+                    </span>
+                    <span class="badge-status {{ 'badge-active' if path.is_active else 'badge-inactive' }}" style="font-size: 0.8rem; padding: 0.3rem 0.7rem;">
+                        {{ 'Active' if path.is_active else 'Inactive' }}
+                    </span>
+                </div>
+                <h1 style="margin: 0 0 0.4rem 0;">{{ path.name }} — Courses</h1>
+                <p style="font-size: 1.05rem; max-width: 680px; color: var(--color-text-muted); margin: 0;">
+                    {{ path.description or 'Manage curriculum courses and instructional modules linked directly to this Grade track.' }}
+                </p>
+            </div>
+            
+            <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                <a href="{{ url_for('admin_add_course', learning_path_id=path.id) }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <span>+</span> Add Course to Path
+                </a>
+                <a href="{{ url_for('admin_edit_learning_path', path_id=path.id) }}" class="btn btn-secondary">
+                    Edit Path
+                </a>
+                <a href="{{ url_for('admin_learning_paths', category_id=category.id) }}" class="btn btn-outline">
+                    &larr; Learning Paths
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% set admin_active = 'paths' %}
+{% include "admin_nav.html" %}
+
+<section class="section" style="padding-top: 0.5rem; padding-bottom: 3.5rem;">
+    <div class="container" style="max-width: 1160px; margin: 0 auto;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category_type, message in messages %}
+        <div class="alert alert-{{ 'success' if category_type == 'success' else ('info' if category_type == 'info' else 'error') }}" style="margin-bottom: 1.5rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Quick Summary & Course Assignment Row -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; margin-bottom: 1.75rem;">
+            <!-- Path Metrics Card -->
+            <div class="card" style="padding: 1.35rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="font-size: 1rem; margin: 0 0 0.75rem 0; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">
+                        Path Details &amp; Summary
+                    </h3>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 120px;">
+                            <div style="font-size: 0.8rem; color: var(--color-text-muted);">Assigned Courses</div>
+                            <div style="font-size: 1.6rem; font-weight: 800; color: var(--color-primary, #0284c7);">
+                                {{ courses|length }}
+                            </div>
+                        </div>
+                        <div style="flex: 1; min-width: 120px;">
+                            <div style="font-size: 0.8rem; color: var(--color-text-muted);">Public URL</div>
+                            <a href="{{ url_for('path_courses', category_slug=category.slug, path_slug=path.slug) }}" target="_blank" style="font-size: 0.85rem; font-family: monospace; color: var(--color-primary, #0284c7); text-decoration: none; word-break: break-all;">
+                                /learn/category/{{ category.slug }}/{{ path.slug }} &nearr;
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border); font-size: 0.825rem; color: var(--color-text-muted);">
+                    Category: <strong>{{ category.name }}</strong> &bull; Grade Track: <strong>{{ path.grade_name }}</strong>
+                </div>
+            </div>
+
+            <!-- Assign Existing Course Card -->
+            <div class="card" style="padding: 1.35rem; background: var(--color-bg-card, #ffffff);">
+                <h3 style="font-size: 1rem; margin: 0 0 0.4rem 0; color: var(--color-text); font-weight: 700;">
+                    Assign Existing Course
+                </h3>
+                <p style="font-size: 0.825rem; color: var(--color-text-muted); margin: 0 0 0.85rem 0;">
+                    Link an unlinked course or reassign a course from another pathway to this track.
+                </p>
+
+                {% if available_courses %}
+                <form method="post" action="{{ url_for('admin_path_assign_course', path_id=path.id) }}" style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                    <select name="course_id" class="form-control" style="flex: 1; min-width: 200px; font-size: 0.875rem;" required>
+                        <option value="">-- Choose Course to Link --</option>
+                        {% for ac in available_courses %}
+                        <option value="{{ ac.id }}">
+                            {{ ac.title }} (Grade {{ ac.grade }} &bull; {{ ac.cat_name }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-primary btn-sm" style="padding: 0.55rem 0.95rem; font-size: 0.875rem; white-space: nowrap;">
+                        Assign to Path
+                    </button>
+                </form>
+                {% else %}
+                <div style="font-size: 0.85rem; color: var(--color-text-muted); font-style: italic; padding: 0.5rem 0;">
+                    All current courses are already assigned to learning paths.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Courses Table / Card List -->
+        <div class="card" style="padding: 1.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                    <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">
+                        Curriculum Courses in this Track
+                    </h2>
+                    <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: var(--color-text-muted);">
+                        These courses form the learning progression for students in {{ path.grade_name }}.
+                    </p>
+                </div>
+                <span class="course-stat-pill" style="font-weight: 700; background: #e0f2fe; color: #0284c7;">
+                    {{ courses|length }} Course{% if courses|length != 1 %}s{% endif %}
+                </span>
+            </div>
+
+            {% if courses %}
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.925rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--color-border); color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            <th style="padding: 0.75rem 0.5rem;">Course Title</th>
+                            <th style="padding: 0.75rem 0.5rem;">Level</th>
+                            <th style="padding: 0.75rem 0.5rem; text-align: center;">Modules</th>
+                            <th style="padding: 0.75rem 0.5rem; text-align: center;">Videos</th>
+                            <th style="padding: 0.75rem 0.5rem; text-align: center;">Enrollments</th>
+                            <th style="padding: 0.75rem 0.5rem;">Status</th>
+                            <th style="padding: 0.75rem 0.5rem; text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in courses %}
+                        <tr style="border-bottom: 1px solid var(--color-border);">
+                            <!-- Title & Slug -->
+                            <td style="padding: 1rem 0.5rem; max-width: 340px;">
+                                <div style="font-weight: 700; font-size: 1rem; color: var(--color-text);">
+                                    <a href="{{ url_for('admin_course_detail', course_id=c.id) }}" style="color: var(--color-text); text-decoration: none;">
+                                        {{ c.title }}
+                                    </a>
+                                </div>
+                                <div style="font-size: 0.78rem; color: var(--color-text-muted); font-family: monospace; margin-top: 0.15rem;">
+                                    /courses/{{ c.slug }}
+                                </div>
+                                {% if c.short_description %}
+                                <div style="font-size: 0.825rem; color: var(--color-text-muted); margin-top: 0.25rem;">
+                                    {{ c.short_description[:85] }}{% if c.short_description|length > 85 %}...{% endif %}
+                                </div>
+                                {% endif %}
+                            </td>
+
+                            <!-- Level -->
+                            <td style="padding: 1rem 0.5rem;">
+                                <span class="badge-status badge-active" style="font-size: 0.78rem; text-transform: capitalize;">
+                                    {{ c.level or 'Beginner' }}
+                                </span>
+                            </td>
+
+                            <!-- Modules Count -->
+                            <td style="padding: 1rem 0.5rem; text-align: center;">
+                                <span class="course-stat-pill" style="font-weight: 600; font-size: 0.8rem; background: var(--color-bg-subtle, #f1f5f9);">
+                                    {{ c.total_modules }}
+                                </span>
+                            </td>
+
+                            <!-- Videos Count -->
+                            <td style="padding: 1rem 0.5rem; text-align: center;">
+                                <span class="course-stat-pill" style="font-weight: 600; font-size: 0.8rem; background: var(--color-bg-subtle, #f1f5f9);">
+                                    {{ c.total_videos }}
+                                </span>
+                            </td>
+
+                            <!-- Enrollments -->
+                            <td style="padding: 1rem 0.5rem; text-align: center;">
+                                <span class="course-stat-pill" style="font-weight: 700; font-size: 0.8rem; background: #e0f2fe; color: #0284c7;">
+                                    {{ c.total_enrollments }}
+                                </span>
+                            </td>
+
+                            <!-- Status -->
+                            <td style="padding: 1rem 0.5rem;">
+                                <span class="badge-status {{ 'badge-active' if c.is_active else 'badge-inactive' }}" style="font-size: 0.78rem;">
+                                    {{ 'Active' if c.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+
+                            <!-- Actions -->
+                            <td style="padding: 1rem 0.5rem; text-align: right;">
+                                <div style="display: inline-flex; gap: 0.4rem; align-items: center; justify-content: flex-end; flex-wrap: wrap;">
+                                    <!-- View / Manage Modules -->
+                                    <a href="{{ url_for('admin_course_detail', course_id=c.id) }}" 
+                                       class="btn btn-primary btn-sm" 
+                                       style="font-size: 0.78rem; padding: 0.35rem 0.65rem;"
+                                       title="Manage curriculum modules & videos">
+                                        Manage
+                                    </a>
+
+                                    <!-- Edit Course Metadata -->
+                                    <a href="{{ url_for('admin_edit_course', course_id=c.id) }}" 
+                                       class="btn btn-secondary btn-sm" 
+                                       style="font-size: 0.78rem; padding: 0.35rem 0.65rem;">
+                                        Edit
+                                    </a>
+
+                                    <!-- Unlink / Remove from Path -->
+                                    <form method="post" action="{{ url_for('admin_path_remove_course', path_id=path.id, course_id=c.id) }}" style="display: inline;"
+                                          onsubmit="return confirm('Remove course \'{{ c.title|e }}\' from this learning path? The course will remain in the database as unlinked.');">
+                                        <button type="submit" class="btn btn-outline btn-sm btn-destructive" style="font-size: 0.78rem; padding: 0.35rem 0.65rem;">
+                                            Remove
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <!-- Empty Path State -->
+            <div style="text-align: center; padding: 3rem 1rem;">
+                <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📚</div>
+                <h3 style="font-size: 1.2rem; color: var(--color-text); margin-bottom: 0.4rem;">No courses in this learning path yet</h3>
+                <p style="color: var(--color-text-muted); max-width: 480px; margin: 0 auto 1.5rem auto; font-size: 0.9rem;">
+                    Get started by creating a new course for this grade pathway, or assign an existing course from your catalog.
+                </p>
+                <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+                    <a href="{{ url_for('admin_add_course', learning_path_id=path.id) }}" class="btn btn-primary">
+                        + Add Course to Path
+                    </a>
+                    <a href="{{ url_for('admin_learning_paths', category_id=category.id) }}" class="btn btn-outline">
+                        Back to Learning Paths
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

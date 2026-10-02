@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}{% if product %}Edit {{ product.name }}{% else %}Add New Product{% endif %} | Admin Panel — airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div>
+            <h1 style="margin-bottom: 0.5rem;">{% if product %}Edit Product{% else %}Add New STEM Product{% endif %}</h1>
+            <p style="margin: 0; color: var(--color-text-muted, #94a3b8);">Configure product pricing, specifications, components, applications, and image assets.</p>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container" style="max-width: 860px;">
+        <nav style="margin-bottom: 1.5rem;">
+            <a href="{{ url_for('admin_products') }}" style="color: #2563eb; text-decoration: none; font-weight: 600; font-size: 0.95rem;">
+                &larr; Back to Product Management
+            </a>
+        </nav>
+
+        {% if error %}
+        <div class="alert alert-error" style="margin-bottom: 1.5rem;">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <div class="card" style="padding: 2rem; border-radius: 16px; background: var(--color-card-bg, #ffffff); border: 1px solid var(--color-border, #e2e8f0); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);">
+            <form action="{% if product %}{{ url_for('admin_edit_product', product_id=product.id) }}{% else %}{{ url_for('admin_add_product') }}{% endif %}" method="POST" enctype="multipart/form-data">
+                
+                <!-- Product Name -->
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="name" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                        Product Name <span style="color: #dc2626;">*</span>
+                    </label>
+                    <input type="text" id="name" name="name" required value="{{ request.form.get('name', product.name if product else '') }}" placeholder="e.g. AI Vision Starter Kit" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem;">
+                </div>
+
+                <!-- URL Slug -->
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="slug" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                        URL Slug <span style="font-weight: 400; color: #64748b; font-size: 0.85rem;">(Leave blank to auto-generate from product name)</span>
+                    </label>
+                    <input type="text" id="slug" name="slug" value="{{ request.form.get('slug', product.slug if product else '') }}" placeholder="e.g. ai-vision-starter-kit" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem; font-family: monospace;">
+                </div>
+
+                <!-- Price & Availability Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem;">
+                    <!-- Price -->
+                    <div>
+                        <label for="price" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                            Numeric Price (₹) <span style="color: #dc2626;">*</span>
+                        </label>
+                        <input type="number" step="0.01" min="0" id="price" name="price" required value="{{ request.form.get('price', product.price if product else '') }}" placeholder="e.g. 17999.00" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem;">
+                        <span style="font-size: 0.8rem; color: #64748b; display: block; margin-top: 0.25rem;">Stored as numeric value (e.g. 17999.00). Renders as ₹17,999 on UI.</span>
+                    </div>
+
+                    <!-- Availability -->
+                    <div>
+                        <label for="availability" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                            Availability
+                        </label>
+                        <select id="availability" name="availability" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem; background: #ffffff;">
+                            <option value="Available" {% if (request.form.get('availability') == 'Available') or (product and product.availability == 'Available') or not product %}selected{% endif %}>✓ Available</option>
+                            <option value="Out of Stock" {% if (request.form.get('availability') == 'Out of Stock') or (product and product.availability == 'Out of Stock') %}selected{% endif %}>Out of Stock</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Shipping Options Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem; background: #f8fafc; padding: 1.25rem; border-radius: 10px; border: 1px solid #e2e8f0;">
+                    <!-- Shipping Setting -->
+                    <div>
+                        <label for="shipping_setting" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                            Shipping Configuration
+                        </label>
+                        <select id="shipping_setting" name="shipping_setting" onchange="toggleShippingChargeInput()" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem; background: #ffffff;">
+                            <option value="free" {% if not product or product.shipping_free %}selected{% endif %}>Free Shipping</option>
+                            <option value="paid" {% if product and not product.shipping_free %}selected{% endif %}>Paid Shipping</option>
+                        </select>
+                    </div>
+
+                    <!-- Shipping Charge -->
+                    <div id="shippingChargeWrap" style="{% if not product or product.shipping_free %}display: none;{% endif %}">
+                        <label for="shipping_charge" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                            Shipping Charge (₹)
+                        </label>
+                        <input type="number" step="0.01" min="0" id="shipping_charge" name="shipping_charge" value="{{ request.form.get('shipping_charge', product.shipping_charge if product else '0') }}" placeholder="e.g. 150.00" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                    </div>
+                </div>
+
+                <!-- Short Description -->
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="short_description" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                        Short Description
+                    </label>
+                    <input type="text" id="short_description" name="short_description" value="{{ request.form.get('short_description', product.short_description if product else '') }}" placeholder="Brief 1-2 sentence overview for catalogue card..." style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                </div>
+
+                <!-- Full Description -->
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="description" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                        Full Description (About This Product)
+                    </label>
+                    <textarea id="description" name="description" rows="4" placeholder="Detailed product overview, hardware architecture, and educational capabilities..." style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem; font-family: inherit;">{{ request.form.get('description', product.description if product else '') }}</textarea>
+                </div>
+
+                <!-- Components & Applications Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem;">
+                    <!-- Components -->
+                    <div>
+                        <label for="components" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                            What's Included / Components <span style="font-size: 0.8rem; font-weight: 400; color: #64748b;">(One item per line)</span>
+                        </label>
+                        {% set existing_comp = product.components | parse_list if product else [] %}
+                        <textarea id="components" name="components" rows="6" placeholder="HUSKYLENS 2 AI Vision Sensor&#10;Kendryte K230 AI Processor&#10;ESP32 development board&#10;Servo motors" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.9rem; font-family: monospace;">{{ request.form.get('components', existing_comp | join('\n') if existing_comp else '') }}</textarea>
+                    </div>
+
+                    <!-- Applications -->
+                    <div>
+                        <label for="applications" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                            Applications & Use Cases <span style="font-size: 0.8rem; font-weight: 400; color: #64748b;">(One item per line)</span>
+                        </label>
+                        {% set existing_app = product.applications | parse_list if product else [] %}
+                        <textarea id="applications" name="applications" rows="6" placeholder="Object recognition&#10;Tracking & classification&#10;Smart automation&#10;Autonomous robotics" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.9rem; font-family: monospace;">{{ request.form.get('applications', existing_app | join('\n') if existing_app else '') }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Product Thumbnail Image Upload -->
+                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1.25rem; border-radius: 10px; border: 1px solid #e2e8f0;">
+                    <label for="image" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                        Thumbnail Image Upload
+                    </label>
+
+                    {% if product and product.image %}
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.85rem; padding: 0.75rem; background: #ffffff; border-radius: 8px; border: 1px solid #cbd5e1;">
+                        <div style="width: 60px; height: 60px; border-radius: 6px; overflow: hidden; background: #0f172a; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                            {% set img_url = image_url(product.image) %}
+                            {% if img_url %}
+                            <img src="{{ img_url }}" alt="Current Image" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% endif %}
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; font-weight: 600; color: #1e293b;">Current Product Image:</div>
+                            <div style="font-size: 0.8rem; color: #64748b; font-family: monospace; word-break: break-all;">{{ product.image }}</div>
+                            <div style="font-size: 0.78rem; color: #059669; font-weight: 500; margin-top: 0.2rem;">If no new image is chosen, existing image will be preserved.</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <input type="file" id="image" name="image" accept="image/jpeg,image/png,image/webp" style="display: block; width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff;">
+                    <span style="font-size: 0.8rem; color: #64748b; display: block; margin-top: 0.4rem;">Allowed formats: JPG, JPEG, PNG, WEBP (Max size: 5 MB). File magic bytes signature validated server-side.</span>
+                </div>
+
+                <!-- Active Toggle Checkbox -->
+                <div style="margin-bottom: 2rem; display: flex; align-items: center; gap: 0.65rem;">
+                    <input type="checkbox" id="is_active" name="is_active" {% if (request.form.get('is_active') == '1') or (product and product.is_active) or not product %}checked{% endif %} style="width: 18px; height: 18px; accent-color: #2563eb; cursor: pointer;">
+                    <label for="is_active" style="font-weight: 600; color: var(--color-text, #0b1220); cursor: pointer; user-select: none;">
+                        Active <span style="font-weight: 400; color: #64748b; font-size: 0.85rem;">(Product visible in public catalogue & detail view)</span>
+                    </label>
+                </div>
+
+                <!-- Submit Action Bar -->
+                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 1rem; border-top: 1px solid #e2e8f0; padding-top: 1.5rem;">
+                    <a href="{{ url_for('admin_products') }}" class="btn" style="padding: 0.75rem 1.5rem; font-weight: 600; border-radius: 8px; background: #f1f5f9; color: #475569; text-decoration: none;">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.75rem; font-weight: 700; border-radius: 8px; background: #2563eb; color: #ffffff; border: none; cursor: pointer;">
+                        {% if product %}Save Product Changes{% else %}Create Product{% endif %}
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</section>
+
+<script>
+function toggleShippingChargeInput() {
+    var setting = document.getElementById('shipping_setting').value;
+    var wrap = document.getElementById('shippingChargeWrap');
+    if (setting === 'paid') {
+        wrap.style.display = 'block';
+    } else {
+        wrap.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

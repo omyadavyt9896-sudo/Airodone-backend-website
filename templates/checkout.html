@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}Guest Checkout — {{ product.name if product else 'Unavailable' }} | airodrone{% endblock %}
+
+{% block content %}
+<section style="background: var(--color-bg-alt, #f8fafc); padding: 2.5rem 0 4rem 0;">
+    <div class="container" style="max-width: 1000px; margin: 0 auto;">
+        
+        <!-- Breadcrumb Navigation -->
+        <nav style="margin-bottom: 1.5rem;">
+            {% if product %}
+            <a href="{{ url_for('public_product_detail', slug=product.slug) }}" style="color: #2563eb; text-decoration: none; font-weight: 600; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                &larr; Back to {{ product.name }}
+            </a>
+            {% else %}
+            <a href="{{ url_for('public_products') }}" style="color: #2563eb; text-decoration: none; font-weight: 600; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                &larr; Back to Products Catalogue
+            </a>
+            {% endif %}
+        </nav>
+
+        {% if unavailable or not product %}
+        <div style="background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 3rem 2rem; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.04);">
+            <div style="width: 64px; height: 64px; background: #fee2e2; color: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem auto; font-size: 1.75rem;">
+                ✕
+            </div>
+            <h1 style="font-size: 1.8rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">Currently Unavailable</h1>
+            <p style="font-size: 1.05rem; color: #64748b; max-width: 500px; margin: 0 auto 2rem auto;">
+                This STEM product is currently out of stock or inactive. Please check back later or explore other available hardware kits.
+            </p>
+            <a href="{{ url_for('public_products') }}" class="btn btn-primary" style="padding: 0.75rem 1.75rem; border-radius: 8px; font-weight: 700; background: #2563eb; color: #fff; text-decoration: none;">
+                Browse Other Products
+            </a>
+        </div>
+        {% else %}
+        
+        <h1 style="font-size: 2rem; font-weight: 800; color: #0b1220; margin-bottom: 1.75rem;">
+            Secure Guest Checkout
+        </h1>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; align-items: start;">
+            
+            <!-- LEFT COLUMN: Customer & Shipping Information -->
+            <div style="background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.04);">
+                <h2 style="font-size: 1.3rem; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 1.25rem; border-bottom: 2px solid #2563eb; padding-bottom: 0.5rem; display: inline-block;">
+                    1. Contact & Delivery Details
+                </h2>
+
+                <div id="checkout-error" style="display: none; background: #fee2e2; color: #b91c1c; padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600; margin-bottom: 1.25rem;"></div>
+
+                <form id="checkout-form" onsubmit="handleCheckoutSubmit(event)">
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+
+                    <div style="margin-bottom: 1.25rem;">
+                        <label for="customer_name" style="display: block; font-size: 0.9rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
+                            Full Name <span style="color: #dc2626;">*</span>
+                        </label>
+                        <input type="text" id="customer_name" name="customer_name" required placeholder="e.g. Rahul Sharma" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; color: #0f172a; box-sizing: border-box;">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                        <div>
+                            <label for="customer_phone" style="display: block; font-size: 0.9rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
+                                Mobile Number <span style="color: #dc2626;">*</span>
+                            </label>
+                            <input type="tel" id="customer_phone" name="customer_phone" required placeholder="10-digit mobile" maxlength="10" pattern="[6-9][0-9]{9}" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; color: #0f172a; box-sizing: border-box;">
+                        </div>
+
+                        <div>
+                            <label for="customer_email" style="display: block; font-size: 0.9rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
+                                Email Address <span style="color: #dc2626;">*</span>
+                            </label>
+                            <input type="email" id="customer_email" name="customer_email" required placeholder="name@example.com" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; color: #0f172a; box-sizing: border-box;">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.25rem;">
+                        <label for="address" style="display: block; font-size: 0.9rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
+                            Delivery Address <span style="color: #dc2626;">*</span>
+                        </label>
+                        <textarea id="address" name="address" required rows="2" placeholder="House/Flat No., Street, Area" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; color: #0f172a; box-sizing: border-box; resize: vertical;"></textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                        <div>
+                            <label for="city" style="display: block; font-size: 0.9rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
+                                City <span style="color: #dc2626;">*</span>
+                            </label>
+                            <input type="text" id="city" name="city" required placeholder="e.g. Mumbai" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; color: #0f172a; box-sizing: border-box;">
+                        </div>
+
+                        <div>
+                            <label for="state" style="display: block; font-size: 0.9rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
+                                State <span style="color: #dc2626;">*</span>
+                            </label>
+                            <input type="text" id="state" name="state" required placeholder="e.g. Maharashtra" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; color: #0f172a; box-sizing: border-box;">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.75rem;">
+                        <div>
+                            <label for="pincode" style="display: block; font-size: 0.9rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
+                                PIN Code <span style="color: #dc2626;">*</span>
+                            </label>
+                            <input type="text" id="pincode" name="pincode" required placeholder="6-digit PIN" maxlength="6" pattern="[1-9][0-9]{5}" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; color: #0f172a; box-sizing: border-box;">
+                        </div>
+
+                        <div>
+                            <label for="landmark" style="display: block; font-size: 0.9rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">
+                                Landmark <span style="font-weight: 400; color: #64748b;">(Optional)</span>
+                            </label>
+                            <input type="text" id="landmark" name="landmark" placeholder="e.g. Near Metro Station" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; color: #0f172a; box-sizing: border-box;">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="pay-button" style="width: 100%; padding: 1rem; font-size: 1.15rem; font-weight: 800; border-radius: 10px; background: #2563eb; color: #ffffff; border: none; cursor: pointer; transition: background 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 0.6rem; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);">
+                        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        Proceed to Payment ({{ total_amount | format_price }})
+                    </button>
+                </form>
+            </div>
+
+            <!-- RIGHT COLUMN: Order Summary Card -->
+            <div style="background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.04); position: sticky; top: 2rem;">
+                <h2 style="font-size: 1.3rem; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 1.25rem; border-bottom: 2px solid #2563eb; padding-bottom: 0.5rem; display: inline-block;">
+                    2. Order Summary
+                </h2>
+
+                <!-- Product Line Item -->
+                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid #f1f5f9; align-items: center;">
+                    <div style="width: 80px; height: 80px; background: #0f172a; border-radius: 8px; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                        {% set img_url = image_url(product.image) %}
+                        {% if img_url %}
+                        <img src="{{ img_url }}" alt="{{ product.name }}" style="width: 100%; height: 100%; object-fit: contain; padding: 0.25rem;">
+                        {% else %}
+                        <span style="color: #64748b; font-size: 0.75rem;">No Image</span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 1.05rem; color: #0f172a; margin-bottom: 0.25rem;">
+                            {{ product.name }}
+                        </div>
+                        <div style="font-size: 0.85rem; color: #64748b; font-weight: 600;">
+                            Quantity: 1
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Price Breakdown -->
+                <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.95rem; margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; color: #475569;">
+                        <span>Product Price</span>
+                        <span style="font-weight: 700; color: #0f172a;">{{ product_price | format_price }}</span>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; color: #475569;">
+                        <span>Shipping</span>
+                        {% if shipping_charge == 0 %}
+                        <span style="font-weight: 700; color: #16a34a;">FREE</span>
+                        {% else %}
+                        <span style="font-weight: 700; color: #0f172a;">{{ shipping_charge | format_price }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; color: #475569;">
+                        <span>GST</span>
+                        <span style="background: #e0f2fe; color: #0369a1; font-size: 0.8rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px;">
+                            Included
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Total Amount -->
+                <div style="border-top: 2px dashed #cbd5e1; padding-top: 1.25rem; display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem;">
+                    <span style="font-size: 1.1rem; font-weight: 800; color: #0f172a;">Total Payable</span>
+                    <span style="font-size: 1.8rem; font-weight: 800; color: #2563eb;">
+                        {{ total_amount | format_price }}
+                    </span>
+                </div>
+
+                <!-- Payment Method Badge -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem; text-align: center;">
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Supported Payment Method
+                    </div>
+                    <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: #ffffff; border: 1px solid #cbd5e1; padding: 0.4rem 1rem; border-radius: 6px; font-weight: 700; color: #0f172a; font-size: 0.95rem;">
+                        <svg width="18" height="18" fill="none" stroke="#2563eb" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+                        Secure payment via Razorpay
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+</section>
+
+<!-- Include official Razorpay Checkout SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+function handleCheckoutSubmit(e) {
+    e.preventDefault();
+
+    const payBtn = document.getElementById("pay-button");
+    const errorDiv = document.getElementById("checkout-error");
+    errorDiv.style.display = "none";
+    errorDiv.innerText = "";
+
+    const formData = new FormData(document.getElementById("checkout-form"));
+
+    payBtn.disabled = true;
+    payBtn.innerHTML = "Creating Secure Order...";
+
+    fetch("{{ url_for('create_razorpay_order') }}", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => {
+        console.log("Order creation response HTTP status:", res.status);
+        return res.json();
+    })
+    .then(data => {
+        if (!data.success) {
+            payBtn.disabled = false;
+            payBtn.innerHTML = 'Proceed to Payment ({{ total_amount | format_price }})';
+            errorDiv.innerText = data.error || "Unable to initialize checkout. Please check inputs.";
+            errorDiv.style.display = "block";
+            return;
+        }
+
+        if (data.payment_mode === "mock" && data.redirect_url) {
+            window.location.href = data.redirect_url;
+            return;
+        }
+
+        const hasOrderId = Boolean(data.razorpay_order_id);
+        const keyPrefix = data.razorpay_key_id ? data.razorpay_key_id.substring(0, 8) + '...' : 'none';
+
+        console.log("Order creation diagnostic summary:", {
+            order_id_exists: hasOrderId,
+            order_id: data.razorpay_order_id,
+            amount: data.amount,
+            currency: data.currency,
+            key_id_prefix: keyPrefix
+        });
+
+        // Initialize Razorpay Modal
+        const options = {
+            "key": data.razorpay_key_id,
+            "amount": data.amount,
+            "currency": data.currency,
+            "name": "airodrone",
+            "description": "Order " + data.order_number,
+            "order_id": data.razorpay_order_id,
+            "prefill": {
+                "name": data.customer_name,
+                "email": data.customer_email,
+                "contact": data.customer_phone
+            },
+            "handler": function (response) {
+
+                payBtn.innerHTML = "Verifying Payment...";
+                fetch("{{ url_for('verify_payment') }}", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature,
+                        order_number: data.order_number
+                    })
+                })
+                .then(r => r.json())
+                .then(verRes => {
+                    if (verRes.success && verRes.redirect_url) {
+                        window.location.href = verRes.redirect_url;
+                    } else {
+                        window.location.href = "{{ url_for('payment_failed') }}";
+                    }
+                })
+                .catch(() => {
+                    window.location.href = "{{ url_for('payment_failed') }}";
+                });
+            },
+            "modal": {
+                "ondismiss": function() {
+                    payBtn.disabled = false;
+                    payBtn.innerHTML = 'Proceed to Payment ({{ total_amount | format_price }})';
+                }
+            }
+        };
+
+        const rzp1 = new Razorpay(options);
+        
+        rzp1.on('payment.failed', function (response) {
+            payBtn.disabled = false;
+            payBtn.innerHTML = 'Proceed to Payment ({{ total_amount | format_price }})';
+            const errCode = (response && response.error && response.error.code) ? response.error.code : 'UNKNOWN';
+            const errDesc = (response && response.error && response.error.description) ? response.error.description : 'Payment could not be started. Please try again.';
+            
+            console.log("Razorpay Payment Failure Event:", {
+                code: errCode,
+                description: errDesc,
+                reason: response && response.error ? response.error.reason : null
+            });
+
+            errorDiv.innerText = "Payment Failure (" + errCode + "): " + errDesc;
+            errorDiv.style.display = "block";
+        });
+
+        rzp1.open();
+    })
+    .catch(err => {
+        payBtn.disabled = false;
+        payBtn.innerHTML = 'Proceed to Payment ({{ total_amount | format_price }})';
+        errorDiv.innerText = "Payment could not be started. Please try again.";
+        errorDiv.style.display = "block";
+    });
+}
+</script>
+{% endblock %}

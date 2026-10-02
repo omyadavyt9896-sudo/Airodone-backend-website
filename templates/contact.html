@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Contact | airodrone{% endblock %}
+{% block meta_description %}Contact airodrone to discuss AI, robotics, coding, electronics, drone, web design, ATL lab setup, and STEM workshops for your institution.{% endblock %}
+
+{% block content %}
+<!-- Contact Hero Section -->
+<section class="page-hero contact-hero">
+    <!-- Subtle ambient floating background motion -->
+    <div class="contact-hero-ambient" aria-hidden="true">
+        <div class="ambient-orb ambient-orb-1"></div>
+        <div class="ambient-orb ambient-orb-2"></div>
+    </div>
+
+    <div class="container page-hero-inner contact-hero-inner">
+        <div class="contact-hero-text">
+            <div class="hero-tagline-pill contact-hero-badge">
+                <span class="badge-pulse-dot" aria-hidden="true"></span>
+                <span>CONNECT &bull; COLLABORATE</span>
+            </div>
+            <h1 class="contact-hero-title">Contact Us</h1>
+            <p class="contact-hero-desc">
+                Share a few details about your institution and requirements. Our team will get in touch
+                with you to explore the best way forward.
+            </p>
+        </div>
+        <div class="page-hero-media contact-hero-media">
+            <div class="contact-img-frame">
+                <img src="{{ url_for('static', filename='images/contact/contact.jpg') }}"
+                    alt="Contact our STEM and ATL lab consulting team"
+                    class="contact-hero-img"
+                    width="600"
+                    height="400"
+                    loading="eager">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Contact Form & Engagement Section -->
+<section class="section contact-section">
+    <div class="container contact-layout">
+        <!-- Contact Form Card -->
+        <div class="contact-form-wrapper contact-reveal contact-reveal-left">
+            <div class="form-card-header">
+                <h2>Send Us a Message</h2>
+                <p class="form-subtext">Fill in the form below and we will connect with you within 1&ndash;2 business days.</p>
+            </div>
+
+            {% if error %}
+            <div class="alert alert-error" role="alert">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            {% if success %}
+            <div class="alert alert-success" role="alert">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <span>Thank you for reaching out. Your message has been received and we will get back to you shortly.</span>
+            </div>
+            {% endif %}
+
+            <form method="post" action="{{ url_for('contact') }}" class="contact-form" id="contactForm">
+                {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />{% endif %}
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="name">Full Name <span class="required" aria-hidden="true">*</span></label>
+                        <input type="text" id="name" name="name" required placeholder="Enter your full name" autocomplete="name">
+                    </div>
+                    <div class="form-field">
+                        <label for="email">Email <span class="required" aria-hidden="true">*</span></label>
+                        <input type="email" id="email" name="email" required placeholder="you@example.com" autocomplete="email">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="phone">Phone</label>
+                        <input type="tel" id="phone" name="phone" placeholder="+91-XXXXXXXXXX" autocomplete="tel">
+                    </div>
+                    <div class="form-field">
+                        <label for="subject">Subject</label>
+                        <input type="text" id="subject" name="subject"
+                            placeholder="E.g. ATL setup, AI program, workshop">
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label for="message">Message <span class="required" aria-hidden="true">*</span></label>
+                    <textarea id="message" name="message" rows="5" required
+                        placeholder="Tell us briefly about your institution, classes, and what you are looking for."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary contact-submit-btn" id="contactSubmitBtn">
+                        <span class="btn-text">Send Message</span>
+                        <svg class="btn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- How We Engage Card -->
+        <aside class="contact-aside contact-reveal contact-reveal-right">
+            <div class="aside-tagline-pill">
+                CONSULTATION PROCESS
+            </div>
+            <h2>How We Engage</h2>
+            <p class="aside-intro">
+                After you submit the form, our team will review your requirements and connect with you
+                within 1&ndash;2 working days to:
+            </p>
+
+            <div class="engage-steps">
+                <div class="engage-step-card" style="--step-delay: 0ms;">
+                    <div class="step-badge" aria-hidden="true">
+                        <span class="step-dot"></span>
+                    </div>
+                    <div class="step-content">
+                        <h3 class="step-title">Clarify Objectives</h3>
+                        <p class="step-desc">Clarify your objectives, timelines, and constraints.</p>
+                    </div>
+                </div>
+
+                <div class="engage-step-card" style="--step-delay: 100ms;">
+                    <div class="step-badge" aria-hidden="true">
+                        <span class="step-dot"></span>
+                    </div>
+                    <div class="step-content">
+                        <h3 class="step-title">Recommend Programs</h3>
+                        <p class="step-desc">Recommend relevant programs and engagement models.</p>
+                    </div>
+                </div>
+
+                <div class="engage-step-card" style="--step-delay: 200ms;">
+                    <div class="step-badge" aria-hidden="true">
+                        <span class="step-dot"></span>
+                    </div>
+                    <div class="step-content">
+                        <h3 class="step-title">Roadmap &amp; Next Steps</h3>
+                        <p class="step-desc">Share tentative roadmaps and next steps.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="privacy-note">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span>We respect your time and privacy. Your details are used only to respond to your enquiry.</span>
+            </div>
+        </aside>
+    </div>
+</section>
+
+<!-- Lightweight Interactions & Scroll Reveal -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // 1. Scroll-triggered reveal observer
+    var reveals = document.querySelectorAll(".contact-reveal");
+    if ("IntersectionObserver" in window) {
+        var revealObserver = new IntersectionObserver(function (entries, observer) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add("revealed");
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.08,
+            rootMargin: "0px 0px -20px 0px"
+        });
+
+        reveals.forEach(function (el) {
+            revealObserver.observe(el);
+        });
+    } else {
+        reveals.forEach(function (el) {
+            el.classList.add("revealed");
+        });
+    }
+
+    // 2. Submit Button Loading State (Progressive Enhancement)
+    var contactForm = document.getElementById("contactForm");
+    var submitBtn = document.getElementById("contactSubmitBtn");
+
+    if (contactForm && submitBtn) {
+        contactForm.addEventListener("submit", function (e) {
+            // Check native HTML5 validation
+            if (!contactForm.checkValidity()) {
+                return; // Let browser highlight missing fields
+            }
+
+            // Valid form - show loading spinner without blocking POST submit
+            submitBtn.classList.add("is-submitting");
+            submitBtn.style.pointerEvents = "none";
+            submitBtn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span> <span>Sending...</span>';
+
+            setTimeout(function () {
+                submitBtn.disabled = true;
+            }, 50);
+        });
+    }
+});
+</script>
+{% endblock %}

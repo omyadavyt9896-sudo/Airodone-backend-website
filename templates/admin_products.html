@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Product Management | Admin Panel — airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-inner">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h1 style="margin-bottom: 0.5rem;">Product Management</h1>
+                <p style="margin: 0; color: var(--color-text-muted, #94a3b8);">Manage STEM products, hardware kits, pricing, availability, and components.</p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin_add_product') }}" class="btn btn-primary" style="padding: 0.75rem 1.5rem; font-weight: 600; border-radius: 8px; background: #2563eb; color: #ffffff; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+                    + Add Product
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}" style="margin-bottom: 1.5rem;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="card" style="padding: 1.5rem; border-radius: 14px; background: var(--color-card-bg, #ffffff); border: 1px solid var(--color-border, #e2e8f0);">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                <h2 style="margin: 0; font-size: 1.35rem; font-weight: 700;">All Products ({{ products | length }})</h2>
+                <a href="{{ url_for('public_products') }}" target="_blank" style="color: #2563eb; text-decoration: none; font-size: 0.9rem; font-weight: 600;">
+                    View Public Catalogue &rarr;
+                </a>
+            </div>
+
+            {% if products %}
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--color-border, #e2e8f0); color: #64748b; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            <th style="padding: 0.85rem 1rem;">Product</th>
+                            <th style="padding: 0.85rem 1rem;">Price</th>
+                            <th style="padding: 0.85rem 1rem;">Availability</th>
+                            <th style="padding: 0.85rem 1rem;">Shipping</th>
+                            <th style="padding: 0.85rem 1rem;">Status</th>
+                            <th style="padding: 0.85rem 1rem; text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in products %}
+                        <tr style="border-bottom: 1px solid var(--color-border, #f1f5f9);">
+                            <!-- Product thumbnail & name -->
+                            <td style="padding: 1rem;">
+                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                    <div style="width: 54px; height: 54px; border-radius: 8px; overflow: hidden; background: #0f172a; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                                        {% set img_url = image_url(p.image) %}
+                                        {% if img_url %}
+                                        <img src="{{ img_url }}" alt="{{ p.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                        {% else %}
+                                        <span style="font-size: 0.7rem; color: #94a3b8;">No Img</span>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 700; color: var(--color-text, #0b1220); font-size: 1rem;">
+                                            <a href="{{ url_for('public_product_detail', slug=p.slug) }}" style="color: inherit; text-decoration: none;">
+                                                {{ p.name }}
+                                            </a>
+                                        </div>
+                                        <div style="font-size: 0.8rem; color: #64748b;">
+                                            Slug: <code>{{ p.slug }}</code>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Price -->
+                            <td style="padding: 1rem; font-weight: 700; color: #2563eb; font-size: 1.05rem;">
+                                {{ p.price | format_price }}
+                            </td>
+
+                            <!-- Availability -->
+                            <td style="padding: 1rem;">
+                                {% if p.availability == 'Available' %}
+                                <span class="badge-status badge-active" style="background: #dcfce7; color: #15803d; font-size: 0.8rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 6px;">
+                                    ✓ Available
+                                </span>
+                                {% else %}
+                                <span class="badge-status badge-inactive" style="background: #fee2e2; color: #b91c1c; font-size: 0.8rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 6px;">
+                                    Out of Stock
+                                </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Shipping -->
+                            <td style="padding: 1rem; font-size: 0.88rem;">
+                                {% if p.shipping_free %}
+                                <span style="color: #0284c7; font-weight: 600;">Free Shipping</span>
+                                {% else %}
+                                <span style="color: #475569; font-weight: 600;">+ {{ p.shipping_charge | format_price }}</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Active Status -->
+                            <td style="padding: 1rem;">
+                                {% if p.is_active %}
+                                <span class="badge-status badge-active" style="background: #dbeafe; color: #1e40af; font-size: 0.8rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 6px;">
+                                    Active
+                                </span>
+                                {% else %}
+                                <span class="badge-status badge-inactive" style="background: #f1f5f9; color: #64748b; font-size: 0.8rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 6px;">
+                                    Inactive
+                                </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Actions -->
+                            <td style="padding: 1rem; text-align: right;">
+                                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem;">
+                                    <a href="{{ url_for('admin_edit_product', product_id=p.id) }}" class="btn" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; font-weight: 600; border-radius: 6px; background: #f1f5f9; color: #334155; text-decoration: none; border: 1px solid #cbd5e1;">
+                                        Edit
+                                    </a>
+
+                                    <form action="{{ url_for('admin_toggle_product_active', product_id=p.id) }}" method="POST" style="display: inline;">
+                                        <button type="submit" class="btn" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; font-weight: 600; border-radius: 6px; background: {{ '#fef3c7' if p.is_active else '#dcfce7' }}; color: {{ '#92400e' if p.is_active else '#166534' }}; border: 1px solid {{ '#fde68a' if p.is_active else '#bbf7d0' }}; cursor: pointer;">
+                                            {{ 'Deactivate' if p.is_active else 'Activate' }}
+                                        </button>
+                                    </form>
+
+                                    <form action="{{ url_for('admin_delete_product', product_id=p.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                        <button type="submit" class="btn" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; font-weight: 600; border-radius: 6px; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; cursor: pointer;">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 3rem 1rem; color: #64748b;">
+                <p style="margin-bottom: 1rem;">No products available in database.</p>
+                <a href="{{ url_for('admin_add_product') }}" class="btn btn-primary" style="padding: 0.5rem 1.25rem;">+ Add First Product</a>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</section>
+{% endblock %}

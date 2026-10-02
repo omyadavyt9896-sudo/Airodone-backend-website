@@ -381,15 +381,30 @@ def create_raw_db_connection():
             raise ImportError("PyMySQL driver is required for MySQL connections. Install with 'pip install PyMySQL'.")
         clean_url = db_url.replace("mysql+pymysql://", "mysql://")
         parsed = urllib.parse.urlparse(clean_url)
+
+        # Extract password from parsed DATABASE_URL or standard environment variables
+        db_password = ""
+        if parsed.password:
+            db_password = urllib.parse.unquote(parsed.password)
+        elif os.environ.get("DB_PASSWORD"):
+            db_password = os.environ.get("DB_PASSWORD")
+        elif os.environ.get("MYSQL_PASSWORD"):
+            db_password = os.environ.get("MYSQL_PASSWORD")
+
+        db_host = parsed.hostname or os.environ.get("DB_HOST") or "localhost"
+        db_port = parsed.port or int(os.environ.get("DB_PORT", 3306))
+        db_user = (urllib.parse.unquote(parsed.username) if parsed.username else None) or os.environ.get("DB_USER") or "root"
+        db_name = (parsed.path.lstrip("/") if parsed.path else None) or os.environ.get("DB_NAME") or ""
+
         connect_timeout = int(os.environ.get("DB_CONNECT_TIMEOUT", 10))
         read_timeout = int(os.environ.get("DB_READ_TIMEOUT", 15))
         write_timeout = int(os.environ.get("DB_WRITE_TIMEOUT", 15))
         return pymysql.connect(
-            host=parsed.hostname or "localhost",
-            port=parsed.port or 3306,
-            user=parsed.username or "root",
-            password=password,
-            database=parsed.path.lstrip("/"),
+            host=db_host,
+            port=db_port,
+            user=db_user,
+            password=db_password,
+            database=db_name,
             cursorclass=pymysql.cursors.DictCursor,
             connect_timeout=connect_timeout,
             read_timeout=read_timeout,

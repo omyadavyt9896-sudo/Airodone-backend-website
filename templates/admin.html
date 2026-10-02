@@ -20,11 +20,11 @@
                 </h1>
                 <p style="color: var(--color-text-muted); font-size: 1.05rem; max-width: 680px; margin: 0.25rem 0 0 0;">
                     {% if current_user.is_admin() %}
-                        Full system control: Manage curriculum, courses, learning pathways, users, enrollments, orders, and system logs.
+                        Full system control: Manage curriculum, learning programs, learning pathways, users, enrollments, orders, and system logs.
                     {% elif current_user.is_sub_admin() %}
-                        Operational control: Manage student enrollments, curriculum, course assignments, and academic evaluations.
+                        Operational control: Manage student enrollments, curriculum, program assignments, and academic evaluations.
                     {% else %}
-                        Academic console: View assigned courses, track student learning progression, and evaluate project milestones.
+                        Academic console: View assigned programs, track student learning progression, and evaluate project milestones.
                     {% endif %}
                 </p>
             </div>
@@ -65,19 +65,19 @@
             <!-- Courses Card -->
             <div class="card" style="padding: 1.25rem; border-radius: 10px; border-top: 4px solid #0284c7; background: var(--color-bg-card, #ffffff);">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Total Courses</div>
+                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Total Programs</div>
                     <span style="font-size: 0.75rem; background: #e0f2fe; color: #0284c7; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">{{ published_courses }} Active</span>
                 </div>
                 <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-text); line-height: 1;">{{ total_courses }}</div>
                 <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.5rem;">
-                    <a href="{{ url_for('admin_courses') }}" style="color: #0284c7; text-decoration: none; font-weight: 600;">Manage Courses &rarr;</a>
+                    <a href="{{ url_for('admin_courses') }}" style="color: #0284c7; text-decoration: none; font-weight: 600;">Manage Programs &rarr;</a>
                 </div>
             </div>
 
             <!-- Published Courses Card -->
             <div class="card" style="padding: 1.25rem; border-radius: 10px; border-top: 4px solid #16a34a; background: var(--color-bg-card, #ffffff);">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Published Courses</div>
+                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Published Programs</div>
                     <span style="font-size: 0.75rem; background: #dcfce7; color: #15803d; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">Live in Catalogue</span>
                 </div>
                 <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-text); line-height: 1;">{{ published_courses }}</div>
@@ -125,7 +125,7 @@
             <!-- Active Enrollments Card -->
             <div class="card" style="padding: 1.25rem; border-radius: 10px; border-top: 4px solid #10b981; background: var(--color-bg-card, #ffffff);">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Course Enrollments</div>
+                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Learning Enrollments</div>
                     <span style="font-size: 0.75rem; background: #d1fae5; color: #047857; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">Assigned</span>
                 </div>
                 <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-text); line-height: 1;">{{ total_enrollments }}</div>
@@ -164,9 +164,9 @@
         {% if current_user.is_teacher() %}
         <div style="margin-bottom: 3rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
-                <h2 style="margin: 0; font-size: 1.5rem; color: var(--color-text);">My Assigned Courses</h2>
+                <h2 style="margin: 0; font-size: 1.5rem; color: var(--color-text);">My Assigned Programs</h2>
                 <span class="course-stat-pill" style="font-weight: 700; background: #e0f2fe; color: #0284c7;">
-                    {{ teacher_courses|length }} Course{% if teacher_courses|length != 1 %}s{% endif %} Assigned
+                    {{ teacher_courses|length }} Program{% if teacher_courses|length != 1 %}s{% endif %} Assigned
                 </span>
             </div>
 
@@ -197,7 +197,7 @@
                     </div>
                     <div>
                         <a href="{{ url_for('admin_course_detail', course_id=c.id) }}" class="btn btn-primary btn-sm" style="width: 100%; text-align: center; justify-content: center; border-radius: 6px;">
-                            Open Course &rarr;
+                            Open Program &rarr;
                         </a>
                     </div>
                 </article>
@@ -205,7 +205,7 @@
             </div>
             {% else %}
             <div class="card" style="padding: 2rem; text-align: center; color: var(--color-text-muted); margin-bottom: 2rem;">
-                <p style="margin-bottom: 0;">No courses assigned to your account yet. Contact an administrator to assign courses.</p>
+                <p style="margin-bottom: 0;">No programs assigned to your account yet. Contact an administrator to assign programs.</p>
             </div>
             {% endif %}
         </div>
@@ -222,11 +222,11 @@
             
             <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
-                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">📚 Course Management</h3>
-                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Manage all STEM courses, curriculum modules, lessons, quizzes, and projects.</p>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">📚 Learning Program Management</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Manage all STEM learning programs, curriculum modules, lessons, quizzes, and projects.</p>
                 </div>
                 <a href="{{ url_for('admin_courses') }}" class="card-link" style="margin-top: 1rem;">
-                    Manage Courses ({{ total_courses }})
+                    Manage Programs ({{ total_courses }})
                     <span aria-hidden="true">&rarr;</span>
                 </a>
             </article>
@@ -266,8 +266,8 @@
 
             <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
-                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">🎓 Course Enrollments</h3>
-                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Track, assign, and manage student course permissions and access.</p>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">🎓 Learning Enrollments</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Track, assign, and manage student learning program permissions and access.</p>
                 </div>
                 <a href="{{ url_for('admin_enrollments') }}" class="card-link" style="margin-top: 1rem;">
                     View Enrollments ({{ total_enrollments }})

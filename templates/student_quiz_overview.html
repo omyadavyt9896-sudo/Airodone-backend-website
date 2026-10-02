@@ -19,7 +19,7 @@
                 <span class="course-badge-v2" style="position: static; display: inline-block; margin-bottom: 0.5rem;">Module Quiz</span>
                 <h1>{{ quiz.title }}</h1>
                 <p style="font-size: 1.1rem; max-width: 650px; color: var(--color-text-muted);">
-                    Module: <strong>{{ module.title }}</strong> &bull; Course: <strong>{{ course.title }}</strong>
+                    Module: <strong>{{ module.title }}</strong> &bull; Program: <strong>{{ course.title }}</strong>
                 </p>
             </div>
         </div>
@@ -77,7 +77,7 @@
                     <a href="{{ url_for('student_quiz_start', course_slug=course.slug, module_id=module.id) }}" class="btn btn-primary btn-lg js-start-quiz-btn">
                         Start Quiz (Attempt {{ attempts_used + 1 }} of {{ quiz.max_attempts }}) &rarr;
                     </a>
-                    <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-outline">&larr; Back to Course</a>
+                    <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-outline">&larr; Back to Program</a>
                 </div>
                 {% else %}
                 <div class="cert-status-box cert-status-locked" style="margin-bottom: 1.5rem; background: rgba(220, 38, 38, 0.08); border-color: rgba(220, 38, 38, 0.25); color: #b91c1c;">
@@ -88,7 +88,7 @@
                     </div>
                 </div>
                 <div>
-                    <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-outline">&larr; Back to Course Overview</a>
+                    <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-outline">&larr; Back to Program Overview</a>
                 </div>
                 {% endif %}
             </div>

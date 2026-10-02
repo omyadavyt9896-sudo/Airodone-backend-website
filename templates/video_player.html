@@ -106,7 +106,7 @@
                         </div>
                         <h3>Video Coming Soon</h3>
                         <p>The video content for <strong>{{ video.title }}</strong> is currently being uploaded or processed. Check back soon!</p>
-                        <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-outline" style="margin-top: 1rem;">Back to Course Overview</a>
+                        <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-outline" style="margin-top: 1rem;">Back to Program Overview</a>
                     </div>
                 </div>
                 {% endif %}
@@ -121,7 +121,7 @@
                     {% endif %}
                     <div class="video-meta-pills" style="margin-top: 1rem;">
                         <span class="course-stat-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Duration: {{ video.duration or '10:00' }}</span>
-                        <span class="course-stat-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Course: {{ course.title }}</span>
+                        <span class="course-stat-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 4px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Program: {{ course.title }}</span>
                     </div>
                 </div>
 
@@ -141,7 +141,7 @@
                     </a>
                     {% else %}
                     <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-primary">
-                        Course Overview &rarr;
+                        Program Overview &rarr;
                     </a>
                     {% endif %}
                 </div>
@@ -151,7 +151,7 @@
             <div class="video-sidebar-column-v2">
                 <div class="video-sidebar-card-v2">
                     <div class="video-sidebar-header-v2">
-                        <h3>Course Content</h3>
+                        <h3>Program Content</h3>
                         <p style="margin: 0; color: var(--color-text-muted); font-size: 0.85rem;">{{ course.title }}</p>
                     </div>
 

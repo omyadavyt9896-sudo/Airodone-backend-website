@@ -8,7 +8,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
             <div>
                 <h1>User Management</h1>
-                <p style="color: var(--color-text-muted);">Student Account Management — Manage student accounts, teacher course assignments, and sub-administrative staff.</p>
+                <p style="color: var(--color-text-muted);">Student Account Management — Manage student accounts, teacher program assignments, and sub-administrative staff.</p>
             </div>
             <div>
                 <a href="{{ url_for('admin_user_new') }}" class="btn btn-primary btn-md">
@@ -50,7 +50,7 @@
 
         <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
             <a href="{{ url_for('admin') }}" class="btn btn-outline">&larr; Back to Panel</a>
-            <a href="{{ url_for('admin_courses') }}" class="btn btn-outline">Course Management</a>
+            <a href="{{ url_for('admin_courses') }}" class="btn btn-outline">Learning Program Management</a>
         </div>
 
         {% if users and users|length > 0 %}
@@ -68,9 +68,9 @@
                         <th>Role</th>
                         <th>Status</th>
                         {% if current_tab == 'students' %}
-                        <th>Enrolled Courses</th>
+                        <th>Enrolled Programs</th>
                         {% elif current_tab == 'teachers' %}
-                        <th>Assigned Courses</th>
+                        <th>Assigned Programs</th>
                         {% endif %}
                         <th>Actions</th>
                     </tr>
@@ -113,11 +113,11 @@
                         </td>
                         {% if current_tab == 'students' %}
                         <td>
-                            <strong>{{ u.enrolled_count or 0 }} Course{% if u.enrolled_count != 1 %}s{% endif %}</strong>
+                            <strong>{{ u.enrolled_count or 0 }} Program{% if u.enrolled_count != 1 %}s{% endif %}</strong>
                         </td>
                         {% elif current_tab == 'teachers' %}
                         <td>
-                            <strong>{{ u.assigned_teacher_courses or 0 }} Course{% if u.assigned_teacher_courses != 1 %}s{% endif %}</strong>
+                            <strong>{{ u.assigned_teacher_courses or 0 }} Program{% if u.assigned_teacher_courses != 1 %}s{% endif %}</strong>
                         </td>
                         {% endif %}
                         <td>
@@ -127,11 +127,11 @@
                                     Progress
                                 </a>
                                 <a href="{{ url_for('admin_user_courses', user_id=u.id) }}" class="btn btn-primary btn-sm">
-                                    Enroll Courses
+                                    Enroll Programs
                                 </a>
                                 {% elif current_tab == 'teachers' %}
                                 <a href="{{ url_for('admin_teacher_assign_courses', teacher_id=u.id) }}" class="btn btn-primary btn-sm">
-                                    Assign Courses
+                                    Assign Programs
                                 </a>
                                 {% endif %}
 

@@ -15,7 +15,7 @@
             </nav>
             <h1>📁 {{ project.title }}</h1>
             <p style="font-size: 1.05rem; color: var(--color-text-muted);">
-                Course: <strong>{{ course.title }}</strong> &bull; Module {{ "%02d" % module.sequence }}: <strong>{{ module.title }}</strong>
+                Program: <strong>{{ course.title }}</strong> &bull; Module {{ "%02d" % module.sequence }}: <strong>{{ module.title }}</strong>
             </p>
         </div>
     </div>
@@ -106,7 +106,7 @@
                 {% endif %}
 
                 <div style="margin-top: 1.5rem;">
-                    <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-primary">&larr; Back to Course</a>
+                    <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-primary">&larr; Back to Program</a>
                 </div>
 
             {% else %}
@@ -139,7 +139,7 @@
                             <button type="submit" class="btn btn-primary">
                                 {% if submission %}Update Submission{% else %}Submit Project Work{% endif %} &rarr;
                             </button>
-                            <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-outline">&larr; Back to Course</a>
+                            <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-outline">&larr; Back to Program</a>
                         </div>
                     </div>
                 </form>

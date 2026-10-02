@@ -2,7 +2,7 @@
 
 {% block title %}Dashboard | airodrone{% endblock %}
 
-{% block meta_description %}Manage your Airodrone student profile, continue your courses, and access your certificates.{% endblock %}
+{% block meta_description %}Manage your Airodrone student profile, continue your programs, and access your certificates.{% endblock %}
 
 {% block content %}
 <!-- Student Dashboard Hero Header -->
@@ -14,7 +14,7 @@
             </div>
             <h1 style="margin-top: 0.5rem;">Welcome back, {{ current_user.name }}!</h1>
             <p style="font-size: 1.1rem; max-width: 600px; color: var(--color-text-muted);">
-                Track your course progress, manage your profile information, and access your verified certificates.
+                Track your program progress, manage your profile information, and access your verified certificates.
             </p>
         </div>
     </div>
@@ -40,7 +40,7 @@
                 <div class="dashboard-card-icon-wrap">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
                 </div>
-                <h3>{% if latest_progress %}Continue Learning{% elif assigned_courses %}Start Learning{% else %}No Courses Assigned Yet{% endif %}</h3>
+                <h3>{% if latest_progress %}Continue Learning{% elif assigned_courses %}Start Learning{% else %}No Programs Assigned Yet{% endif %}</h3>
                 
                 {% if latest_progress %}
                 <p style="font-size: 0.95rem; color: var(--color-text-muted); margin-bottom: 0.75rem;">
@@ -55,7 +55,7 @@
                 </a>
                 {% elif assigned_courses %}
                 <p style="font-size: 0.95rem; color: var(--color-text-muted); margin-bottom: 0.75rem;">
-                    You have access to <strong>{{ assigned_courses|length }} STEM course{% if assigned_courses|length != 1 %}s{% endif %}</strong>{% if current_user.grade %} (Grade {{ current_user.grade }}){% endif %}:
+                    You have access to <strong>{{ assigned_courses|length }} STEM program{% if assigned_courses|length != 1 %}s{% endif %}</strong>{% if current_user.grade %} (Grade {{ current_user.grade }}){% endif %}:
                 </p>
                 <ul style="list-style: none; padding: 0; margin: 0 0 1.25rem 0; font-size: 0.9rem; color: var(--color-text-main);">
                     {% for ac in assigned_courses[:3] %}

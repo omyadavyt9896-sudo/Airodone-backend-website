@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Manage Courses — {{ path.name }} | Admin airodrone{% endblock %}
+{% block title %}Manage Programs — {{ path.name }} | Admin airodrone{% endblock %}
 
 {% block content %}
 <section class="page-hero">
@@ -14,7 +14,7 @@
             <span aria-hidden="true">&rarr;</span>
             <span class="current-breadcrumb">{{ path.name }}</span>
             <span aria-hidden="true">&rarr;</span>
-            <span class="current-breadcrumb">Courses</span>
+            <span class="current-breadcrumb">Programs</span>
         </nav>
 
         <div class="page-hero-inner" style="margin-top: 0.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
@@ -30,15 +30,15 @@
                         {{ 'Active' if path.is_active else 'Inactive' }}
                     </span>
                 </div>
-                <h1 style="margin: 0 0 0.4rem 0;">{{ path.name }} — Courses</h1>
+                <h1 style="margin: 0 0 0.4rem 0;">{{ path.name }} — Programs</h1>
                 <p style="font-size: 1.05rem; max-width: 680px; color: var(--color-text-muted); margin: 0;">
-                    {{ path.description or 'Manage curriculum courses and instructional modules linked directly to this Grade track.' }}
+                    {{ path.description or 'Manage curriculum programs and instructional modules linked directly to this Grade track.' }}
                 </p>
             </div>
             
             <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
                 <a href="{{ url_for('admin_add_course', learning_path_id=path.id) }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
-                    <span>+</span> Add Course to Path
+                    <span>+</span> Add Program to Path
                 </a>
                 <a href="{{ url_for('admin_edit_learning_path', path_id=path.id) }}" class="btn btn-secondary">
                     Edit Path
@@ -76,7 +76,7 @@
                     </h3>
                     <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                         <div style="flex: 1; min-width: 120px;">
-                            <div style="font-size: 0.8rem; color: var(--color-text-muted);">Assigned Courses</div>
+                            <div style="font-size: 0.8rem; color: var(--color-text-muted);">Assigned Programs</div>
                             <div style="font-size: 1.6rem; font-weight: 800; color: var(--color-primary, #0284c7);">
                                 {{ courses|length }}
                             </div>
@@ -97,16 +97,16 @@
             <!-- Assign Existing Course Card -->
             <div class="card" style="padding: 1.35rem; background: var(--color-bg-card, #ffffff);">
                 <h3 style="font-size: 1rem; margin: 0 0 0.4rem 0; color: var(--color-text); font-weight: 700;">
-                    Assign Existing Course
+                    Assign Existing Program
                 </h3>
                 <p style="font-size: 0.825rem; color: var(--color-text-muted); margin: 0 0 0.85rem 0;">
-                    Link an unlinked course or reassign a course from another pathway to this track.
+                    Link an unlinked program or reassign a program from another pathway to this track.
                 </p>
 
                 {% if available_courses %}
                 <form method="post" action="{{ url_for('admin_path_assign_course', path_id=path.id) }}" style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
                     <select name="course_id" class="form-control" style="flex: 1; min-width: 200px; font-size: 0.875rem;" required>
-                        <option value="">-- Choose Course to Link --</option>
+                        <option value="">-- Choose Program to Link --</option>
                         {% for ac in available_courses %}
                         <option value="{{ ac.id }}">
                             {{ ac.title }} (Grade {{ ac.grade }} &bull; {{ ac.cat_name }})
@@ -119,7 +119,7 @@
                 </form>
                 {% else %}
                 <div style="font-size: 0.85rem; color: var(--color-text-muted); font-style: italic; padding: 0.5rem 0;">
-                    All current courses are already assigned to learning paths.
+                    All current programs are already assigned to learning paths.
                 </div>
                 {% endif %}
             </div>
@@ -130,14 +130,14 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
                 <div>
                     <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">
-                        Curriculum Courses in this Track
+                        Curriculum Programs in this Track
                     </h2>
                     <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: var(--color-text-muted);">
-                        These courses form the learning progression for students in {{ path.grade_name }}.
+                        These programs form the learning progression for students in {{ path.grade_name }}.
                     </p>
                 </div>
                 <span class="course-stat-pill" style="font-weight: 700; background: #e0f2fe; color: #0284c7;">
-                    {{ courses|length }} Course{% if courses|length != 1 %}s{% endif %}
+                    {{ courses|length }} Program{% if courses|length != 1 %}s{% endif %}
                 </span>
             </div>
 
@@ -146,7 +146,7 @@
                 <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.925rem;">
                     <thead>
                         <tr style="border-bottom: 2px solid var(--color-border); color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
-                            <th style="padding: 0.75rem 0.5rem;">Course Title</th>
+                            <th style="padding: 0.75rem 0.5rem;">Program Title</th>
                             <th style="padding: 0.75rem 0.5rem;">Level</th>
                             <th style="padding: 0.75rem 0.5rem; text-align: center;">Modules</th>
                             <th style="padding: 0.75rem 0.5rem; text-align: center;">Videos</th>
@@ -230,7 +230,7 @@
 
                                     <!-- Unlink / Remove from Path -->
                                     <form method="post" action="{{ url_for('admin_path_remove_course', path_id=path.id, course_id=c.id) }}" style="display: inline;"
-                                          onsubmit="return confirm('Remove course \'{{ c.title|e }}\' from this learning path? The course will remain in the database as unlinked.');">
+                                          onsubmit="return confirm('Remove program \'{{ c.title|e }}\' from this learning path? The program will remain in the database as unlinked.');">
                                         <button type="submit" class="btn btn-outline btn-sm btn-destructive" style="font-size: 0.78rem; padding: 0.35rem 0.65rem;">
                                             Remove
                                         </button>
@@ -246,13 +246,13 @@
             <!-- Empty Path State -->
             <div style="text-align: center; padding: 3rem 1rem;">
                 <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📚</div>
-                <h3 style="font-size: 1.2rem; color: var(--color-text); margin-bottom: 0.4rem;">No courses in this learning path yet</h3>
+                <h3 style="font-size: 1.2rem; color: var(--color-text); margin-bottom: 0.4rem;">No programs in this learning path yet</h3>
                 <p style="color: var(--color-text-muted); max-width: 480px; margin: 0 auto 1.5rem auto; font-size: 0.9rem;">
-                    Get started by creating a new course for this grade pathway, or assign an existing course from your catalog.
+                    Get started by creating a new program for this grade pathway, or assign an existing program from your catalog.
                 </p>
                 <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
                     <a href="{{ url_for('admin_add_course', learning_path_id=path.id) }}" class="btn btn-primary">
-                        + Add Course to Path
+                        + Add Program to Path
                     </a>
                     <a href="{{ url_for('admin_learning_paths', category_id=category.id) }}" class="btn btn-outline">
                         Back to Learning Paths

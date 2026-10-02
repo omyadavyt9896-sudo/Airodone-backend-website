@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}{{ category.name }} | Learn | Airodrone{% endblock %}
-{% block meta_description %}Explore hands-on STEM courses in {{ category.name }} across Grade 1 to Grade 5 on Airodrone.{% endblock %}
+{% block meta_description %}Explore hands-on STEM learning programs in {{ category.name }} across Grade 1 to Grade 5 on Airodrone.{% endblock %}
 
 {% block content %}
 <!-- Category Hero Section with Breadcrumbs -->
@@ -46,12 +46,12 @@
     </div>
 </section>
 
-<!-- Category Courses & Pathways Grid -->
+<!-- Category Programs & Pathways Grid -->
 <section class="section">
     <div class="container">
         <div class="section-heading">
-            <h2>Courses in {{ category.name }}</h2>
-            <p>Select a course below to view curriculum modules, video lessons, quizzes, and projects.</p>
+            <h2>Learning Programs in {{ category.name }}</h2>
+            <p>Select a program below to view curriculum modules, video lessons, quizzes, and projects.</p>
         </div>
 
         {% if courses %}
@@ -63,7 +63,7 @@
                     {% set c_img = image_url(course.image) if course.image else None %}
                     {% if c_img %}
                     <img src="{{ c_img }}" 
-                         alt="{{ course.title }} course thumbnail" 
+                         alt="{{ course.title }} program thumbnail"
                          class="course-card-img-v2"
                          style="width: 100%; height: 100%; object-fit: cover;"
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -95,12 +95,12 @@
                     </h3>
 
                     <p class="course-card-desc-v2" style="margin-bottom: 1.25rem; color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5; flex: 1;">
-                        {{ course.short_description or course.description or 'Foundational STEM course with hands-on curriculum modules and projects.' }}
+                        {{ course.short_description or course.description or 'Foundational STEM learning program with hands-on curriculum modules and projects.' }}
                     </p>
 
                     <div class="course-card-footer-v2" style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--color-border, #e2e8f0);">
                         <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-primary btn-block">
-                            View Course Details &rarr;
+                            View Program Details &rarr;
                         </a>
                     </div>
                 </div>
@@ -137,7 +137,7 @@
                             Grade {{ p.grade }}
                         </span>
                         <span style="font-size: 0.85rem; color: var(--color-text-muted); font-weight: 600;">
-                            {{ p.course_count }} {{ 'Course' if p.course_count == 1 else 'Courses' }}
+                            {{ p.course_count }} {{ 'Program' if p.course_count == 1 else 'Programs' }}
                         </span>
                     </div>
 
@@ -153,7 +153,7 @@
 
                     <div class="course-card-footer-v2" style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--color-border, #e2e8f0);">
                         <a href="{{ url_for('path_courses', category_slug=category.slug, path_slug=p.slug) }}" class="btn btn-primary btn-block">
-                            Explore Grade {{ p.grade }} Courses &rarr;
+                            Explore Grade {{ p.grade }} Programs &rarr;
                         </a>
                     </div>
                 </div>
@@ -164,7 +164,7 @@
 
         {% if not courses and not paths %}
         <div class="empty-state" style="text-align: center; padding: 4rem 1rem;">
-            <p style="font-size: 1.1rem; color: var(--color-text-muted);">No courses currently active for {{ category.name }}.</p>
+            <p style="font-size: 1.1rem; color: var(--color-text-muted);">No learning programs currently active for {{ category.name }}.</p>
             <a href="{{ url_for('learn') }}" class="btn btn-secondary" style="margin-top: 1rem;">Browse All Categories</a>
         </div>
         {% endif %}

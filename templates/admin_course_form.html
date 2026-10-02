@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ action }} Course | Admin airodrone{% endblock %}
+{% block title %}{{ action }} Program | Admin airodrone{% endblock %}
 
 {% block content %}
 <section class="page-hero">
@@ -8,16 +8,16 @@
         <nav class="course-breadcrumb" aria-label="Breadcrumb">
             <a href="{{ url_for('admin') }}">Admin</a>
             <span aria-hidden="true">&rarr;</span>
-            <a href="{{ url_for('admin_courses') }}">Course Management</a>
+            <a href="{{ url_for('admin_courses') }}">Learning Programs</a>
             <span aria-hidden="true">&rarr;</span>
-            <span class="current-breadcrumb">{{ action }} Course</span>
+            <span class="current-breadcrumb">{{ action }} Program</span>
         </nav>
 
         <div class="page-hero-inner" style="margin-top: 0.75rem;">
             <div>
-                <h1>{{ action }} STEM Course</h1>
+                <h1>{{ action }} Learning Program</h1>
                 <p style="font-size: 1.05rem; max-width: 620px; color: var(--color-text-muted);">
-                    Configure course identity, educational grade pathway, thumbnail artwork, curriculum details, and publishing status.
+                    Configure learning program identity, educational grade pathway, thumbnail artwork, curriculum details, and publishing status.
                 </p>
             </div>
         </div>
@@ -36,16 +36,16 @@
             {% endif %}
 
             <form method="post" enctype="multipart/form-data" class="profile-form" id="courseForm">
-                <!-- SECTION 1: Course Information -->
+                <!-- SECTION 1: Program Information -->
                 <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
                         <span style="font-weight: 700; font-size: 1.15rem; color: var(--color-primary, #2563eb);">1.</span>
-                        <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Course Information</h2>
+                        <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Program Information</h2>
                     </div>
 
                     <div class="form-group" style="margin-bottom: 1.25rem;">
                         <label for="title" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
-                            Course Title <span style="color: var(--color-error);">*</span>
+                            Program Title <span style="color: var(--color-error);">*</span>
                         </label>
                         <input type="text" 
                                id="title" 
@@ -85,7 +85,7 @@
 
                     <div class="form-group" style="margin-top: 1.25rem;">
                         <label for="display_label" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
-                            Course Display Label
+                            Program Display Label
                         </label>
                         <input type="text"
                                id="display_label"
@@ -94,7 +94,7 @@
                                value="{{ request.form.get('display_label', course.display_label if course and course.display_label is not none else '') }}"
                                placeholder="e.g. Grade 3, Beginner, Intermediate, or Advanced">
                         <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-top: 0.35rem; margin-bottom: 0;">
-                            Text shown on the course card, e.g. Grade 3, Beginner, Intermediate, or Advanced.
+                            Text shown on the program card, e.g. Grade 3, Beginner, Intermediate, or Advanced.
                         </p>
                     </div>
                 </div>
@@ -106,7 +106,7 @@
                         <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Category & Learning Pathway</h2>
                     </div>
                     <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">
-                        Classify this course under a Learning Domain and specific Grade Learning Pathway. Selecting a pathway automatically aligns the educational grade.
+                        Classify this program under a Learning Domain and specific Grade Learning Pathway. Selecting a pathway automatically aligns the educational grade.
                     </p>
 
                     {% set current_cat_id = request.form.get('category_id', request.args.get('category_id', course.category_id if course else default_category_id|default('')))|string %}
@@ -150,7 +150,7 @@
                         <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Educational Grade <span style="color: var(--color-error);">*</span></h2>
                     </div>
                     <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">
-                        Select the single educational grade level this course is authored for.
+                        Select the single educational grade level this program is authored for.
                     </p>
 
                     {% set current_grd = request.form.get('grade', course.grade if course else default_grade|default(1))|int %}
@@ -176,15 +176,15 @@
                     </div>
 
                     <div id="gradeConfirmNotice" class="grade-confirmation-box" style="padding: 0.75rem 1rem; background: var(--color-bg-subtle, #f0fdf4); border: 1px solid #bbf7d0; border-radius: var(--radius-md, 8px); font-size: 0.9rem; color: #166534;">
-                        <strong>&check; {{ grades[current_grd].name }} selected:</strong> This course will be available to students in {{ grades[current_grd].classes }}.
+                        <strong>&check; {{ grades[current_grd].name }} selected:</strong> This program will be available to students in {{ grades[current_grd].classes }}.
                     </div>
                 </div>
 
-                <!-- SECTION 4: Course Thumbnail -->
+                <!-- SECTION 4: Program Thumbnail -->
                 <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
                         <span style="font-weight: 700; font-size: 1.15rem; color: var(--color-primary, #2563eb);">4.</span>
-                        <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Course Thumbnail</h2>
+                        <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Program Thumbnail</h2>
                     </div>
 
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; align-items: start;">
@@ -256,7 +256,7 @@
                                 {% if cur_thumb %}
                                     <img id="thumbnailPreviewImg" 
                                          src="{{ cur_thumb }}" 
-                                         alt="Course thumbnail preview" 
+                                         alt="Program thumbnail preview"
                                          style="width: 100%; height: 100%; object-fit: cover; display: block;">
                                     <div id="thumbnailPreviewPlaceholder" style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
                                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
@@ -264,7 +264,7 @@
                                 {% else %}
                                     <img id="thumbnailPreviewImg" 
                                          src="" 
-                                         alt="Course thumbnail preview" 
+                                         alt="Program thumbnail preview"
                                          style="width: 100%; height: 100%; object-fit: cover; display: none;">
                                     <div id="thumbnailPreviewPlaceholder" style="display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
                                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
@@ -278,16 +278,16 @@
                     </div>
                 </div>
 
-                <!-- SECTION 4: Public Course Information -->
+                <!-- SECTION 4: Public Program Information -->
                 <div class="card profile-form-card" style="margin-bottom: 1.75rem; padding: 1.75rem;">
                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.6rem;">
                         <span style="font-weight: 700; font-size: 1.15rem; color: var(--color-primary, #2563eb);">4.</span>
-                        <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Public Course Information</h2>
+                        <h2 style="font-size: 1.2rem; margin: 0; color: var(--color-text);">Public Program Information</h2>
                     </div>
 
                     <div class="form-group" style="margin-bottom: 1.25rem;">
                         <label for="short_description" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
-                            Short Description <span style="color: var(--color-text-muted); font-size: 0.85rem; font-weight: normal;">(Used on catalogue course cards)</span>
+                            Short Description <span style="color: var(--color-text-muted); font-size: 0.85rem; font-weight: normal;">(Used on catalogue program cards)</span>
                         </label>
                         <textarea id="short_description" 
                                   name="short_description" 
@@ -298,14 +298,14 @@
 
                     <div class="form-group" style="margin-bottom: 1.25rem;">
                         <label for="description" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
-                            Full Description <span style="color: var(--color-error);">*</span> <span style="color: var(--color-text-muted); font-size: 0.85rem; font-weight: normal;">(Used on public course detail page)</span>
+                            Full Description <span style="color: var(--color-error);">*</span> <span style="color: var(--color-text-muted); font-size: 0.85rem; font-weight: normal;">(Used on public program detail page)</span>
                         </label>
                         <textarea id="description" 
                                   name="description" 
                                   class="form-control" 
                                   rows="5" 
                                   required 
-                                  placeholder="Detailed course overview, learning approach, and curriculum description...">{{ request.form.get('description', course.description if course else '') }}</textarea>
+                                  placeholder="Detailed program overview, learning approach, and curriculum description...">{{ request.form.get('description', course.description if course else '') }}</textarea>
                     </div>
 
                     <div class="form-group">
@@ -341,7 +341,7 @@
 
                     <div class="form-group" style="margin-bottom: 1.25rem;">
                         <label for="course_benefits" class="form-label" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
-                            Course Benefits <span style="color: var(--color-text-muted); font-size: 0.85rem; font-weight: normal;">(One practical benefit per line)</span>
+                            Program Benefits <span style="color: var(--color-text-muted); font-size: 0.85rem; font-weight: normal;">(One practical benefit per line)</span>
                         </label>
                         <textarea id="course_benefits" 
                                   name="course_benefits" 
@@ -359,7 +359,7 @@
                                name="certificate_description" 
                                class="form-control" 
                                value="{{ request.form.get('certificate_description', course.certificate_description if course else '') }}" 
-                               placeholder="e.g. Earn an official Airodrone Certificate upon 75% verified course completion.">
+                               placeholder="e.g. Earn an official Airodrone Certificate upon 75% verified program completion.">
                     </div>
                 </div>
 
@@ -384,7 +384,7 @@
                 <!-- SECTION 7: Actions -->
                 <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; align-items: center;">
                     <button type="submit" class="btn btn-primary btn-md">
-                        {% if action == 'Create' %}Create Course &rarr;{% else %}Save Changes &rarr;{% endif %}
+                        {% if action == 'Create' %}Create Program &rarr;{% else %}Save Changes &rarr;{% endif %}
                     </button>
                     {% if course %}
                     <a href="{{ url_for('admin_course_detail', course_id=course.id) }}" class="btn btn-outline">&larr; Cancel</a>
@@ -557,7 +557,7 @@ function handleGradeSelect(gradeNum, classesText, gradeName) {
 
     var notice = document.getElementById("gradeConfirmNotice");
     if (notice) {
-        notice.innerHTML = '<strong>&check; ' + gradeName + ' selected:</strong> This course will be available to students in ' + classesText + '.';
+        notice.innerHTML = '<strong>&check; ' + gradeName + ' selected:</strong> This program will be available to students in ' + classesText + '.';
     }
 }
 

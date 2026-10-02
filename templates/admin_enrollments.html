@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Course Enrollments | Admin airodrone{% endblock %}
+{% block title %}Learning Enrollments | Admin airodrone{% endblock %}
 
 {% block content %}
 <section class="page-hero">
@@ -13,9 +13,9 @@
 
         <div class="page-hero-inner" style="margin-top: 0.75rem;">
             <div>
-                <h1>Course Enrollments</h1>
+                <h1>Learning Enrollments</h1>
                 <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
-                    Monitor and manage active student assignments and course access permissions across the platform.
+                    Monitor and manage active student assignments and learning program access permissions across the platform.
                 </p>
             </div>
             <div>
@@ -46,7 +46,7 @@
         <div class="card" style="padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; border-radius: 10px;">
             <form method="get" action="{{ url_for('admin_enrollments') }}" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
                 <div style="flex: 1; min-width: 220px;">
-                    <input type="text" name="search" value="{{ search or '' }}" placeholder="Search by student name, email, or course..." class="form-control" style="font-size: 0.9rem;">
+                    <input type="text" name="search" value="{{ search or '' }}" placeholder="Search by student name, email, or program..." class="form-control" style="font-size: 0.9rem;">
                 </div>
                 <div style="min-width: 160px;">
                     <select name="status" class="form-control" style="font-size: 0.9rem;">
@@ -68,7 +68,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
                 <div>
                     <h2 style="font-size: 1.25rem; margin: 0; color: var(--color-text);">All Student Enrollments</h2>
-                    <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: var(--color-text-muted);">Record of courses assigned to enrolled students.</p>
+                    <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: var(--color-text-muted);">Record of learning programs assigned to enrolled students.</p>
                 </div>
                 <span class="course-stat-pill" style="font-weight: 700; background: #e0f2fe; color: #0284c7;">
                     {{ enrollments|length }} Records
@@ -81,7 +81,7 @@
                     <thead>
                         <tr style="border-bottom: 2px solid var(--color-border); color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
                             <th style="padding: 0.75rem 0.5rem;">Student</th>
-                            <th style="padding: 0.75rem 0.5rem;">Course Title</th>
+                            <th style="padding: 0.75rem 0.5rem;">Program Title</th>
                             <th style="padding: 0.75rem 0.5rem;">Category</th>
                             <th style="padding: 0.75rem 0.5rem;">Assigned Date</th>
                             <th style="padding: 0.75rem 0.5rem;">Status</th>
@@ -124,7 +124,7 @@
                             <td style="padding: 1rem 0.5rem; text-align: right;">
                                 <div style="display: inline-flex; gap: 0.4rem; align-items: center; justify-content: flex-end;">
                                     <a href="{{ url_for('admin_user_courses', user_id=enr.user_id) }}" class="btn btn-secondary btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;">
-                                        Manage Student Courses &rarr;
+                                        Manage Student Programs &rarr;
                                     </a>
                                 </div>
                             </td>
@@ -136,7 +136,7 @@
             {% else %}
             <div class="empty-state" style="text-align: center; padding: 3rem 1rem;">
                 <p style="color: var(--color-text-muted);">No enrollments found{% if search %} matching "{{ search }}"{% endif %}.</p>
-                <a href="{{ url_for('admin_users') }}" class="btn btn-primary" style="margin-top: 1rem;">Go to Users to Assign Courses</a>
+                <a href="{{ url_for('admin_users') }}" class="btn btn-primary" style="margin-top: 1rem;">Go to Users to Assign Programs</a>
             </div>
             {% endif %}
         </div>

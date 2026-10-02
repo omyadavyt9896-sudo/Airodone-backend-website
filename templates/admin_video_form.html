@@ -8,7 +8,7 @@
         <nav class="course-breadcrumb" aria-label="Breadcrumb">
             <a href="{{ url_for('admin') }}">Admin</a>
             <span aria-hidden="true">&rarr;</span>
-            <a href="{{ url_for('admin_courses') }}">Course Management</a>
+            <a href="{{ url_for('admin_courses') }}">Learning Program Management</a>
             <span aria-hidden="true">&rarr;</span>
             <a href="{{ url_for('admin_course_detail', course_id=mod_info.course_id) }}">{{ mod_info.course_title }}</a>
             <span aria-hidden="true">&rarr;</span>
@@ -19,7 +19,7 @@
             <div>
                 <h1>{{ action }} Video Lesson</h1>
                 <p style="font-size: 1.05rem; max-width: 600px; color: var(--color-text-muted);">
-                    Course: <strong>{{ mod_info.course_title }}</strong> &bull; Module: <strong>{{ mod_info.module_title }}</strong>
+                    Program: <strong>{{ mod_info.course_title }}</strong> &bull; Module: <strong>{{ mod_info.module_title }}</strong>
                 </p>
             </div>
         </div>

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}{{ course.title }} — Course Management | Admin airodrone{% endblock %}
-{% block meta_description %}Manage course modules, video lessons, quizzes, and project assignments for {{ course.title }}.{% endblock %}
+{% block title %}{{ course.title }} — Program Management | Admin airodrone{% endblock %}
+{% block meta_description %}Manage program modules, video lessons, quizzes, and project assignments for {{ course.title }}.{% endblock %}
 
 {% block content %}
 <section class="admin-course-hero" style="padding: 2.5rem 0 2rem 0; background: #f8fafc; border-bottom: 1px solid #e2e8f0; position: relative; z-index: 1;">
@@ -10,7 +10,7 @@
         <nav class="course-breadcrumb" aria-label="Breadcrumb" style="font-size: 0.875rem; color: #475569; margin-bottom: 1.25rem;">
             <a href="{{ url_for('admin') }}" style="color: #475569; text-decoration: none; font-weight: 500;">Admin</a>
             <span aria-hidden="true" style="margin: 0 0.4rem; color: #94a3b8;">&rarr;</span>
-            <a href="{{ url_for('admin_courses') }}" style="color: #475569; text-decoration: none; font-weight: 500;">Course Management</a>
+            <a href="{{ url_for('admin_courses') }}" style="color: #475569; text-decoration: none; font-weight: 500;">Learning Programs</a>
             {% if course.category_id %}
             <span aria-hidden="true" style="margin: 0 0.4rem; color: #94a3b8;">&rarr;</span>
             <a href="{{ url_for('admin_courses', category_id=course.category_id) }}" style="color: #475569; text-decoration: none; font-weight: 500;">{{ course.category_name or 'Category' }}</a>
@@ -27,7 +27,7 @@
             <div style="flex: 1; min-width: 280px;">
                 <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
                     <span style="background: #0284c7; color: #ffffff; font-weight: 700; padding: 0.35rem 0.85rem; border-radius: 9999px; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 1px 2px rgba(2,132,199,0.2); display: inline-flex; align-items: center;">
-                        Course
+                        Program
                     </span>
                     <span style="background: #e0f2fe; color: #0369a1; font-weight: 600; padding: 0.35rem 0.85rem; border-radius: 9999px; font-size: 0.8rem; border: 1px solid #bae6fd; display: inline-flex; align-items: center;">
                         {{ course.category_name or 'AI & Artificial Intelligence' }}
@@ -51,7 +51,7 @@
                 </h1>
                 
                 <p style="font-size: 1.05rem; max-width: 680px; color: #334155; margin: 0; line-height: 1.6;">
-                    {{ course.description or 'No course description available.' }}
+                    {{ course.description or 'No program description available.' }}
                 </p>
             </div>
 
@@ -59,13 +59,13 @@
             {% if current_user.is_admin() or current_user.is_sub_admin() %}
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; position: relative; z-index: 3;">
                 <a href="{{ url_for('admin_edit_course', course_id=course.id) }}" class="btn admin-btn-edit" style="font-size: 0.9rem; padding: 0.6rem 1.2rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none;">
-                    ✏️ Edit Course
+                    ✏️ Edit Program
                 </a>
                 <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn admin-btn-preview" target="_blank" style="font-size: 0.9rem; padding: 0.6rem 1.2rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none;">
-                    👁️ Preview Course
+                    👁️ Preview Program
                 </a>
                 {% if course.is_active %}
-                <form action="{{ url_for('admin_deactivate_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('Deactivate Course?\n\n{{ course.title|e }}\n\nThis will remove the course from the student catalogue but preserve its modules, videos, projects, and progress.');" style="display: inline;">
+                <form action="{{ url_for('admin_deactivate_course', course_id=course.id) }}" method="POST" onsubmit="return confirm('Deactivate Program?\n\n{{ course.title|e }}\n\nThis will remove the program from the student catalogue but preserve its modules, videos, projects, and progress.');" style="display: inline;">
                     <button type="submit" class="btn admin-btn-deactivate" style="font-size: 0.9rem; padding: 0.6rem 1.2rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.4rem;">
                         🚫 Deactivate
                     </button>
@@ -100,10 +100,10 @@
         {% endif %}
         {% endwith %}
 
-        <!-- COURSE CONTENT Section Header -->
+        <!-- PROGRAM CONTENT Section Header -->
         <div style="border-bottom: 2px solid var(--color-border, #e2e8f0); padding-bottom: 1rem; margin-bottom: 2rem;">
             <div style="font-size: 0.75rem; font-weight: 800; letter-spacing: 0.1em; color: var(--color-primary, #0284c7); text-transform: uppercase; margin-bottom: 0.25rem;">
-                COURSE CONTENT
+                PROGRAM CONTENT
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -317,12 +317,12 @@
     <div class="airo-modal-container" style="max-width: 480px; padding: 0;">
         <div style="padding: 1.5rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h3 style="font-size: 1.25rem; font-weight: 700; color: #dc2626; margin: 0;">Delete Course?</h3>
+                <h3 style="font-size: 1.25rem; font-weight: 700; color: #dc2626; margin: 0;">Delete Program?</h3>
                 <button type="button" class="airo-modal-close-btn" onclick="closeDeleteCourseModal()" style="position: static;">&times;</button>
             </div>
             <p style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--color-text);">{{ course.title }}</p>
             <p style="font-size: 0.9rem; color: var(--color-text-muted); line-height: 1.5; margin-bottom: 1rem;">
-                <strong>WARNING:</strong> Permanent deletion cannot be undone. If this course contains video lessons or modules, please <strong>DEACTIVATE</strong> the course instead.
+                <strong>WARNING:</strong> Permanent deletion cannot be undone. If this program contains video lessons or modules, please <strong>DEACTIVATE</strong> the program instead.
             </p>
             <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 0.75rem;">
                 Type <strong>{{ course.title }}</strong> to confirm permanent deletion:

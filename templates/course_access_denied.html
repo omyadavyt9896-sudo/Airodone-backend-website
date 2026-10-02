@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Access Denied — Course Access Required | airodrone{% endblock %}
+{% block title %}Access Denied — Program Access Required | airodrone{% endblock %}
 
 {% block content %}
 <section class="page-hero">
     <div class="container page-hero-inner">
         <div>
-            <h1>Course Access Required</h1>
+            <h1>Program Access Required</h1>
             <p>Private Student Platform</p>
         </div>
     </div>
@@ -23,7 +23,7 @@
             </div>
             <h2 style="font-size: 1.35rem; margin-bottom: 0.75rem;">Access Restricted</h2>
             <p style="color: var(--color-text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.75rem;">
-                You don't currently have access to this course. Course enrollment is managed by your Airodrone administrator. Please contact your administrator to request access.
+                You don't currently have access to this learning program. Program enrollment is managed by your Airodrone administrator. Please contact your administrator to request access.
             </p>
             <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">
                 &larr; Back to Dashboard

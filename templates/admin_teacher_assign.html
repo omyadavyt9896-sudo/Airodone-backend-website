@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Teacher Course Assignment — {{ teacher.name }} | airodrone{% endblock %}
+{% block title %}Teacher Program Assignment — {{ teacher.name }} | airodrone{% endblock %}
 
 {% block content %}
 <section class="page-hero">
     <div class="container page-hero-inner">
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
             <div>
-                <h1>Teacher Course Assignment</h1>
-                <p style="color: var(--color-text-muted);">Assign educational courses to <strong>{{ teacher.name }}</strong> ({{ teacher.email }}) for monitoring and evaluation access.</p>
+                <h1>Teacher Program Assignment</h1>
+                <p style="color: var(--color-text-muted);">Assign educational programs to <strong>{{ teacher.name }}</strong> ({{ teacher.email }}) for monitoring and evaluation access.</p>
             </div>
             <div>
                 <a href="{{ url_for('admin_users', tab='teachers') }}" class="btn btn-outline btn-md">&larr; Back to Teachers List</a>
@@ -29,33 +29,33 @@
         {% endif %}
         {% endwith %}
 
-        <!-- Assign New Course Card -->
+        <!-- Assign New Program Card -->
         <div class="card" style="padding: 1.5rem; margin-bottom: 2rem; border-radius: 12px; background: var(--card-bg, #ffffff);">
-            <h3 style="margin-bottom: 1rem; font-size: 1.2rem;">Assign New Course</h3>
+            <h3 style="margin-bottom: 1rem; font-size: 1.2rem;">Assign New Program</h3>
             {% if unassigned_courses and unassigned_courses|length > 0 %}
             <form method="post" action="{{ url_for('admin_teacher_assign_courses', teacher_id=teacher.id) }}" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                 <select name="course_id" class="form-input" style="flex: 1; min-width: 250px;" required>
-                    <option value="">-- Select Course to Assign --</option>
+                    <option value="">-- Select Program to Assign --</option>
                     {% for c in unassigned_courses %}
                     <option value="{{ c.id }}">{{ c.title }} (Grade {{ c.grade }})</option>
                     {% endfor %}
                 </select>
-                <button type="submit" class="btn btn-primary">Assign Course</button>
+                <button type="submit" class="btn btn-primary">Assign Program</button>
             </form>
             {% else %}
-            <p style="color: var(--color-text-muted); font-size: 0.95rem;">All active courses are currently assigned to this teacher.</p>
+            <p style="color: var(--color-text-muted); font-size: 0.95rem;">All active programs are currently assigned to this teacher.</p>
             {% endif %}
         </div>
 
-        <!-- Currently Assigned Courses -->
-        <h3 style="margin-bottom: 1rem; font-size: 1.25rem;">Currently Assigned Courses ({{ assigned_courses|length }})</h3>
+        <!-- Currently Assigned Programs -->
+        <h3 style="margin-bottom: 1rem; font-size: 1.25rem;">Currently Assigned Programs ({{ assigned_courses|length }})</h3>
         {% if assigned_courses and assigned_courses|length > 0 %}
         <div class="table-wrapper">
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Course ID</th>
-                        <th>Course Title</th>
+                        <th>Program ID</th>
+                        <th>Program Title</th>
                         <th>Educational Grade</th>
                         <th>Assigned On</th>
                         <th>Actions</th>
@@ -69,7 +69,7 @@
                         <td>Grade {{ c.grade }}</td>
                         <td>{{ c.assigned_at }}</td>
                         <td>
-                            <form method="post" action="{{ url_for('admin_teacher_remove_course', teacher_id=teacher.id, course_id=c.id) }}" onsubmit="return confirm('Remove course assignment for {{ c.title }}?');">
+                            <form method="post" action="{{ url_for('admin_teacher_remove_course', teacher_id=teacher.id, course_id=c.id) }}" onsubmit="return confirm('Remove program assignment for {{ c.title }}?');">
                                 <button type="submit" class="btn btn-outline btn-sm" style="color: var(--color-error, #ef4444); border-color: var(--color-error, #ef4444);">
                                     Remove Access
                                 </button>
@@ -81,7 +81,7 @@
             </table>
         </div>
         {% else %}
-        <p style="color: var(--color-text-muted);">No courses assigned to this teacher yet.</p>
+        <p style="color: var(--color-text-muted);">No programs assigned to this teacher yet.</p>
         {% endif %}
     </div>
 </section>

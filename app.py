@@ -4147,7 +4147,7 @@ def generate_course_certificate(course_slug):
     if not course:
         cur.close()
         conn.close()
-        flash("Course not found.", "error")
+        flash("Learning program not found.", "error")
         return redirect(url_for("courses"))
 
     # Calculate verified course completion percentage server-side
@@ -4156,7 +4156,7 @@ def generate_course_certificate(course_slug):
     if completion_pct < 75.0:
         cur.close()
         conn.close()
-        flash(f"Course progress is {completion_pct:.1f}%. Complete at least 75% of this course to earn your certificate.", "error")
+        flash(f"Program progress is {completion_pct:.1f}%. Complete at least 75% of this learning program to earn your certificate.", "error")
         return redirect(url_for("course_detail", slug=course_slug))
 
     # Check if certificate already exists for user and course
@@ -4169,7 +4169,7 @@ def generate_course_certificate(course_slug):
     if existing_cert:
         cur.close()
         conn.close()
-        flash("Certificate already generated for this course.", "info")
+        flash("Certificate already generated for this learning program.", "info")
         return redirect(url_for("view_certificate", certificate_id=existing_cert["certificate_id"]))
 
     # Generate new unique certificate ID
@@ -4525,114 +4525,136 @@ def admin():
     conn = get_db_connection()
     cur = get_db_cursor(conn)
 
-    # Real-time Dashboard Database Metrics
-    cur.execute("SELECT COUNT(*) AS count FROM users")
-    total_users = cur.fetchone()["count"]
+    # Real-time Dashboard Database Metrics (Defensive against missing optional tables or schema variations)
+    def safe_count(query, params=None):
+        try:
+            if params:
+                cur.execute(query, params)
+            else:
+                cur.execute(query)
+            row = cur.fetchone()
+            return row["count"] if row else 0
+        except Exception as err:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            app.logger.warning(f"Admin metric count query failed ({query}): {err}")
+            return 0
 
-    cur.execute("SELECT COUNT(*) AS count FROM users WHERE role IN ('user', 'student') AND is_active = 1")
-    total_students = cur.fetchone()["count"]
-
-    cur.execute("SELECT COUNT(*) AS count FROM users WHERE role = 'teacher' AND is_active = 1")
-    total_teachers = cur.fetchone()["count"]
-
-    cur.execute("SELECT COUNT(*) AS count FROM users WHERE role = 'sub_admin' AND is_active = 1")
-    total_subadmins = cur.fetchone()["count"]
-
-    cur.execute("SELECT COUNT(*) AS count FROM users WHERE role = 'admin' AND is_active = 1")
-    total_admins = cur.fetchone()["count"]
-
-    cur.execute("SELECT COUNT(*) AS count FROM courses")
-    total_courses = cur.fetchone()["count"]
-
-    cur.execute("SELECT COUNT(*) AS count FROM courses WHERE is_active = 1")
-    published_courses = cur.fetchone()["count"]
-
+    total_users = safe_count("SELECT COUNT(*) AS count FROM users")
+    total_students = safe_count("SELECT COUNT(*) AS count FROM users WHERE role IN ('user', 'student') AND is_active = 1")
+    total_teachers = safe_count("SELECT COUNT(*) AS count FROM users WHERE role = 'teacher' AND is_active = 1")
+    total_subadmins = safe_count("SELECT COUNT(*) AS count FROM users WHERE role = 'sub_admin' AND is_active = 1")
+    total_admins = safe_count("SELECT COUNT(*) AS count FROM users WHERE role = 'admin' AND is_active = 1")
+    total_courses = safe_count("SELECT COUNT(*) AS count FROM courses")
+    published_courses = safe_count("SELECT COUNT(*) AS count FROM courses WHERE is_active = 1")
     draft_courses = max(0, total_courses - published_courses)
-
-    cur.execute("SELECT COUNT(*) AS count FROM learning_categories WHERE is_active = 1")
-    total_categories = cur.fetchone()["count"]
-
-    cur.execute("SELECT COUNT(*) AS count FROM learning_paths WHERE is_active = 1")
-    total_learning_paths = cur.fetchone()["count"]
-
-    cur.execute("SELECT COUNT(*) AS count FROM course_enrollments WHERE is_active = 1")
-    total_enrollments = cur.fetchone()["count"]
-
-    cur.execute("SELECT COUNT(*) AS count FROM certificates")
-    total_certificates = cur.fetchone()["count"]
-
-    cur.execute("SELECT COUNT(*) AS count FROM products WHERE is_active = 1")
-    total_products = cur.fetchone()["count"]
-
-    cur.execute("SELECT COUNT(*) AS count FROM orders")
-    total_orders = cur.fetchone()["count"]
-
-    cur.execute("SELECT COUNT(*) AS count FROM solutions")
-    total_solutions = cur.fetchone()["count"]
+    total_categories = safe_count("SELECT COUNT(*) AS count FROM learning_categories WHERE is_active = 1")
+    total_learning_paths = safe_count("SELECT COUNT(*) AS count FROM learning_paths WHERE is_active = 1")
+    total_enrollments = safe_count("SELECT COUNT(*) AS count FROM course_enrollments WHERE is_active = 1")
+    total_certificates = safe_count("SELECT COUNT(*) AS count FROM certificates")
+    total_products = safe_count("SELECT COUNT(*) AS count FROM products WHERE is_active = 1")
+    total_orders = safe_count("SELECT COUNT(*) AS count FROM orders")
+    total_solutions = safe_count("SELECT COUNT(*) AS count FROM solutions")
 
     # Pending project evaluations count
-    if current_user.is_teacher():
-        assigned_course_ids = get_teacher_assigned_course_ids(current_user.id)
-        if assigned_course_ids:
-            placeholders = ",".join(["%s"] * len(assigned_course_ids))
-            cur.execute(
-                f"""
-                SELECT COUNT(*) AS count
-                FROM project_submissions ps
-                JOIN projects p ON p.id = ps.project_id
-                JOIN modules m ON m.id = p.module_id
-                WHERE m.course_id IN ({placeholders}) AND ps.status != 'evaluated'
-                """,
-                tuple(assigned_course_ids)
-            )
-            pending_evaluations = cur.fetchone()["count"]
+    pending_evaluations = 0
+    try:
+        if current_user.is_teacher():
+            assigned_course_ids = get_teacher_assigned_course_ids(current_user.id)
+            if assigned_course_ids:
+                placeholders = ",".join(["%s"] * len(assigned_course_ids))
+                cur.execute(
+                    f"""
+                    SELECT COUNT(*) AS count
+                    FROM project_submissions ps
+                    JOIN projects p ON p.id = ps.project_id
+                    JOIN modules m ON m.id = p.module_id
+                    WHERE m.course_id IN ({placeholders}) AND ps.status != 'evaluated'
+                    """,
+                    tuple(assigned_course_ids)
+                )
+                row = cur.fetchone()
+                pending_evaluations = row["count"] if row else 0
         else:
-            pending_evaluations = 0
-    else:
-        cur.execute("SELECT COUNT(*) AS count FROM project_submissions WHERE status != 'evaluated'")
-        pending_evaluations = cur.fetchone()["count"]
+            cur.execute("SELECT COUNT(*) AS count FROM project_submissions WHERE status != 'evaluated'")
+            row = cur.fetchone()
+            pending_evaluations = row["count"] if row else 0
+    except Exception as err:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        app.logger.warning(f"Admin pending evaluations count failed: {err}")
+        pending_evaluations = 0
 
     # Recent submissions / contacts
-    cur.execute("SELECT id, name, email, phone, subject, message, created_at FROM contacts ORDER BY created_at DESC LIMIT 10")
-    submissions = cur.fetchall()
+    submissions = []
+    try:
+        cur.execute("SELECT id, name, email, phone, subject, message, created_at FROM contacts ORDER BY created_at DESC LIMIT 10")
+        submissions = cur.fetchall() or []
+    except Exception as err:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        app.logger.warning(f"Admin contacts fetch failed: {err}")
+        submissions = []
 
     # Audit logs preview for Admin
     audit_logs = []
     if current_user.is_admin():
-        cur.execute(
-            """
-            SELECT a.id, a.user_id, a.action, a.target_type, a.target_id, a.details, a.timestamp, u.name as user_name
-            FROM audit_logs a
-            LEFT JOIN users u ON u.id = a.user_id
-            ORDER BY a.timestamp DESC, a.id DESC
-            LIMIT 10
-            """
-        )
-        audit_logs = cur.fetchall()
+        try:
+            cur.execute(
+                """
+                SELECT a.id, a.user_id, a.action, a.target_type, a.target_id, a.details, a.timestamp, u.name as user_name
+                FROM audit_logs a
+                LEFT JOIN users u ON u.id = a.user_id
+                ORDER BY a.timestamp DESC, a.id DESC
+                LIMIT 10
+                """
+            )
+            audit_logs = cur.fetchall() or []
+        except Exception as err:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            app.logger.warning(f"Admin audit logs fetch failed: {err}")
+            audit_logs = []
 
     # Assigned courses for teacher
     teacher_courses = []
     if current_user.is_teacher():
         assigned_course_ids = get_teacher_assigned_course_ids(current_user.id)
         if assigned_course_ids:
-            placeholders = ",".join(["%s"] * len(assigned_course_ids))
-            cur.execute(
-                f"""
-                SELECT c.id, c.title, c.slug, c.level, c.grade, c.short_description, c.image, c.category_id,
-                       lc.name AS category_name,
-                       COUNT(DISTINCT m.id) AS module_count,
-                       COUNT(DISTINCT v.id) AS video_count
-                FROM courses c
-                LEFT JOIN learning_categories lc ON lc.id = c.category_id
-                LEFT JOIN modules m ON m.course_id = c.id AND m.is_active = 1
-                LEFT JOIN course_videos v ON v.module_id = m.id AND v.is_active = 1
-                WHERE c.id IN ({placeholders}) AND c.is_active = 1
-                GROUP BY c.id, c.title, c.slug, c.level, c.grade, c.short_description, c.image, c.category_id, lc.name
-                ORDER BY c.grade ASC, c.title ASC
-                """,
-                tuple(assigned_course_ids)
-            )
-            teacher_courses = cur.fetchall()
+            try:
+                placeholders = ",".join(["%s"] * len(assigned_course_ids))
+                cur.execute(
+                    f"""
+                    SELECT c.id, c.title, c.slug, c.level, c.grade, c.short_description, c.image, c.category_id,
+                           lc.name AS category_name,
+                           COUNT(DISTINCT m.id) AS module_count,
+                           COUNT(DISTINCT v.id) AS video_count
+                    FROM courses c
+                    LEFT JOIN learning_categories lc ON lc.id = c.category_id
+                    LEFT JOIN modules m ON m.course_id = c.id AND m.is_active = 1
+                    LEFT JOIN course_videos v ON v.module_id = m.id AND v.is_active = 1
+                    WHERE c.id IN ({placeholders}) AND c.is_active = 1
+                    GROUP BY c.id, c.title, c.slug, c.level, c.grade, c.short_description, c.image, c.category_id, lc.name
+                    ORDER BY c.grade ASC, c.title ASC
+                    """,
+                    tuple(assigned_course_ids)
+                )
+                teacher_courses = cur.fetchall() or []
+            except Exception as err:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+                app.logger.warning(f"Admin teacher courses fetch failed: {err}")
+                teacher_courses = []
 
     cur.close()
     conn.close()
@@ -4985,10 +5007,10 @@ def admin_teacher_assign_courses(teacher_id):
                 )
                 conn.commit()
                 log_audit(current_user.id, "assign_teacher_course", "user", teacher_id, f"Assigned course ID {course_id}")
-                flash("Course assigned successfully to teacher.", "success")
+                flash("Learning program assigned successfully to teacher.", "success")
             except Exception:
                 conn.rollback()
-                flash("Course is already assigned to this teacher.", "info")
+                flash("Learning program is already assigned to this teacher.", "info")
 
     cur.execute(
         """
@@ -5029,7 +5051,7 @@ def admin_teacher_remove_course(teacher_id, course_id):
     cur.close()
     conn.close()
     log_audit(current_user.id, "remove_teacher_course", "user", teacher_id, f"Removed course ID {course_id}")
-    flash("Course assignment removed.", "success")
+    flash("Learning program assignment removed.", "success")
     return redirect(url_for("admin_teacher_assign_courses", teacher_id=teacher_id))
 
 
@@ -5369,7 +5391,7 @@ def admin_student_progress(user_id):
 def admin_user_assign_course(user_id):
     course_id = request.form.get("course_id", type=int)
     if not course_id:
-        flash("Invalid course selection.", "error")
+        flash("Invalid program selection.", "error")
         return redirect(url_for("admin_user_courses", user_id=user_id))
 
     conn = get_db_connection()
@@ -5383,14 +5405,14 @@ def admin_user_assign_course(user_id):
     if not student or not course:
         cur.close()
         conn.close()
-        flash("Student or course not found.", "error")
+        flash("Student or learning program not found.", "error")
         return redirect(url_for("admin_user_courses", user_id=user_id))
 
     student_grade = get_grade_from_class(student.get("student_class"))
     if not student_grade or course.get("grade") != student_grade:
         cur.close()
         conn.close()
-        flash(f"Course cannot be assigned because it belongs to Grade {course.get('grade')} while this student belongs to Grade {student_grade or 'Unassigned'}.", "error")
+        flash(f"Learning program cannot be assigned because it belongs to Grade {course.get('grade')} while this student belongs to Grade {student_grade or 'Unassigned'}.", "error")
         return redirect(url_for("admin_user_courses", user_id=user_id))
 
     now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
@@ -5423,7 +5445,7 @@ def admin_user_assign_course(user_id):
     cur.close()
     conn.close()
 
-    flash(f"Course access to '{course['title']}' granted for {student['name']}.", "success")
+    flash(f"Learning program access to '{course['title']}' granted for {student['name']}.", "success")
     return redirect(url_for("admin_user_courses", user_id=user_id))
 
 
@@ -5441,7 +5463,7 @@ def admin_user_remove_course(user_id, course_id):
     if not student or not course:
         cur.close()
         conn.close()
-        flash("Student or course not found.", "error")
+        flash("Student or learning program not found.", "error")
         return redirect(url_for("admin_user_courses", user_id=user_id))
 
     now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
@@ -5473,7 +5495,7 @@ def admin_user_remove_course(user_id, course_id):
     cur.close()
     conn.close()
 
-    flash(f"Course access to '{course['title']}' removed for {student['name']}. Student progress preserved.", "info")
+    flash(f"Learning program access to '{course['title']}' removed for {student['name']}. Student progress preserved.", "info")
     return redirect(url_for("admin_user_courses", user_id=user_id))
 
 
@@ -5622,7 +5644,7 @@ def admin_course_detail(course_id):
     if not course:
         cur.close()
         conn.close()
-        flash("Course not found.", "error")
+        flash("Learning program not found.", "error")
         return redirect(url_for("admin_courses"))
 
     cur.execute(
@@ -5861,7 +5883,7 @@ def admin_learning_catalogue_settings():
                     cur.close()
                     conn.close()
 
-                    flash("Courses page hero settings updated successfully!", "success")
+                    flash("Learn page hero settings updated successfully!", "success")
                     return redirect(url_for("admin_learning_catalogue_settings"))
                 except Exception as e:
                     if conn:
@@ -5880,6 +5902,7 @@ def admin_learning_catalogue_settings():
 
 
 @app.route("/admin/learning-categories")
+@app.route("/admin/categories")
 @admin_or_subadmin_required
 def admin_learning_categories():
     categories = get_learning_categories_with_counts(active_only=False)
@@ -6129,7 +6152,7 @@ def admin_delete_learning_category(category_id):
     if course_count > 0 or path_count > 0:
         cur.close()
         conn.close()
-        flash("This category cannot be deleted because it contains courses or learning paths. Remove or reassign the dependent content first.", "warning")
+        flash("This category cannot be deleted because it contains learning programs or paths. Remove or reassign the dependent content first.", "warning")
         return redirect(url_for("admin_learning_categories"))
 
     # Category is empty and safe to delete
@@ -6162,6 +6185,7 @@ def admin_category_courses(category_id):
 
 
 @app.route("/admin/learning-paths")
+@app.route("/admin/paths")
 @admin_or_subadmin_required
 def admin_learning_paths():
     conn = get_db_connection()
@@ -6318,7 +6342,7 @@ def admin_path_assign_course(path_id):
     if not course_id:
         cur.close()
         conn.close()
-        flash("Please select a course to assign.", "error")
+        flash("Please select a learning program to assign.", "error")
         return redirect(url_for("admin_path_courses", path_id=path_id))
 
     now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
@@ -6333,7 +6357,7 @@ def admin_path_assign_course(path_id):
     conn.commit()
     cur.close()
     conn.close()
-    flash("Course assigned to this learning path successfully!", "success")
+    flash("Learning program assigned to this path successfully!", "success")
     return redirect(url_for("admin_path_courses", path_id=path_id))
 
 
@@ -6354,7 +6378,7 @@ def admin_path_remove_course(path_id, course_id):
     conn.commit()
     cur.close()
     conn.close()
-    flash("Course unlinked from this learning path successfully.", "success")
+    flash("Learning program unlinked from this path successfully.", "success")
     return redirect(url_for("admin_path_courses", path_id=path_id))
 
 
@@ -6748,7 +6772,7 @@ def admin_delete_learning_path(path_id):
         conn.commit()
         cur.close()
         conn.close()
-        flash(f"Learning path '{path['name']}' has {course_cnt} associated course(s). It has been deactivated to preserve course relationships.", "info")
+        flash(f"Learning path '{path['name']}' has {course_cnt} associated program(s). It has been deactivated to preserve program relationships.", "info")
         return redirect(url_for("admin_learning_paths", category_id=path["category_id"]))
 
     # If completely unused, allow permanent deletion
@@ -6862,9 +6886,9 @@ def admin_add_course():
 
         if not error:
             if not title:
-                error = "Course title is required."
+                error = "Program title is required."
             elif not description:
-                error = "Course description is required."
+                error = "Program description is required."
             else:
                 if not short_description:
                     short_description = description[:160]
@@ -6874,7 +6898,7 @@ def admin_add_course():
 
                 cur.execute("SELECT id FROM courses WHERE slug = %s", (slug,))
                 if cur.fetchone():
-                    error = f"A course with slug '{slug}' already exists."
+                    error = f"A program with slug '{slug}' already exists."
                     if uploaded_storage_path:
                         storage.delete_course_image(uploaded_storage_path)
                 else:
@@ -6915,7 +6939,7 @@ def admin_add_course():
                         cur.close()
                         conn.close()
 
-                        flash(f"Course '{title}' created successfully!", "success")
+                        flash(f"Learning program '{title}' created successfully!", "success")
                         return redirect(url_for("admin_course_detail", course_id=new_course_id))
                     except Exception as e:
                         if conn:
@@ -6971,7 +6995,7 @@ def admin_edit_course(course_id):
     if not course:
         cur.close()
         conn.close()
-        flash("Course not found.", "error")
+        flash("Learning program not found.", "error")
         return redirect(url_for("admin_courses"))
 
     cur.execute("SELECT id, name, slug FROM learning_categories WHERE is_active = 1 ORDER BY display_order ASC, id ASC")
@@ -7052,9 +7076,9 @@ def admin_edit_course(course_id):
 
         if not error:
             if not title:
-                error = "Course title is required."
+                error = "Program title is required."
             elif not description:
-                error = "Course description is required."
+                error = "Program description is required."
             else:
                 if not short_description:
                     short_description = description[:160]
@@ -7064,7 +7088,7 @@ def admin_edit_course(course_id):
 
                 cur.execute("SELECT id FROM courses WHERE slug = %s AND id != %s", (slug, course_id))
                 if cur.fetchone():
-                    error = f"Another course with slug '{slug}' already exists."
+                    error = f"Another program with slug '{slug}' already exists."
                     if uploaded_new_storage_path:
                         storage.delete_course_image(uploaded_new_storage_path)
                 else:
@@ -7093,7 +7117,7 @@ def admin_edit_course(course_id):
                         cur.close()
                         conn.close()
 
-                        flash(f"Course '{title}' updated successfully!", "success")
+                        flash(f"Learning program '{title}' updated successfully!", "success")
                         return redirect(url_for("admin_course_detail", course_id=course_id))
                     except Exception as e:
                         if conn:
@@ -7132,7 +7156,7 @@ def admin_toggle_course_active(course_id):
     if not course:
         cur.close()
         conn.close()
-        flash("Course not found.", "error")
+        flash("Learning program not found.", "error")
         return redirect(url_for("admin_courses"))
 
     new_status = 0 if course["is_active"] else 1
@@ -7142,7 +7166,7 @@ def admin_toggle_course_active(course_id):
     cur.close()
     conn.close()
 
-    flash(f"Course '{course['title']}' is now {'active' if new_status else 'deactivated'}.", "success")
+    flash(f"Learning program '{course['title']}' is now {'active' if new_status else 'deactivated'}.", "success")
     return redirect(url_for("admin_course_detail", course_id=course_id))
 
 
@@ -7156,7 +7180,7 @@ def admin_deactivate_course(course_id):
     if not course:
         cur.close()
         conn.close()
-        flash("Course not found.", "error")
+        flash("Learning program not found.", "error")
         return redirect(url_for("admin_courses"))
 
     now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
@@ -7165,7 +7189,7 @@ def admin_deactivate_course(course_id):
     cur.close()
     conn.close()
 
-    flash(f"Course '{course['title']}' has been deactivated. It is hidden from the student catalogue but its modules and data remain intact.", "success")
+    flash(f"Learning program '{course['title']}' has been deactivated. It is hidden from the student catalogue but its modules and data remain intact.", "success")
     return redirect(url_for("admin_course_detail", course_id=course_id))
 
 
@@ -7179,7 +7203,7 @@ def admin_reactivate_course(course_id):
     if not course:
         cur.close()
         conn.close()
-        flash("Course not found.", "error")
+        flash("Learning program not found.", "error")
         return redirect(url_for("admin_courses"))
 
     now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
@@ -7188,7 +7212,7 @@ def admin_reactivate_course(course_id):
     cur.close()
     conn.close()
 
-    flash(f"Course '{course['title']}' has been reactivated and is now visible in the student catalogue.", "success")
+    flash(f"Learning program '{course['title']}' has been reactivated and is now visible in the student catalogue.", "success")
     return redirect(url_for("admin_course_detail", course_id=course_id))
 
 
@@ -7202,7 +7226,7 @@ def admin_delete_course(course_id):
     if not course:
         cur.close()
         conn.close()
-        flash("Course not found.", "error")
+        flash("Learning program not found.", "error")
         return redirect(url_for("admin_courses"))
 
     action = request.form.get("action", "deactivate")
@@ -7233,7 +7257,7 @@ def admin_delete_course(course_id):
                 cur.close()
                 conn.close()
                 flash(
-                    f"Cannot permanently delete course '{course['title']}' because it contains {mod_cnt} module(s), {vid_cnt} video(s), or student enrollments. Please DEACTIVATE the course instead, or remove its contents first.",
+                    f"Cannot permanently delete learning program '{course['title']}' because it contains {mod_cnt} module(s), {vid_cnt} video(s), or student enrollments. Please DEACTIVATE the program instead, or remove its contents first.",
                     "error"
                 )
                 return redirect(url_for("admin_course_detail", course_id=course_id))
@@ -7241,7 +7265,7 @@ def admin_delete_course(course_id):
         if confirm_title and confirm_title != course["title"] and confirm_title != "DELETE":
             cur.close()
             conn.close()
-            flash(f"Course title confirmation mismatch. Expected '{course['title']}'. Permanent deletion cancelled.", "error")
+            flash(f"Program title confirmation mismatch. Expected '{course['title']}'. Permanent deletion cancelled.", "error")
             return redirect(url_for("admin_course_detail", course_id=course_id))
 
         # Safe permanent deletion of course
@@ -7260,7 +7284,7 @@ def admin_delete_course(course_id):
         except Exception:
             pass
 
-        flash(f"Course '{course['title']}' was permanently deleted.", "success")
+        flash(f"Learning program '{course['title']}' was permanently deleted.", "success")
         return redirect(url_for("admin_courses"))
 
     # Default action: Deactivate / Archive
@@ -7270,7 +7294,7 @@ def admin_delete_course(course_id):
     cur.close()
     conn.close()
 
-    flash(f"Course '{course['title']}' has been deactivated.", "success")
+    flash(f"Learning program '{course['title']}' has been deactivated.", "success")
     return redirect(url_for("admin_courses"))
 
 
@@ -7289,7 +7313,7 @@ def admin_add_module(course_id):
     if not course:
         cur.close()
         conn.close()
-        flash("Course not found.", "error")
+        flash("Learning program not found.", "error")
         return redirect(url_for("admin_courses"))
 
     error = None
@@ -7727,7 +7751,7 @@ def student_quiz_overview(course_slug, module_id):
     if not course:
         cur.close()
         conn.close()
-        flash("Course not found.", "error")
+        flash("Learning program not found.", "error")
         return redirect(url_for("courses"))
 
     if not can_access_course(current_user.id, course["id"]):
@@ -7805,7 +7829,7 @@ def student_quiz_start(course_slug, module_id):
     if not course:
         cur.close()
         conn.close()
-        flash("Course not found.", "error")
+        flash("Learning program not found.", "error")
         return redirect(url_for("courses"))
 
     if not can_access_course(current_user.id, course["id"]):
@@ -8499,7 +8523,7 @@ def student_project_view(course_slug, module_id):
     if not course:
         cur.close()
         conn.close()
-        flash("Course not found.", "error")
+        flash("Learning program not found.", "error")
         return redirect(url_for("courses"))
 
     if not can_access_course(current_user.id, course["id"]):

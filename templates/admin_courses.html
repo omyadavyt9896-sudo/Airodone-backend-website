@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Course Management | Admin airodrone{% endblock %}
+{% block title %}Learning Program Management | Admin airodrone{% endblock %}
 
-{% block meta_description %}Manage STEM courses, learning categories, modules, video lessons, quizzes, and project contents on Airodrone admin panel.{% endblock %}
+{% block meta_description %}Manage STEM learning programs, learning categories, modules, video lessons, quizzes, and project contents on Airodrone admin panel.{% endblock %}
 
 {% block content %}
 <section class="page-hero">
@@ -10,19 +10,19 @@
         <nav class="course-breadcrumb" aria-label="Breadcrumb">
             <a href="{{ url_for('admin') }}">Admin</a>
             <span aria-hidden="true">&rarr;</span>
-            <span class="current-breadcrumb">Course Management</span>
+            <span class="current-breadcrumb">Learning Programs</span>
         </nav>
 
         <div class="page-hero-inner" style="margin-top: 0.75rem;">
             <div>
-                <h1>Course Management</h1>
+                <h1>Learning Program Management</h1>
                 <p style="font-size: 1.05rem; max-width: 680px; color: var(--color-text-muted);">
-                    Create, organize, and monitor STEM courses, curriculum modules, video lessons, and student enrollments.
+                    Create, organize, and monitor STEM learning programs, curriculum modules, video lessons, and student enrollments.
                 </p>
             </div>
             <div>
                 <a href="{{ url_for('admin_add_course') }}{% if category_id %}?category_id={{ category_id }}{% endif %}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
-                    <span>+</span> Add New Course
+                    <span>+</span> Add New Program
                 </a>
             </div>
         </div>
@@ -48,7 +48,7 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.75rem;">
             <div class="card" style="padding: 1.15rem 1.25rem; border-radius: 8px; border-left: 4px solid #0284c7; display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">Total Courses</div>
+                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">Total Programs</div>
                     <div style="font-size: 1.75rem; font-weight: 800; color: var(--color-text);">{{ total_courses_count }}</div>
                 </div>
                 <div style="background: #e0f2fe; color: #0284c7; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
@@ -92,7 +92,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
             <h2 style="margin: 0; font-size: 1.35rem; color: var(--color-text);">Browse by Category Domain</h2>
             <div style="display: flex; gap: 0.5rem;">
-                <a href="{{ url_for('admin_courses') }}" class="btn btn-primary btn-sm">&larr; View All Courses Table</a>
+                <a href="{{ url_for('admin_courses') }}" class="btn btn-primary btn-sm">&larr; View All Programs Table</a>
             </div>
         </div>
 
@@ -117,7 +117,7 @@
                     <div class="course-card-body-v2" style="padding: 1.5rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                             <span class="course-stat-pill" style="font-weight: 700; background: #e0f2fe; color: #0284c7;">
-                                {{ cat.course_count }} Courses
+                                {{ cat.course_count }} Programs
                             </span>
                             <span class="badge-status {{ 'badge-active' if cat.is_active else 'badge-inactive' }}" style="font-size: 0.75rem;">
                                 {{ 'Active' if cat.is_active else 'Inactive' }}
@@ -138,7 +138,7 @@
 
                 <div style="padding: 0 1.5rem 1.5rem 1.5rem;">
                     <a href="{{ url_for('admin_courses') }}?category_id={{ cat.id }}" class="btn btn-primary btn-block" style="text-align: center;">
-                        View Courses ({{ cat.course_count }}) &rarr;
+                        View Programs ({{ cat.course_count }}) &rarr;
                     </a>
                 </div>
             </article>
@@ -150,7 +150,7 @@
         <div class="card" style="padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; border-radius: 10px;">
             <form method="get" action="{{ url_for('admin_courses') }}" style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
                 <div style="flex: 2; min-width: 220px;">
-                    <input type="text" name="search" value="{{ search or '' }}" placeholder="Search course by name, slug, keywords..." class="form-control" style="font-size: 0.9rem;">
+                    <input type="text" name="search" value="{{ search or '' }}" placeholder="Search program by name, slug, keywords..." class="form-control" style="font-size: 0.9rem;">
                 </div>
 
                 <div style="flex: 1; min-width: 170px;">
@@ -195,15 +195,15 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
                 <div>
                     <h2 style="font-size: 1.25rem; margin: 0; color: var(--color-text);">
-                        {% if selected_category %}Courses in {{ selected_category.name }}{% elif selected_grade %}Grade {{ selected_grade }} Courses{% else %}All STEM Courses{% endif %}
+                        {% if selected_category %}Programs in {{ selected_category.name }}{% elif selected_grade %}Grade {{ selected_grade }} Programs{% else %}All STEM Learning Programs{% endif %}
                     </h2>
                     <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: var(--color-text-muted);">
-                        Showing {{ courses|length }} course{% if courses|length != 1 %}s{% endif %} matching your active filters.
+                        Showing {{ courses|length }} program{% if courses|length != 1 %}s{% endif %} matching your active filters.
                     </p>
                 </div>
                 <div style="display: flex; gap: 0.5rem;">
                     <a href="{{ url_for('admin_add_course') }}{% if category_id %}?category_id={{ category_id }}{% endif %}" class="btn btn-primary btn-sm">
-                        + Add Course
+                        + Add Program
                     </a>
                 </div>
             </div>
@@ -213,7 +213,7 @@
                 <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.925rem;">
                     <thead>
                         <tr style="border-bottom: 2px solid var(--color-border); color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
-                            <th style="padding: 0.75rem 0.5rem;">Course Name</th>
+                            <th style="padding: 0.75rem 0.5rem;">Program Name</th>
                             <th style="padding: 0.75rem 0.5rem;">Category</th>
                             <th style="padding: 0.75rem 0.5rem;">Learning Path</th>
                             <th style="padding: 0.75rem 0.5rem;">Curriculum</th>
@@ -301,7 +301,7 @@
                                             {{ 'Deactivate' if c.is_active else 'Publish' }}
                                         </button>
                                     </form>
-                                    <form method="post" action="{{ url_for('admin_delete_course', course_id=c.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete course {{ c.title|e }}?\n\nIf this course has modules or enrollments, it should be deactivated instead.');">
+                                    <form method="post" action="{{ url_for('admin_delete_course', course_id=c.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete program {{ c.title|e }}?\n\nIf this program has modules or enrollments, it should be deactivated instead.');">
                                         <input type="hidden" name="action" value="permanent_delete">
                                         <input type="hidden" name="confirm_title" value="{{ c.title }}">
                                         <button type="submit" class="btn btn-outline btn-sm btn-destructive" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;">
@@ -317,9 +317,9 @@
             </div>
             {% else %}
             <div class="empty-state" style="text-align: center; padding: 3rem 1rem;">
-                <p style="color: var(--color-text-muted); font-size: 1.05rem;">No courses found matching your criteria.</p>
+                <p style="color: var(--color-text-muted); font-size: 1.05rem;">No programs found matching your criteria.</p>
                 <div style="margin-top: 1rem; display: flex; justify-content: center; gap: 0.75rem;">
-                    <a href="{{ url_for('admin_add_course') }}" class="btn btn-primary">+ Create New Course</a>
+                    <a href="{{ url_for('admin_add_course') }}" class="btn btn-primary">+ Create New Program</a>
                     {% if search or category_id or selected_grade or status %}
                     <a href="{{ url_for('admin_courses') }}" class="btn btn-outline">Clear Filters</a>
                     {% endif %}

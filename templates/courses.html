@@ -4,7 +4,7 @@
 {% block meta_description %}Explore Airodrone's hands-on STEM learning categories, structured pathways from Grade 1 to 5, and verified certificate tracks.{% endblock %}
 
 {% block content %}
-<!-- Course Catalogue Hero Section -->
+<!-- Learning Program Catalogue Hero Section -->
 <section class="page-hero">
     <div class="container page-hero-inner">
         <div>
@@ -39,7 +39,7 @@
             {% endif %}
         </div>
         <div class="page-hero-media" style="min-width: 260px; max-width: 380px;">
-            <img src="{{ url_for('static', filename='images/hero/hero.jpg') }}" alt="Airodrone STEM Courses and hands-on learning illustration" class="hero-img-glow" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <img src="{{ url_for('static', filename='images/hero/hero.jpg') }}" alt="Airodrone STEM Learning Programs and hands-on learning illustration" class="hero-img-glow" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
             <div style="display: none; width: 100%; height: 220px; border-radius: 12px; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: var(--color-primary, #0284c7);">
                 <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
             </div>
@@ -85,7 +85,7 @@
                 <div class="category-card-content">
                     <div class="category-card-meta">
                         <span class="category-course-count">
-                            {{ cat.course_count }} {{ 'Course' if cat.course_count == 1 else 'Courses' }}
+                            {{ cat.course_count }} {{ 'Program' if cat.course_count == 1 else 'Programs' }}
                         </span>
                     </div>
 
@@ -132,7 +132,7 @@
                     {% set c_img = image_url(course.image) %}
                     {% if c_img %}
                     <img src="{{ c_img }}" 
-                         alt="{{ course.title }} course banner" 
+                         alt="{{ course.title }} banner"
                          class="course-card-img-v2"
                          style="width: 100%; height: 100%; object-fit: cover;"
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -192,7 +192,7 @@
 
                     <div class="course-card-footer-v2">
                         <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn btn-primary btn-block">
-                            View Course Details <span aria-hidden="true">&rarr;</span>
+                            View Program Details <span aria-hidden="true">&rarr;</span>
                         </a>
                     </div>
                 </div>
@@ -201,7 +201,7 @@
         </div>
         {% else %}
         <div class="empty-state" style="text-align: center; padding: 3rem 1rem;">
-            <p style="font-size: 1.1rem; color: var(--color-text-muted);">No courses currently active for {{ grade_info.name }}.</p>
+            <p style="font-size: 1.1rem; color: var(--color-text-muted);">No learning programs currently active for {{ grade_info.name }}.</p>
             <a href="{{ url_for('learn') }}" class="btn btn-secondary" style="margin-top: 1rem;">Browse All Categories</a>
         </div>
         {% endif %}
@@ -214,7 +214,7 @@
     <div class="container highlight-strip">
         <div class="highlight-text">
             <h2>Looking for custom STEM workshops for your institution?</h2>
-            <p>We tailor course modules, equipment kits, and ATL lab roadmaps to align with your school's specific syllabus and academic calendar.</p>
+            <p>We tailor curriculum modules, equipment kits, and ATL lab roadmaps to align with your school's specific syllabus and academic calendar.</p>
         </div>
         <div class="highlight-action">
             <a href="{{ url_for('contact') }}" class="btn btn-primary">Contact Us Today &rarr;</a>

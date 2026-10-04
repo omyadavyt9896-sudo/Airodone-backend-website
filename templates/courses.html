@@ -23,7 +23,7 @@
             </h1>
             <p style="font-size: 1.15rem; max-width: 620px; color: var(--color-text-muted);">
                 {% if show_categories %}
-                Choose a learning domain to explore progressive Educational Grades tailored across Grade 1, Grade 2, Grade 3, Grade 4, and Grade 5 with hands-on STEM projects.
+                Explore hands-on learning in AI, robotics, coding, drones and emerging technology.
                 {% elif grade_info %}
                 Targeted for {{ grade_info.classes }}. {{ grade_info.description }}
                 {% else %}
@@ -77,9 +77,6 @@
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
                     </div>
                     {% endif %}
-                    <span class="category-path-badge">
-                        {{ cat.path_count }} {{ 'Pathway' if cat.path_count == 1 else 'Pathways' }}
-                    </span>
                 </div>
 
                 <div class="category-card-content">

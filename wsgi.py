@@ -1,14 +1,19 @@
 import sys
-import traceback
-from app import app, ensure_db_initialized
+from app import app, is_schema_initialized
 
-# Ensure production database schema is initialized/migrated on WSGI worker startup
+# In production WSGI, individual worker processes must NEVER run concurrent DDL/migrations.
+# Schema migrations are executed once per deployment via 'python init_db_standalone.py' (or Pre-Deploy Command).
 try:
-    print("[AIRODRONE WSGI] Starting database schema verification and migration...", flush=True)
-    ensure_db_initialized()
-    print("[AIRODRONE WSGI] Database schema initialization succeeded.", flush=True)
+    if is_schema_initialized():
+        print("[AIRODRONE WSGI] Database schema verified and active.", flush=True)
+    else:
+        print(
+            "[AIRODRONE WSGI WARNING] Database schema sentinel or core tables not detected. "
+            "Execute 'python init_db_standalone.py' before launching web workers.",
+            file=sys.stderr,
+            flush=True,
+        )
 except Exception as e:
-    print(f"[AIRODRONE WSGI ERROR] Database initialization failed on startup: {e}", file=sys.stderr, flush=True)
-    traceback.print_exc(file=sys.stderr)
+    print(f"[AIRODRONE WSGI WARNING] Could not verify database schema on worker boot: {e}", file=sys.stderr, flush=True)
 
 application = app

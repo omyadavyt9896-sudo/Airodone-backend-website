@@ -503,8 +503,15 @@ def add_column_if_not_exists(cur, table, column, col_type):
             if "no such table" in str(e).lower():
                 raise e
     elif db_type == "mysql":
-        # Direct execution: MySQL throws error 1060 (ER_DUP_FIELDNAME) if column already exists.
-        # This completely avoids slow information_schema.COLUMNS metadata locking.
+        # Fast non-blocking check: verify if column already exists before attempting DDL
+        # This completely avoids expensive exclusive metadata locks (MDL_EXCLUSIVE) and table locking
+        try:
+            cur.execute(f"SHOW COLUMNS FROM {table} LIKE %s", (column,))
+            if cur.fetchall():
+                return
+        except Exception:
+            pass
+
         normalized_type = col_type
         type_upper = col_type.upper()
         if "TEXT" in type_upper and "DEFAULT" in type_upper and "DEFAULT NULL" not in type_upper:
@@ -547,8 +554,15 @@ def create_index_if_not_exists(cur, index_name, table, columns):
     if db_type in ("postgres", "sqlite"):
         cur.execute(f"CREATE INDEX IF NOT EXISTS {index_name} ON {table} ({cols_str});")
     elif db_type == "mysql":
-        # Direct execution: MySQL throws error 1061 (ER_DUP_KEYNAME) if index already exists.
-        # Completely eliminates slow information_schema.STATISTICS query hangs on cloud databases (Render/RDS).
+        # Fast non-blocking check: verify if index already exists before attempting DDL
+        # This completely avoids expensive table metadata locks and index rebuilds on production tables
+        try:
+            cur.execute(f"SHOW INDEX FROM {table} WHERE Key_name = %s", (index_name,))
+            if cur.fetchall():
+                return
+        except Exception:
+            pass
+
         try:
             cur.execute(f"CREATE INDEX {index_name} ON {table} ({cols_str});")
         except Exception as e:
@@ -659,14 +673,13 @@ def is_schema_initialized():
                 pass
 
 def ensure_db_initialized():
-    """Idempotently ensure database schema is initialized and migrated across all supported databases."""
+    """
+    Explicit database schema initialization and migration.
+    Must be called during deployment (e.g. via 'python init_db_standalone.py' or CLI),
+    never during concurrent request lifecycles.
+    """
     global _db_initialized
-    if _db_initialized:
-        return
-
-    # If the schema is already initialized, mark as initialized immediately and avoid redundant DDL runs.
-    if is_schema_initialized():
-        _db_initialized = True
+    if _db_initialized and is_schema_initialized():
         return
 
     try:
@@ -682,9 +695,9 @@ def ensure_db_initialized():
 def auto_init_db_before_request():
     """
     Guard for incoming HTTP requests:
-    - Never block health-checks (HEAD /) or static asset requests.
-    - If DB is already verified/initialized in memory, returns in 0ms.
-    - Only runs initialization if the database schema is confirmed to be missing.
+    - Never execute DDL (CREATE TABLE, ALTER TABLE, CREATE INDEX) during request lifecycle.
+    - If DB is already marked initialized in memory, returns in 0ms.
+    - In production, migrations run strictly via deployment migration command ('python init_db_standalone.py').
     """
     global _db_initialized
     if _db_initialized:
@@ -697,16 +710,80 @@ def auto_init_db_before_request():
     if request.path.startswith("/static/"):
         return
 
-    # In production, check if schema is already verified and valid
+    # Lightweight check: verify schema has already been initialized by deployment migration
     try:
         if is_schema_initialized():
             _db_initialized = True
             return
-
-        app.logger.warning("[AIRODRONE DB] Uninitialized or outdated schema detected at request time; executing ensure_db_initialized()...")
-        ensure_db_initialized()
+        else:
+            # Schema has not been initialized yet.
+            # DO NOT execute DDL or migrations during request lifecycle!
+            app.logger.warning(
+                "[AIRODRONE DB] Database schema is uninitialized or pending migration. "
+                "Request-time DDL is disabled to prevent worker timeouts. "
+                "Run 'python init_db_standalone.py' to apply schema migrations."
+            )
     except Exception as e:
-        app.logger.exception(f"[AIRODRONE DB ERROR] auto_init_db_before_request failed: {e}")
+        app.logger.error(f"[AIRODRONE DB] Error checking schema status in before_request: {e}")
+
+def acquire_migration_lock(conn, timeout_seconds=30):
+    """
+    Acquires a database-level migration lock so concurrent processes/workers
+    cannot execute migrations at the same time.
+    Supports MySQL (GET_LOCK), PostgreSQL (pg_try_advisory_lock), and SQLite.
+    Returns True if lock acquired, False otherwise.
+    """
+    db_type = get_db_type()
+    raw = getattr(conn, "_raw_conn", conn)
+    if isinstance(raw, SQLiteConnWrapper) or "sqlite" in type(raw).__name__.lower() or hasattr(raw, "isolation_level"):
+        return True
+
+    cur = get_db_cursor(conn)
+    try:
+        if db_type == "mysql" or hasattr(raw, "server_version"):
+            try:
+                cur.execute("SET SESSION lock_wait_timeout = 15;")
+            except Exception:
+                pass
+            cur.execute("SELECT GET_LOCK('airodrone_migration_lock', %s) AS lock_acquired;", (timeout_seconds,))
+            row = cur.fetchone()
+            val = row["lock_acquired"] if isinstance(row, dict) else row[0]
+            return bool(val == 1)
+        elif db_type == "postgres" and hasattr(raw, "status"):
+            cur.execute("SELECT pg_try_advisory_lock(74839201) AS lock_acquired;")
+            row = cur.fetchone()
+            val = row["lock_acquired"] if isinstance(row, dict) else row[0]
+            return bool(val is True or val == 1)
+        return True
+    except Exception as e:
+        app.logger.warning(f"[AIRODRONE DB] Migration lock probe note: {e}")
+        return True
+    finally:
+        try:
+            cur.close()
+        except Exception:
+            pass
+
+def release_migration_lock(conn):
+    """Releases the database-level migration lock."""
+    db_type = get_db_type()
+    raw = getattr(conn, "_raw_conn", conn)
+    if isinstance(raw, SQLiteConnWrapper) or "sqlite" in type(raw).__name__.lower() or hasattr(raw, "isolation_level"):
+        return
+
+    cur = get_db_cursor(conn)
+    try:
+        if db_type == "mysql" or hasattr(raw, "server_version"):
+            cur.execute("SELECT RELEASE_LOCK('airodrone_migration_lock');")
+        elif db_type == "postgres" and hasattr(raw, "status"):
+            cur.execute("SELECT pg_advisory_unlock(74839201);")
+    except Exception:
+        pass
+    finally:
+        try:
+            cur.close()
+        except Exception:
+            pass
 
 def init_db():
     """Create database tables if they do not exist and seed initial courses."""
@@ -714,6 +791,13 @@ def init_db():
     cur = get_db_cursor(conn)
     db_type = get_db_type()
     pk_def = "INT AUTO_INCREMENT PRIMARY KEY" if db_type == "mysql" else "SERIAL PRIMARY KEY"
+    
+    if db_type == "mysql":
+        try:
+            cur.execute("SET SESSION lock_wait_timeout = 15;")
+            cur.execute("SET SESSION innodb_lock_wait_timeout = 15;")
+        except Exception:
+            pass
     
     # Create contacts table
     cur.execute(

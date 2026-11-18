@@ -33,6 +33,8 @@ from app import (
     get_db_connection,
     get_db_cursor,
     get_db_type,
+    get_active_database_name,
+    ping_or_reconnect_db,
     CURRENT_SCHEMA_VERSION,
 )
 
@@ -66,6 +68,16 @@ ESSENTIAL_TABLES = [
     "schema_version",
 ]
 
+ESSENTIAL_COLUMNS = {
+    "laboratories": ["id", "name", "slug", "about_image", "cover_image", "is_active"],
+    "composite_lab_packages": ["id", "name", "slug", "price", "is_active"],
+    "composite_lab_sectors": ["id", "name", "code", "is_active"],
+    "composite_lab_content": ["id", "section_key", "title"],
+    "composite_lab_enquiries": ["id", "school_name", "email", "phone", "status"],
+    "products": ["id", "name", "slug", "price", "is_active"],
+    "courses": ["id", "title", "slug", "grade"],
+}
+
 
 def run_deployment_migration():
     total_start = time.time()
@@ -78,21 +90,22 @@ def run_deployment_migration():
     print("=" * 76)
 
     with app.app_context():
-        db_type = get_db_type()
-        print(f"[*] Database dialect:    {db_type.upper()}")
-
-        # Phase 1: Test Connectivity
-        print("\n[Phase 1/5] Testing database connectivity...")
+        # Phase 1: Test Connectivity & Database Identification
+        print("\n[Phase 1/5] Testing database connectivity & identifying target database...")
         t0 = time.time()
         conn = None
         try:
             conn = get_db_connection()
+            db_type = get_db_type(conn)
+            print(f"[*] Database dialect:    {db_type.upper()}")
             cur = get_db_cursor(conn)
             cur.execute("SELECT 1;")
             cur.fetchone()
+            active_db = get_active_database_name(conn)
             cur.close()
             t_conn = time.time() - t0
             print(f" -> Database connection established in {t_conn:.2f}s.")
+            print(f" -> Active target database: {active_db}")
         except Exception as e:
             print(f" [!] CRITICAL: Failed to connect to database: {e}", file=sys.stderr)
             traceback.print_exc()
@@ -133,7 +146,15 @@ def run_deployment_migration():
         print("\n[Phase 3/5] Executing idempotent schema migration & seeding pass...")
         t0 = time.time()
         try:
-            init_db()
+            cur = get_db_cursor(conn)
+            if is_schema_initialized(conn=conn):
+                print(f" -> Database schema is already initialized to version {CURRENT_SCHEMA_VERSION} with core tables.")
+                print(" -> Running idempotent alignment pass using active locked connection...")
+
+            # Pass conn and cur so the SAME active connection that holds the lock is used
+            # This completely eliminates idle connection drops / socket reset during migrations
+            init_db(conn=conn, cur=cur)
+            cur.close()
             t_mig = time.time() - t0
             print(f" -> Migration & seeding pass completed successfully in {t_mig:.2f}s.")
         except Exception as e:
@@ -150,25 +171,91 @@ def run_deployment_migration():
             sys.exit(1)
 
         # Phase 4: Verify Table Existence and Row Counts
-        print("\n[Phase 4/5] Verifying physical presence of all essential tables...")
+        print("\n[Phase 4/5] Verifying physical presence of all essential tables and columns...")
         t0 = time.time()
-        cur = get_db_cursor(conn)
-        missing_tables = []
-        table_stats = []
+        try:
+            conn = ping_or_reconnect_db(conn)
+            db_type = get_db_type(conn)
+            cur = get_db_cursor(conn)
+        except Exception as e:
+            print(f" [!] CRITICAL: Database connection lost before verification: {e}", file=sys.stderr)
+            traceback.print_exc()
+            sys.exit(1)
 
+        missing_tables = []
+        missing_columns = []
+        table_stats = []
+        existing_tables = set()
+        existing_columns = {}
+
+        try:
+            if db_type == "mysql":
+                cur.execute("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE();")
+                existing_tables = {row["TABLE_NAME"] if isinstance(row, dict) else row[0] for row in cur.fetchall()}
+                cur.execute("SELECT TABLE_NAME, COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE();")
+                for col_row in cur.fetchall():
+                    tname = col_row["TABLE_NAME"] if isinstance(col_row, dict) else col_row[0]
+                    cname = col_row["COLUMN_NAME"] if isinstance(col_row, dict) else col_row[1]
+                    existing_columns.setdefault(tname, set()).add(cname)
+            elif db_type == "postgres":
+                cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
+                existing_tables = {row["table_name"] if isinstance(row, dict) else row[0] for row in cur.fetchall()}
+                cur.execute("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public';")
+                for col_row in cur.fetchall():
+                    tname = col_row["table_name"] if isinstance(col_row, dict) else col_row[0]
+                    cname = col_row["column_name"] if isinstance(col_row, dict) else col_row[1]
+                    existing_columns.setdefault(tname, set()).add(cname)
+            else:  # sqlite
+                cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+                existing_tables = {row["name"] if isinstance(row, dict) else row[0] for row in cur.fetchall()}
+                for tbl in existing_tables:
+                    try:
+                        cur.execute(f"PRAGMA table_info({tbl});")
+                        prows = cur.fetchall()
+                        existing_columns[tbl] = {pr["name"] if isinstance(pr, dict) else pr[1] for pr in prows}
+                    except Exception:
+                        pass
+        except Exception as e:
+            err_str = str(e).lower()
+            if "gone away" in err_str or "reset by peer" in err_str or "broken pipe" in err_str or "2006" in err_str or "2013" in err_str:
+                print(f" [!] CRITICAL: Database connection reset during schema metadata inspection: {e}", file=sys.stderr)
+                sys.exit(1)
+            raise e
+
+        # Check each essential table
         for tbl in ESSENTIAL_TABLES:
-            try:
-                cur.execute(f"SELECT COUNT(*) as count FROM {tbl};")
-                row = cur.fetchone()
-                count = row["count"] if isinstance(row, dict) else row[0]
-                table_stats.append((tbl, count, "OK"))
-            except Exception as e:
-                missing_tables.append((tbl, str(e)))
+            if tbl not in existing_tables:
+                missing_tables.append((tbl, "Table not found in database catalog"))
                 table_stats.append((tbl, 0, "MISSING"))
+            else:
+                try:
+                    cur.execute(f"SELECT COUNT(*) as count FROM {tbl};")
+                    row = cur.fetchone()
+                    count = row["count"] if isinstance(row, dict) else row[0]
+                    table_stats.append((tbl, count, "OK"))
+                except Exception as e:
+                    err_str = str(e).lower()
+                    if "gone away" in err_str or "reset by peer" in err_str or "broken pipe" in err_str or "2006" in err_str or "2013" in err_str:
+                        print(f" [!] CRITICAL: Database connection dropped while counting table '{tbl}': {e}", file=sys.stderr)
+                        sys.exit(1)
+                    missing_tables.append((tbl, str(e)))
+                    table_stats.append((tbl, 0, "ERROR"))
+
+        # Verify essential columns
+        for tbl, cols in ESSENTIAL_COLUMNS.items():
+            if tbl in existing_tables:
+                cols_present = existing_columns.get(tbl, set())
+                for col in cols:
+                    if col not in cols_present:
+                        missing_columns.append((tbl, col))
 
         for tbl, count, status in table_stats:
             icon = "[+]" if status == "OK" else "[-]"
             print(f" {icon} {tbl.ljust(34)}: {str(count).rjust(6)} rows ({status})")
+
+        if missing_columns:
+            for tbl, col in missing_columns:
+                print(f" [-] Missing column: {tbl}.{col}")
 
         t_verify = time.time() - t0
         print(f" -> Table verification completed in {t_verify:.2f}s.")
@@ -197,10 +284,15 @@ def run_deployment_migration():
 
         total_elapsed = time.time() - total_start
         print("\n" + "=" * 76)
-        if missing_tables:
-            print(f" [!] FAILED: {len(missing_tables)} essential tables are missing!", file=sys.stderr)
-            for t, err in missing_tables:
-                print(f"     - {t}: {err}", file=sys.stderr)
+        if missing_tables or missing_columns:
+            if missing_tables:
+                print(f" [!] FAILED: {len(missing_tables)} essential tables are missing!", file=sys.stderr)
+                for t, err in missing_tables:
+                    print(f"     - {t}: {err}", file=sys.stderr)
+            if missing_columns:
+                print(f" [!] FAILED: {len(missing_columns)} essential columns are missing!", file=sys.stderr)
+                for t, col in missing_columns:
+                    print(f"     - {t}.{col}", file=sys.stderr)
             print("=" * 76)
             sys.exit(1)
         else:

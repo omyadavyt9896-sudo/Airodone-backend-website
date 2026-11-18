@@ -335,8 +335,16 @@ class SQLiteConnWrapper:
     def close(self):
         self.conn.close()
 
-def get_db_type():
+def get_db_type(conn=None):
     """Detect database engine type: 'mysql', 'sqlite', or 'postgres'."""
+    if conn is not None:
+        raw = getattr(conn, "_raw_conn", conn)
+        if isinstance(raw, SQLiteConnWrapper) or "sqlite" in type(raw).__name__.lower() or hasattr(raw, "isolation_level"):
+            return "sqlite"
+        if hasattr(raw, "server_version") or "pymysql" in type(raw).__name__.lower():
+            return "mysql"
+        if hasattr(raw, "status") or "psycopg" in type(raw).__name__.lower():
+            return "postgres"
     db_url = app.config.get("DATABASE_URL", "")
     if "mysql" in db_url.lower():
         return "mysql"
@@ -397,10 +405,10 @@ def create_raw_db_connection():
         db_user = (urllib.parse.unquote(parsed.username) if parsed.username else None) or os.environ.get("DB_USER") or "root"
         db_name = (parsed.path.lstrip("/") if parsed.path else None) or os.environ.get("DB_NAME") or ""
 
-        connect_timeout = int(os.environ.get("DB_CONNECT_TIMEOUT", 10))
-        read_timeout = int(os.environ.get("DB_READ_TIMEOUT", 15))
-        write_timeout = int(os.environ.get("DB_WRITE_TIMEOUT", 15))
-        return pymysql.connect(
+        connect_timeout = int(os.environ.get("DB_CONNECT_TIMEOUT", 15))
+        read_timeout = int(os.environ.get("DB_READ_TIMEOUT", 60))
+        write_timeout = int(os.environ.get("DB_WRITE_TIMEOUT", 60))
+        conn = pymysql.connect(
             host=db_host,
             port=db_port,
             user=db_user,
@@ -413,6 +421,13 @@ def create_raw_db_connection():
             charset="utf8mb4",
             autocommit=True
         )
+        try:
+            if hasattr(conn, "_sock") and conn._sock:
+                import socket
+                conn._sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        except Exception:
+            pass
+        return conn
     elif "sqlite" in db_url.lower():
         sqlite_path = db_url.replace("sqlite:///", "").replace("sqlite://", "") or "airodrone.db"
         conn = sqlite3.connect(sqlite_path)
@@ -486,6 +501,47 @@ def close_db_connection(exception=None):
             raw_db.close()
         except Exception as e:
             app.logger.error(f"Error closing per-request DB connection: {e}")
+
+def get_active_database_name(conn=None):
+    """
+    Retrieve current active database name from the connection without exposing credentials.
+    Supports MySQL (SELECT DATABASE()), PostgreSQL (SELECT current_database()), and SQLite.
+    """
+    close_after = False
+    if conn is None:
+        conn = get_db_connection()
+        close_after = True
+    db_type = get_db_type(conn)
+    db_name = "unknown"
+    cur = None
+    try:
+        cur = get_db_cursor(conn)
+        if db_type == "mysql":
+            cur.execute("SELECT DATABASE() AS db_name;")
+            row = cur.fetchone()
+            if row:
+                db_name = row.get("db_name") if isinstance(row, dict) else row[0]
+        elif db_type == "postgres":
+            cur.execute("SELECT current_database() AS db_name;")
+            row = cur.fetchone()
+            if row:
+                db_name = row.get("db_name") if isinstance(row, dict) else row[0]
+        else:
+            db_name = "airodrone.db"
+    except Exception as e:
+        app.logger.warning(f"Could not query active database name: {e}")
+    finally:
+        if cur:
+            try:
+                cur.close()
+            except Exception:
+                pass
+        if close_after:
+            try:
+                conn.close()
+            except Exception:
+                pass
+    return db_name
 
 def add_column_if_not_exists(cur, table, column, col_type):
     """Safely execute ALTER TABLE ADD COLUMN across PostgreSQL, SQLite, and MySQL without slow metadata scans."""
@@ -615,16 +671,18 @@ def safe_execute_ddl(cur, ddl_query):
 CURRENT_SCHEMA_VERSION = 3
 _db_initialized = False
 
-def is_schema_initialized():
+def is_schema_initialized(conn=None):
     """
     Check verifying if the database schema is already initialized to CURRENT_SCHEMA_VERSION.
     Returns True only if schema_version exists with recorded version >= CURRENT_SCHEMA_VERSION
     AND all required core tables physically exist in the database.
+    Can accept an existing connection to reuse sockets during migration/health checks.
     """
-    conn = None
+    external_conn = conn is not None
     cur = None
     try:
-        conn = get_db_connection()
+        if conn is None:
+            conn = get_db_connection()
         cur = get_db_cursor(conn)
         cur.execute("SELECT version FROM schema_version WHERE version >= %s LIMIT 1;", (CURRENT_SCHEMA_VERSION,))
         row = cur.fetchone()
@@ -666,7 +724,7 @@ def is_schema_initialized():
                 cur.close()
             except Exception:
                 pass
-        if conn:
+        if not external_conn and conn:
             try:
                 conn.close()
             except Exception:
@@ -785,10 +843,13 @@ def release_migration_lock(conn):
         except Exception:
             pass
 
-def init_db():
+def init_db(conn=None, cur=None):
     """Create database tables if they do not exist and seed initial courses."""
-    conn = get_db_connection()
-    cur = get_db_cursor(conn)
+    external_conn = conn is not None
+    if conn is None:
+        conn = get_db_connection()
+    if cur is None:
+        cur = get_db_cursor(conn)
     db_type = get_db_type()
     pk_def = "INT AUTO_INCREMENT PRIMARY KEY" if db_type == "mysql" else "SERIAL PRIMARY KEY"
     
@@ -1827,8 +1888,9 @@ def init_db():
         )
         conn.commit()
 
-    cur.close()
-    conn.close()
+    if not external_conn:
+        cur.close()
+        conn.close()
 
 
 

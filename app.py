@@ -505,8 +505,12 @@ def add_column_if_not_exists(cur, table, column, col_type):
     elif db_type == "mysql":
         # Direct execution: MySQL throws error 1060 (ER_DUP_FIELDNAME) if column already exists.
         # This completely avoids slow information_schema.COLUMNS metadata locking.
+        normalized_type = col_type
+        type_upper = col_type.upper()
+        if "TEXT" in type_upper and "DEFAULT" in type_upper and "DEFAULT NULL" not in type_upper:
+            normalized_type = re.sub(r'\bTEXT\b', 'VARCHAR(255)', col_type, flags=re.IGNORECASE)
         try:
-            cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type};")
+            cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {normalized_type};")
         except Exception as e:
             # Re-raise connection lost errors immediately (never swallow connection failures)
             if hasattr(e, "args") and len(e.args) > 0 and e.args[0] in (2002, 2003, 2006, 2013):
@@ -576,15 +580,32 @@ def create_index_if_not_exists(cur, index_name, table, columns):
                     # Index does not exist and error was not 1061: do not hide unrelated database errors
                     raise e
 
-CURRENT_SCHEMA_VERSION = 2
+def safe_execute_ddl(cur, ddl_query):
+    """
+    Safely execute DDL queries across PostgreSQL, SQLite, and MySQL.
+    In MySQL, automatically adapts 'TEXT ... DEFAULT ...' (with non-NULL default) to VARCHAR(255)
+    to eliminate MySQL Error 1101 (BLOB/TEXT column can't have a default value).
+    """
+    db_type = get_db_type()
+    if db_type == "mysql":
+        def _adapt_mysql_text(match):
+            col_def = match.group(0)
+            if "DEFAULT NULL" not in col_def.upper():
+                return re.sub(r'\bTEXT\b', 'VARCHAR(255)', col_def, flags=re.IGNORECASE)
+            return col_def
+
+        ddl_query = re.sub(r'\b\w+\s+TEXT\b[^,\)]*DEFAULT\s+[^,\)]+', _adapt_mysql_text, ddl_query, flags=re.IGNORECASE)
+
+    cur.execute(ddl_query)
+
+CURRENT_SCHEMA_VERSION = 3
 _db_initialized = False
 
 def is_schema_initialized():
     """
-    Lightweight check verifying if the database schema is already initialized to CURRENT_SCHEMA_VERSION.
-    Only returns True if schema_version exists AND has recorded version >= CURRENT_SCHEMA_VERSION.
-    Never uses presence of business tables (such as users) to infer schema status.
-    If schema_version does not exist or version is lower, returns False to trigger safe migration pass.
+    Check verifying if the database schema is already initialized to CURRENT_SCHEMA_VERSION.
+    Returns True only if schema_version exists with recorded version >= CURRENT_SCHEMA_VERSION
+    AND all required core tables physically exist in the database.
     """
     conn = None
     cur = None
@@ -593,7 +614,30 @@ def is_schema_initialized():
         cur = get_db_cursor(conn)
         cur.execute("SELECT version FROM schema_version WHERE version >= %s LIMIT 1;", (CURRENT_SCHEMA_VERSION,))
         row = cur.fetchone()
-        return bool(row)
+        if not row:
+            return False
+
+        # Verify all core tables physically exist in the target database
+        essential_tables = [
+            "users",
+            "courses",
+            "products",
+            "solutions",
+            "laboratories",
+            "lab_inquiries",
+            "composite_lab_packages",
+            "composite_lab_sectors",
+            "composite_lab_content",
+            "composite_lab_enquiries",
+        ]
+        for tbl in essential_tables:
+            try:
+                cur.execute(f"SELECT 1 FROM {tbl} LIMIT 1;")
+                cur.fetchone()
+            except Exception:
+                return False
+
+        return True
     except Exception:
         # Table schema_version does not exist yet (or DB connection unreachable)
         if conn:
@@ -626,10 +670,12 @@ def ensure_db_initialized():
         return
 
     try:
+        app.logger.info("[AIRODRONE DB] Running database schema initialization & migration pass...")
         init_db()
         _db_initialized = True
+        app.logger.info("[AIRODRONE DB] Database schema initialization completed successfully.")
     except Exception as e:
-        app.logger.exception(f"Database initialization / schema migration failed: {e}")
+        app.logger.exception(f"[AIRODRONE DB ERROR] Database initialization / schema migration failed: {e}")
         raise e
 
 @app.before_request
@@ -637,8 +683,7 @@ def auto_init_db_before_request():
     """
     Guard for incoming HTTP requests:
     - Never block health-checks (HEAD /) or static asset requests.
-    - If AUTO_INIT_DB is disabled (recommended in production with pre-deployed DB), skip.
-    - If DB is already initialized, returns in 0ms.
+    - If DB is already verified/initialized in memory, returns in 0ms.
     - Only runs initialization if the database schema is confirmed to be missing.
     """
     global _db_initialized
@@ -649,25 +694,19 @@ def auto_init_db_before_request():
     if request.method == "HEAD" or request.path in ("/favicon.ico", "/robots.txt"):
         return
 
-    # In production web servers (Gunicorn, Render), HTTP requests must NEVER execute request-time DDL.
-    # Database initialization/migration in production runs exclusively via 'flask init-db'.
-    is_gunicorn = (
-        "gunicorn" in os.environ.get("SERVER_SOFTWARE", "").lower()
-        or "gunicorn" in sys.modules
-        or bool(os.environ.get("GUNICORN_CMD_ARGS"))
-    )
-    is_render = bool(os.environ.get("RENDER"))
-    if is_gunicorn or is_render:
-        _db_initialized = True
+    if request.path.startswith("/static/"):
         return
 
-    # In local development, respect AUTO_INIT_DB setting if explicitly disabled
-    auto_init_val = os.environ.get("AUTO_INIT_DB", "").strip().strip("'\"").lower()
-    if auto_init_val in ("0", "false", "no", "off"):
-        _db_initialized = True
-        return
+    # In production, check if schema is already verified and valid
+    try:
+        if is_schema_initialized():
+            _db_initialized = True
+            return
 
-    ensure_db_initialized()
+        app.logger.warning("[AIRODRONE DB] Uninitialized or outdated schema detected at request time; executing ensure_db_initialized()...")
+        ensure_db_initialized()
+    except Exception as e:
+        app.logger.exception(f"[AIRODRONE DB ERROR] auto_init_db_before_request failed: {e}")
 
 def init_db():
     """Create database tables if they do not exist and seed initial courses."""
@@ -692,14 +731,15 @@ def init_db():
     )
 
     # Create users table
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS users (
             id {pk_def},
             name TEXT NOT NULL,
             email VARCHAR(255) UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'user',
+            role VARCHAR(50) NOT NULL DEFAULT 'user',
             is_active INTEGER NOT NULL DEFAULT 1,
             created_at TEXT NOT NULL
         )
@@ -711,7 +751,8 @@ def init_db():
     add_column_if_not_exists(cur, "users", "student_class", "VARCHAR(50) DEFAULT NULL")
 
     # Create learning_categories table
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS learning_categories (
             id {pk_def},
@@ -734,7 +775,8 @@ def init_db():
     add_column_if_not_exists(cur, "learning_categories", "is_active", "INTEGER NOT NULL DEFAULT 1")
 
     # Create learning_paths table
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS learning_paths (
             id {pk_def},
@@ -761,30 +803,32 @@ def init_db():
     add_column_if_not_exists(cur, "learning_paths", "is_active", "INTEGER NOT NULL DEFAULT 1")
 
     # Create course_catalogue_settings table
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS course_catalogue_settings (
             id {pk_def},
-            hero_badge TEXT NOT NULL DEFAULT 'STEM LEARNING DOMAINS',
-            hero_title TEXT NOT NULL DEFAULT 'Learning Categories',
-            hero_description TEXT DEFAULT 'Choose a learning domain to explore progressive educational pathways across technology, programming, AI, drones, and digital skills.',
-            hero_image TEXT DEFAULT '',
-            hero_image_alt TEXT NOT NULL DEFAULT 'Learning Categories',
+            hero_badge VARCHAR(255) NOT NULL DEFAULT 'STEM LEARNING DOMAINS',
+            hero_title VARCHAR(255) NOT NULL DEFAULT 'Learning Categories',
+            hero_description TEXT DEFAULT NULL,
+            hero_image VARCHAR(500) DEFAULT '',
+            hero_image_alt VARCHAR(255) NOT NULL DEFAULT 'Learning Categories',
             is_active INTEGER NOT NULL DEFAULT 1,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
         """
     )
-    add_column_if_not_exists(cur, "course_catalogue_settings", "hero_badge", "TEXT NOT NULL DEFAULT 'STEM LEARNING DOMAINS'")
-    add_column_if_not_exists(cur, "course_catalogue_settings", "hero_title", "TEXT NOT NULL DEFAULT 'Learning Categories'")
+    add_column_if_not_exists(cur, "course_catalogue_settings", "hero_badge", "VARCHAR(255) NOT NULL DEFAULT 'STEM LEARNING DOMAINS'")
+    add_column_if_not_exists(cur, "course_catalogue_settings", "hero_title", "VARCHAR(255) NOT NULL DEFAULT 'Learning Categories'")
     add_column_if_not_exists(cur, "course_catalogue_settings", "hero_description", "TEXT DEFAULT NULL")
-    add_column_if_not_exists(cur, "course_catalogue_settings", "hero_image", "TEXT DEFAULT ''")
-    add_column_if_not_exists(cur, "course_catalogue_settings", "hero_image_alt", "TEXT NOT NULL DEFAULT 'Learning Categories'")
+    add_column_if_not_exists(cur, "course_catalogue_settings", "hero_image", "VARCHAR(500) DEFAULT ''")
+    add_column_if_not_exists(cur, "course_catalogue_settings", "hero_image_alt", "VARCHAR(255) NOT NULL DEFAULT 'Learning Categories'")
     add_column_if_not_exists(cur, "course_catalogue_settings", "is_active", "INTEGER NOT NULL DEFAULT 1")
 
     # Create courses table
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS courses (
             id {pk_def},
@@ -792,7 +836,7 @@ def init_db():
             slug VARCHAR(255) UNIQUE NOT NULL,
             description TEXT,
             image TEXT,
-            level TEXT DEFAULT 'All Levels',
+            level VARCHAR(100) DEFAULT 'All Levels',
             grade INTEGER NOT NULL DEFAULT 1,
             display_label TEXT DEFAULT NULL,
             category_id INTEGER REFERENCES learning_categories(id) ON DELETE SET NULL,
@@ -854,7 +898,8 @@ def init_db():
     add_column_if_not_exists(cur, "modules", "is_active", "INTEGER NOT NULL DEFAULT 1")
 
     # Create course_videos table
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS course_videos (
             id {pk_def},
@@ -862,7 +907,7 @@ def init_db():
             title TEXT NOT NULL,
             description TEXT,
             sequence INTEGER NOT NULL DEFAULT 1,
-            duration TEXT DEFAULT '10:00',
+            duration VARCHAR(50) DEFAULT '10:00',
             video_file TEXT DEFAULT NULL,
             youtube_video_id TEXT DEFAULT NULL,
             is_active INTEGER NOT NULL DEFAULT 1,
@@ -1014,7 +1059,8 @@ def init_db():
     )
 
     # Create project_submissions table
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS project_submissions (
             id {pk_def},
@@ -1022,7 +1068,7 @@ def init_db():
             user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             submission_text TEXT,
             submission_file TEXT,
-            status TEXT NOT NULL DEFAULT 'submitted',
+            status VARCHAR(50) NOT NULL DEFAULT 'submitted',
             marks INTEGER DEFAULT NULL,
             feedback TEXT,
             evaluated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -1043,7 +1089,7 @@ def init_db():
     # Ensure project_submissions columns exist across PostgreSQL, SQLite, and MySQL
     add_column_if_not_exists(cur, "project_submissions", "submission_text", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "project_submissions", "submission_file", "TEXT DEFAULT NULL")
-    add_column_if_not_exists(cur, "project_submissions", "status", "TEXT NOT NULL DEFAULT 'submitted'")
+    add_column_if_not_exists(cur, "project_submissions", "status", "VARCHAR(50) NOT NULL DEFAULT 'submitted'")
     add_column_if_not_exists(cur, "project_submissions", "marks", "INTEGER DEFAULT NULL")
     add_column_if_not_exists(cur, "project_submissions", "feedback", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "project_submissions", "evaluated_by", "INTEGER DEFAULT NULL")
@@ -1217,62 +1263,64 @@ def init_db():
     create_index_if_not_exists(cur, "idx_orders_status", "orders", ["order_status"])
 
     # Create solutions table (Phase CMS Driven Solutions)
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS solutions (
             id {pk_def},
             slug VARCHAR(255) UNIQUE NOT NULL,
-            title TEXT NOT NULL,
-            badge TEXT DEFAULT NULL,
+            title VARCHAR(255) NOT NULL,
+            badge VARCHAR(255) DEFAULT NULL,
             short_description TEXT DEFAULT NULL,
             description TEXT DEFAULT NULL,
-            image TEXT DEFAULT NULL,
+            image VARCHAR(500) DEFAULT NULL,
             ideal_for TEXT DEFAULT NULL,
-            cta_text TEXT DEFAULT 'Get in Touch',
-            cta_url TEXT DEFAULT '/contact',
+            cta_text VARCHAR(100) DEFAULT 'Get in Touch',
+            cta_url VARCHAR(255) DEFAULT '/contact',
             display_order INTEGER NOT NULL DEFAULT 1,
             is_active INTEGER NOT NULL DEFAULT 1,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            created_at VARCHAR(50) NOT NULL,
+            updated_at VARCHAR(50) NOT NULL
         )
         """
     )
     add_column_if_not_exists(cur, "solutions", "slug", "VARCHAR(255) DEFAULT ''")
-    add_column_if_not_exists(cur, "solutions", "title", "TEXT NOT NULL DEFAULT ''")
-    add_column_if_not_exists(cur, "solutions", "badge", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "solutions", "title", "VARCHAR(255) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "solutions", "badge", "VARCHAR(255) DEFAULT NULL")
     add_column_if_not_exists(cur, "solutions", "short_description", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "solutions", "description", "TEXT DEFAULT NULL")
-    add_column_if_not_exists(cur, "solutions", "image", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "solutions", "image", "VARCHAR(500) DEFAULT NULL")
     add_column_if_not_exists(cur, "solutions", "ideal_for", "TEXT DEFAULT NULL")
-    add_column_if_not_exists(cur, "solutions", "cta_text", "TEXT DEFAULT 'Get in Touch'")
-    add_column_if_not_exists(cur, "solutions", "cta_url", "TEXT DEFAULT '/contact'")
+    add_column_if_not_exists(cur, "solutions", "cta_text", "VARCHAR(100) DEFAULT 'Get in Touch'")
+    add_column_if_not_exists(cur, "solutions", "cta_url", "VARCHAR(255) DEFAULT '/contact'")
     add_column_if_not_exists(cur, "solutions", "display_order", "INTEGER NOT NULL DEFAULT 1")
     add_column_if_not_exists(cur, "solutions", "is_active", "INTEGER NOT NULL DEFAULT 1")
-    add_column_if_not_exists(cur, "solutions", "created_at", "TEXT DEFAULT ''")
-    add_column_if_not_exists(cur, "solutions", "updated_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "solutions", "created_at", "VARCHAR(50) DEFAULT ''")
+    add_column_if_not_exists(cur, "solutions", "updated_at", "VARCHAR(50) DEFAULT ''")
 
     # Create solution_items table
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS solution_items (
             id {pk_def},
             solution_id INTEGER NOT NULL REFERENCES solutions(id) ON DELETE CASCADE,
-            title TEXT NOT NULL,
+            title VARCHAR(255) NOT NULL,
             description TEXT DEFAULT NULL,
             display_order INTEGER NOT NULL DEFAULT 1,
             is_active INTEGER NOT NULL DEFAULT 1,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            created_at VARCHAR(50) NOT NULL,
+            updated_at VARCHAR(50) NOT NULL
         )
         """
     )
     add_column_if_not_exists(cur, "solution_items", "solution_id", "INTEGER NOT NULL DEFAULT 0")
-    add_column_if_not_exists(cur, "solution_items", "title", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "solution_items", "title", "VARCHAR(255) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "solution_items", "description", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "solution_items", "display_order", "INTEGER NOT NULL DEFAULT 1")
     add_column_if_not_exists(cur, "solution_items", "is_active", "INTEGER NOT NULL DEFAULT 1")
-    add_column_if_not_exists(cur, "solution_items", "created_at", "TEXT DEFAULT ''")
-    add_column_if_not_exists(cur, "solution_items", "updated_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "solution_items", "created_at", "VARCHAR(50) DEFAULT ''")
+    add_column_if_not_exists(cur, "solution_items", "updated_at", "VARCHAR(50) DEFAULT ''")
 
     create_index_if_not_exists(cur, "idx_solutions_slug", "solutions", ["slug"])
     create_index_if_not_exists(cur, "idx_solutions_display_order", "solutions", ["display_order"])
@@ -1281,61 +1329,69 @@ def init_db():
     create_index_if_not_exists(cur, "idx_solution_items_display_order", "solution_items", ["display_order"])
 
     # Create laboratories table (Lab Setup Management)
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS laboratories (
             id {pk_def},
-            name TEXT NOT NULL,
+            name VARCHAR(255) NOT NULL,
             slug VARCHAR(255) UNIQUE NOT NULL,
-            badge TEXT DEFAULT NULL,
-            cover_image TEXT DEFAULT NULL,
+            badge VARCHAR(255) DEFAULT NULL,
+            cover_image VARCHAR(500) DEFAULT NULL,
+            cover_image_alt VARCHAR(255) DEFAULT NULL,
+            about_image VARCHAR(500) DEFAULT NULL,
+            about_image_alt VARCHAR(255) DEFAULT NULL,
             short_description TEXT DEFAULT NULL,
             description TEXT DEFAULT NULL,
             features TEXT DEFAULT NULL,
             equipment TEXT DEFAULT NULL,
             benefits TEXT DEFAULT NULL,
             target_audience TEXT DEFAULT NULL,
-            cta_text TEXT DEFAULT 'Book a Lab Setup',
+            cta_text VARCHAR(100) DEFAULT 'Book a Lab Setup',
             display_order INTEGER NOT NULL DEFAULT 1,
             is_active INTEGER NOT NULL DEFAULT 1,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            created_at VARCHAR(50) NOT NULL,
+            updated_at VARCHAR(50) NOT NULL
         )
         """
     )
-    add_column_if_not_exists(cur, "laboratories", "name", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "laboratories", "name", "VARCHAR(255) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "laboratories", "slug", "VARCHAR(255) DEFAULT ''")
-    add_column_if_not_exists(cur, "laboratories", "badge", "TEXT DEFAULT NULL")
-    add_column_if_not_exists(cur, "laboratories", "cover_image", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "laboratories", "badge", "VARCHAR(255) DEFAULT NULL")
+    add_column_if_not_exists(cur, "laboratories", "cover_image", "VARCHAR(500) DEFAULT NULL")
+    add_column_if_not_exists(cur, "laboratories", "cover_image_alt", "VARCHAR(255) DEFAULT NULL")
+    add_column_if_not_exists(cur, "laboratories", "about_image", "VARCHAR(500) DEFAULT NULL")
+    add_column_if_not_exists(cur, "laboratories", "about_image_alt", "VARCHAR(255) DEFAULT NULL")
     add_column_if_not_exists(cur, "laboratories", "short_description", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "laboratories", "description", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "laboratories", "features", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "laboratories", "equipment", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "laboratories", "benefits", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "laboratories", "target_audience", "TEXT DEFAULT NULL")
-    add_column_if_not_exists(cur, "laboratories", "cta_text", "TEXT DEFAULT 'Book a Lab Setup'")
+    add_column_if_not_exists(cur, "laboratories", "cta_text", "VARCHAR(100) DEFAULT 'Book a Lab Setup'")
     add_column_if_not_exists(cur, "laboratories", "display_order", "INTEGER NOT NULL DEFAULT 1")
     add_column_if_not_exists(cur, "laboratories", "is_active", "INTEGER NOT NULL DEFAULT 1")
-    add_column_if_not_exists(cur, "laboratories", "created_at", "TEXT DEFAULT ''")
-    add_column_if_not_exists(cur, "laboratories", "updated_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "laboratories", "created_at", "VARCHAR(50) DEFAULT ''")
+    add_column_if_not_exists(cur, "laboratories", "updated_at", "VARCHAR(50) DEFAULT ''")
 
     create_index_if_not_exists(cur, "idx_laboratories_slug", "laboratories", ["slug"])
     create_index_if_not_exists(cur, "idx_laboratories_display_order", "laboratories", ["display_order"])
     create_index_if_not_exists(cur, "idx_laboratories_is_active", "laboratories", ["is_active"])
 
     # Create lab_inquiries table (Institutional Lab Setup Inquiries)
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS lab_inquiries (
             id {pk_def},
-            institution_name TEXT NOT NULL,
+            institution_name VARCHAR(255) NOT NULL,
             institution_type VARCHAR(100) NOT NULL,
-            institution_website TEXT DEFAULT NULL,
+            institution_website VARCHAR(500) DEFAULT NULL,
             state VARCHAR(100) NOT NULL,
             city VARCHAR(100) NOT NULL,
             address TEXT NOT NULL,
             pincode VARCHAR(20) NOT NULL,
-            contact_person TEXT NOT NULL,
+            contact_person VARCHAR(255) NOT NULL,
             designation VARCHAR(100) NOT NULL,
             email VARCHAR(255) NOT NULL,
             phone VARCHAR(50) NOT NULL,
@@ -1347,23 +1403,23 @@ def init_db():
             additional_requirements TEXT DEFAULT NULL,
             status VARCHAR(50) NOT NULL DEFAULT 'New',
             internal_notes TEXT DEFAULT NULL,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            created_at VARCHAR(50) NOT NULL,
+            updated_at VARCHAR(50) NOT NULL
         )
         """
     )
-    add_column_if_not_exists(cur, "lab_inquiries", "institution_name", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiries", "institution_name", "VARCHAR(255) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "lab_inquiries", "institution_type", "VARCHAR(100) NOT NULL DEFAULT 'School'")
-    add_column_if_not_exists(cur, "lab_inquiries", "institution_website", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "lab_inquiries", "institution_website", "VARCHAR(500) DEFAULT NULL")
     add_column_if_not_exists(cur, "lab_inquiries", "state", "VARCHAR(100) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "lab_inquiries", "city", "VARCHAR(100) NOT NULL DEFAULT ''")
-    add_column_if_not_exists(cur, "lab_inquiries", "address", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiries", "address", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "lab_inquiries", "pincode", "VARCHAR(20) NOT NULL DEFAULT ''")
-    add_column_if_not_exists(cur, "lab_inquiries", "contact_person", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiries", "contact_person", "VARCHAR(255) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "lab_inquiries", "designation", "VARCHAR(100) NOT NULL DEFAULT 'Coordinator'")
     add_column_if_not_exists(cur, "lab_inquiries", "email", "VARCHAR(255) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "lab_inquiries", "phone", "VARCHAR(50) NOT NULL DEFAULT ''")
-    add_column_if_not_exists(cur, "lab_inquiries", "selected_labs", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiries", "selected_labs", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "lab_inquiries", "expected_students", "VARCHAR(100) DEFAULT NULL")
     add_column_if_not_exists(cur, "lab_inquiries", "available_space", "VARCHAR(100) DEFAULT NULL")
     add_column_if_not_exists(cur, "lab_inquiries", "approximate_budget", "VARCHAR(100) DEFAULT NULL")
@@ -1371,44 +1427,46 @@ def init_db():
     add_column_if_not_exists(cur, "lab_inquiries", "additional_requirements", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "lab_inquiries", "status", "VARCHAR(50) NOT NULL DEFAULT 'New'")
     add_column_if_not_exists(cur, "lab_inquiries", "internal_notes", "TEXT DEFAULT NULL")
-    add_column_if_not_exists(cur, "lab_inquiries", "created_at", "TEXT DEFAULT ''")
-    add_column_if_not_exists(cur, "lab_inquiries", "updated_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiries", "created_at", "VARCHAR(50) DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiries", "updated_at", "VARCHAR(50) DEFAULT ''")
 
     create_index_if_not_exists(cur, "idx_lab_inquiries_status", "lab_inquiries", ["status"])
     create_index_if_not_exists(cur, "idx_lab_inquiries_created_at", "lab_inquiries", ["created_at"])
 
     # Create lab_inquiry_notes table (Private administrative notes)
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS lab_inquiry_notes (
             id {pk_def},
             inquiry_id INTEGER NOT NULL REFERENCES lab_inquiries(id) ON DELETE CASCADE,
             author_id INTEGER DEFAULT NULL,
-            author_name TEXT NOT NULL,
+            author_name VARCHAR(255) NOT NULL DEFAULT 'Admin',
             note TEXT NOT NULL,
-            created_at TEXT NOT NULL
+            created_at VARCHAR(50) NOT NULL
         )
         """
     )
     add_column_if_not_exists(cur, "lab_inquiry_notes", "inquiry_id", "INTEGER NOT NULL DEFAULT 0")
     add_column_if_not_exists(cur, "lab_inquiry_notes", "author_id", "INTEGER DEFAULT NULL")
-    add_column_if_not_exists(cur, "lab_inquiry_notes", "author_name", "TEXT NOT NULL DEFAULT 'Admin'")
-    add_column_if_not_exists(cur, "lab_inquiry_notes", "note", "TEXT NOT NULL DEFAULT ''")
-    add_column_if_not_exists(cur, "lab_inquiry_notes", "created_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiry_notes", "author_name", "VARCHAR(255) NOT NULL DEFAULT 'Admin'")
+    add_column_if_not_exists(cur, "lab_inquiry_notes", "note", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "lab_inquiry_notes", "created_at", "VARCHAR(50) DEFAULT ''")
 
     create_index_if_not_exists(cur, "idx_lab_inquiry_notes_inquiry", "lab_inquiry_notes", ["inquiry_id"])
 
     # -------------------------------------------------------------
     # Composite Skill Lab (CBSE) Dedicated Tables & Indexes
     # -------------------------------------------------------------
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS composite_lab_enquiries (
             id {pk_def},
-            school_name TEXT NOT NULL,
+            school_name VARCHAR(255) NOT NULL,
             institution_type VARCHAR(100) NOT NULL,
             cbse_affiliation_no VARCHAR(100) DEFAULT NULL,
-            contact_person TEXT NOT NULL,
+            contact_person VARCHAR(255) NOT NULL,
             designation VARCHAR(100) NOT NULL,
             email VARCHAR(255) NOT NULL,
             phone VARCHAR(50) NOT NULL,
@@ -1424,85 +1482,88 @@ def init_db():
             additional_requirements TEXT DEFAULT NULL,
             status VARCHAR(50) NOT NULL DEFAULT 'New',
             assigned_to INTEGER DEFAULT NULL,
-            assigned_to_name TEXT DEFAULT NULL,
+            assigned_to_name VARCHAR(255) DEFAULT NULL,
             internal_notes TEXT DEFAULT NULL,
             ip_address VARCHAR(50) DEFAULT NULL,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            created_at VARCHAR(50) NOT NULL,
+            updated_at VARCHAR(50) NOT NULL
         )
         """
     )
-    add_column_if_not_exists(cur, "composite_lab_enquiries", "school_name", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "school_name", "VARCHAR(255) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "institution_type", "VARCHAR(100) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "cbse_affiliation_no", "VARCHAR(100) DEFAULT NULL")
-    add_column_if_not_exists(cur, "composite_lab_enquiries", "contact_person", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "contact_person", "VARCHAR(255) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "designation", "VARCHAR(100) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "email", "VARCHAR(255) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "phone", "VARCHAR(50) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "state", "VARCHAR(100) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "city", "VARCHAR(100) NOT NULL DEFAULT ''")
-    add_column_if_not_exists(cur, "composite_lab_enquiries", "address", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "address", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "student_strength", "VARCHAR(100) DEFAULT NULL")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "existing_lab", "VARCHAR(100) DEFAULT NULL")
-    add_column_if_not_exists(cur, "composite_lab_enquiries", "required_sectors", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "required_sectors", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "preferred_package", "VARCHAR(100) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "room_size", "VARCHAR(100) DEFAULT NULL")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "budget", "VARCHAR(100) DEFAULT NULL")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "additional_requirements", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "status", "VARCHAR(50) NOT NULL DEFAULT 'New'")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "assigned_to", "INTEGER DEFAULT NULL")
-    add_column_if_not_exists(cur, "composite_lab_enquiries", "assigned_to_name", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "assigned_to_name", "VARCHAR(255) DEFAULT NULL")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "internal_notes", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "composite_lab_enquiries", "ip_address", "VARCHAR(50) DEFAULT NULL")
-    add_column_if_not_exists(cur, "composite_lab_enquiries", "created_at", "TEXT DEFAULT ''")
-    add_column_if_not_exists(cur, "composite_lab_enquiries", "updated_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "created_at", "VARCHAR(50) DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "updated_at", "VARCHAR(50) DEFAULT ''")
 
     create_index_if_not_exists(cur, "idx_comp_enq_status", "composite_lab_enquiries", ["status"])
     create_index_if_not_exists(cur, "idx_comp_enq_created", "composite_lab_enquiries", ["created_at"])
     create_index_if_not_exists(cur, "idx_comp_enq_pkg", "composite_lab_enquiries", ["preferred_package"])
 
     # Composite Lab Notes
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS composite_lab_notes (
             id {pk_def},
             enquiry_id INTEGER NOT NULL REFERENCES composite_lab_enquiries(id) ON DELETE CASCADE,
             author_id INTEGER DEFAULT NULL,
-            author_name TEXT NOT NULL DEFAULT 'Admin',
+            author_name VARCHAR(255) NOT NULL DEFAULT 'Admin',
             note TEXT NOT NULL,
-            created_at TEXT NOT NULL
+            created_at VARCHAR(50) NOT NULL
         )
         """
     )
     add_column_if_not_exists(cur, "composite_lab_notes", "enquiry_id", "INTEGER NOT NULL DEFAULT 0")
     add_column_if_not_exists(cur, "composite_lab_notes", "author_id", "INTEGER DEFAULT NULL")
-    add_column_if_not_exists(cur, "composite_lab_notes", "author_name", "TEXT NOT NULL DEFAULT 'Admin'")
-    add_column_if_not_exists(cur, "composite_lab_notes", "note", "TEXT NOT NULL DEFAULT ''")
-    add_column_if_not_exists(cur, "composite_lab_notes", "created_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_notes", "author_name", "VARCHAR(255) NOT NULL DEFAULT 'Admin'")
+    add_column_if_not_exists(cur, "composite_lab_notes", "note", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_notes", "created_at", "VARCHAR(50) DEFAULT ''")
     create_index_if_not_exists(cur, "idx_comp_notes_enq", "composite_lab_notes", ["enquiry_id"])
 
     # Composite Lab Activity Logs
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS composite_lab_activity_logs (
             id {pk_def},
             enquiry_id INTEGER NOT NULL REFERENCES composite_lab_enquiries(id) ON DELETE CASCADE,
             user_id INTEGER DEFAULT NULL,
-            user_name TEXT NOT NULL DEFAULT 'System',
-            action TEXT NOT NULL,
-            created_at TEXT NOT NULL
+            user_name VARCHAR(255) NOT NULL DEFAULT 'System',
+            action VARCHAR(255) NOT NULL,
+            created_at VARCHAR(50) NOT NULL
         )
         """
     )
     add_column_if_not_exists(cur, "composite_lab_activity_logs", "enquiry_id", "INTEGER NOT NULL DEFAULT 0")
     add_column_if_not_exists(cur, "composite_lab_activity_logs", "user_id", "INTEGER DEFAULT NULL")
-    add_column_if_not_exists(cur, "composite_lab_activity_logs", "user_name", "TEXT NOT NULL DEFAULT 'System'")
-    add_column_if_not_exists(cur, "composite_lab_activity_logs", "action", "TEXT NOT NULL DEFAULT ''")
-    add_column_if_not_exists(cur, "composite_lab_activity_logs", "created_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_activity_logs", "user_name", "VARCHAR(255) NOT NULL DEFAULT 'System'")
+    add_column_if_not_exists(cur, "composite_lab_activity_logs", "action", "VARCHAR(255) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_activity_logs", "created_at", "VARCHAR(50) DEFAULT ''")
     create_index_if_not_exists(cur, "idx_comp_act_enq", "composite_lab_activity_logs", ["enquiry_id"])
 
     # Composite Lab Packages
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS composite_lab_packages (
             id {pk_def},
@@ -1517,8 +1578,8 @@ def init_db():
             features TEXT NOT NULL,
             display_order INTEGER NOT NULL DEFAULT 1,
             is_active INTEGER NOT NULL DEFAULT 1,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            created_at VARCHAR(50) NOT NULL,
+            updated_at VARCHAR(50) NOT NULL
         )
         """
     )
@@ -1529,48 +1590,50 @@ def init_db():
     add_column_if_not_exists(cur, "composite_lab_packages", "badge", "VARCHAR(50) DEFAULT NULL")
     add_column_if_not_exists(cur, "composite_lab_packages", "target_grades", "VARCHAR(100) DEFAULT 'Grades 6 - 10'")
     add_column_if_not_exists(cur, "composite_lab_packages", "ideal_for", "TEXT DEFAULT NULL")
-    add_column_if_not_exists(cur, "composite_lab_packages", "description", "TEXT NOT NULL DEFAULT ''")
-    add_column_if_not_exists(cur, "composite_lab_packages", "features", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_packages", "description", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_packages", "features", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "composite_lab_packages", "display_order", "INTEGER NOT NULL DEFAULT 1")
     add_column_if_not_exists(cur, "composite_lab_packages", "is_active", "INTEGER NOT NULL DEFAULT 1")
-    add_column_if_not_exists(cur, "composite_lab_packages", "created_at", "TEXT DEFAULT ''")
-    add_column_if_not_exists(cur, "composite_lab_packages", "updated_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_packages", "created_at", "VARCHAR(50) DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_packages", "updated_at", "VARCHAR(50) DEFAULT ''")
     create_index_if_not_exists(cur, "idx_comp_pkg_order", "composite_lab_packages", ["display_order"])
 
     # Composite Lab Skill Sectors
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS composite_lab_sectors (
             id {pk_def},
             name VARCHAR(150) NOT NULL,
             code VARCHAR(50) UNIQUE NOT NULL,
             icon VARCHAR(50) DEFAULT 'cpu',
-            image_path TEXT DEFAULT NULL,
+            image_path VARCHAR(500) DEFAULT NULL,
             description TEXT NOT NULL,
             equipment_highlights TEXT NOT NULL,
             cbse_subject_code VARCHAR(100) DEFAULT NULL,
             display_order INTEGER NOT NULL DEFAULT 1,
             is_active INTEGER NOT NULL DEFAULT 1,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            created_at VARCHAR(50) NOT NULL,
+            updated_at VARCHAR(50) NOT NULL
         )
         """
     )
     add_column_if_not_exists(cur, "composite_lab_sectors", "name", "VARCHAR(150) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "composite_lab_sectors", "code", "VARCHAR(50) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "composite_lab_sectors", "icon", "VARCHAR(50) DEFAULT 'cpu'")
-    add_column_if_not_exists(cur, "composite_lab_sectors", "image_path", "TEXT DEFAULT NULL")
-    add_column_if_not_exists(cur, "composite_lab_sectors", "description", "TEXT NOT NULL DEFAULT ''")
-    add_column_if_not_exists(cur, "composite_lab_sectors", "equipment_highlights", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_sectors", "image_path", "VARCHAR(500) DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_sectors", "description", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_sectors", "equipment_highlights", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "composite_lab_sectors", "cbse_subject_code", "VARCHAR(100) DEFAULT NULL")
     add_column_if_not_exists(cur, "composite_lab_sectors", "display_order", "INTEGER NOT NULL DEFAULT 1")
     add_column_if_not_exists(cur, "composite_lab_sectors", "is_active", "INTEGER NOT NULL DEFAULT 1")
-    add_column_if_not_exists(cur, "composite_lab_sectors", "created_at", "TEXT DEFAULT ''")
-    add_column_if_not_exists(cur, "composite_lab_sectors", "updated_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_sectors", "created_at", "VARCHAR(50) DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_sectors", "updated_at", "VARCHAR(50) DEFAULT ''")
     create_index_if_not_exists(cur, "idx_comp_sec_order", "composite_lab_sectors", ["display_order"])
 
     # Composite Lab FAQs
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS composite_lab_faqs (
             id {pk_def},
@@ -1579,44 +1642,45 @@ def init_db():
             category VARCHAR(50) DEFAULT 'General',
             display_order INTEGER NOT NULL DEFAULT 1,
             is_active INTEGER NOT NULL DEFAULT 1,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            created_at VARCHAR(50) NOT NULL,
+            updated_at VARCHAR(50) NOT NULL
         )
         """
     )
-    add_column_if_not_exists(cur, "composite_lab_faqs", "question", "TEXT NOT NULL DEFAULT ''")
-    add_column_if_not_exists(cur, "composite_lab_faqs", "answer", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_faqs", "question", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_faqs", "answer", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "composite_lab_faqs", "category", "VARCHAR(50) DEFAULT 'General'")
     add_column_if_not_exists(cur, "composite_lab_faqs", "display_order", "INTEGER NOT NULL DEFAULT 1")
     add_column_if_not_exists(cur, "composite_lab_faqs", "is_active", "INTEGER NOT NULL DEFAULT 1")
-    add_column_if_not_exists(cur, "composite_lab_faqs", "created_at", "TEXT DEFAULT ''")
-    add_column_if_not_exists(cur, "composite_lab_faqs", "updated_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_faqs", "created_at", "VARCHAR(50) DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_faqs", "updated_at", "VARCHAR(50) DEFAULT ''")
     create_index_if_not_exists(cur, "idx_comp_faq_order", "composite_lab_faqs", ["display_order"])
 
     # Composite Lab Content (CMS)
-    cur.execute(
+    safe_execute_ddl(
+        cur,
         f"""
         CREATE TABLE IF NOT EXISTS composite_lab_content (
             id {pk_def},
             section_key VARCHAR(100) UNIQUE NOT NULL,
-            title TEXT NOT NULL,
+            title VARCHAR(255) NOT NULL,
             subtitle TEXT DEFAULT NULL,
             body TEXT DEFAULT NULL,
-            image_path TEXT DEFAULT NULL,
-            image_alt TEXT DEFAULT NULL,
+            image_path VARCHAR(500) DEFAULT NULL,
+            image_alt VARCHAR(255) DEFAULT NULL,
             extra_data TEXT DEFAULT NULL,
-            updated_at TEXT NOT NULL
+            updated_at VARCHAR(50) NOT NULL
         )
         """
     )
     add_column_if_not_exists(cur, "composite_lab_content", "section_key", "VARCHAR(100) NOT NULL DEFAULT ''")
-    add_column_if_not_exists(cur, "composite_lab_content", "title", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_content", "title", "VARCHAR(255) NOT NULL DEFAULT ''")
     add_column_if_not_exists(cur, "composite_lab_content", "subtitle", "TEXT DEFAULT NULL")
     add_column_if_not_exists(cur, "composite_lab_content", "body", "TEXT DEFAULT NULL")
-    add_column_if_not_exists(cur, "composite_lab_content", "image_path", "TEXT DEFAULT NULL")
-    add_column_if_not_exists(cur, "composite_lab_content", "image_alt", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_content", "image_path", "VARCHAR(500) DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_content", "image_alt", "VARCHAR(255) DEFAULT NULL")
     add_column_if_not_exists(cur, "composite_lab_content", "extra_data", "TEXT DEFAULT NULL")
-    add_column_if_not_exists(cur, "composite_lab_content", "updated_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_content", "updated_at", "VARCHAR(50) DEFAULT ''")
     create_index_if_not_exists(cur, "idx_comp_cnt_key", "composite_lab_content", ["section_key"])
 
     conn.commit()
@@ -6504,59 +6568,87 @@ def admin_course_detail(course_id):
 
 # ---------- Admin Learning Category & Path Management ----------
 
+def find_and_serve_upload(subfolder, filename):
+    """
+    Safely find and serve uploaded files across static uploads, root uploads, seed directories,
+    and fallback assets. Prevents 404s when ephemeral disks on platforms like Render restart.
+    """
+    clean_filename = os.path.basename(filename)
+    search_dirs = [
+        os.path.join(app.root_path, "static", "uploads", subfolder),
+        os.path.join(app.root_path, "uploads", subfolder),
+        os.path.join(app.root_path, "static", "uploads"),
+        os.path.join(app.root_path, "uploads"),
+        os.path.join(app.root_path, "product_airodrone_image"),
+        os.path.join(app.root_path, "static", "images", "services"),
+        os.path.join(app.root_path, "static", "images", subfolder),
+        os.path.join(app.root_path, "static", "images"),
+    ]
+
+    for d in search_dirs:
+        full_path = os.path.join(d, clean_filename)
+        if os.path.exists(full_path) and os.path.isfile(full_path):
+            return send_from_directory(d, clean_filename)
+
+    # Check exact filename with subpaths if nested
+    for d in [
+        os.path.join(app.root_path, "static", "uploads", subfolder),
+        os.path.join(app.root_path, "uploads", subfolder),
+    ]:
+        full_path = os.path.join(d, filename)
+        if os.path.exists(full_path) and os.path.isfile(full_path):
+            return send_from_directory(os.path.dirname(full_path), os.path.basename(full_path))
+
+    # Fallback placeholder to prevent broken layout on ephemeral cloud disk wipes
+    fallback_dir = os.path.join(app.root_path, "static", "images", "services")
+    fallback_file = "workshop.jpg"
+    if os.path.exists(os.path.join(fallback_dir, fallback_file)):
+        return send_from_directory(fallback_dir, fallback_file)
+
+    abort(404)
+
+
 @app.route("/uploads/categories/<path:filename>")
 def serve_category_upload_image(filename):
-    for dir_path in [
-        os.path.join(app.root_path, "static", "uploads", "categories"),
-        os.path.join(app.root_path, "uploads", "categories"),
-    ]:
-        if os.path.exists(os.path.join(dir_path, filename)):
-            return send_from_directory(dir_path, filename)
-    abort(404)
+    return find_and_serve_upload("categories", filename)
 
 
 @app.route("/uploads/learning_paths/<path:filename>")
 def serve_learning_path_upload_image(filename):
-    for dir_path in [
-        os.path.join(app.root_path, "static", "uploads", "learning_paths"),
-        os.path.join(app.root_path, "uploads", "learning_paths"),
-    ]:
-        if os.path.exists(os.path.join(dir_path, filename)):
-            return send_from_directory(dir_path, filename)
-    abort(404)
+    return find_and_serve_upload("learning_paths", filename)
 
 
 @app.route("/uploads/courses/<path:filename>")
 def serve_course_upload_image(filename):
-    for dir_path in [
-        os.path.join(app.root_path, "static", "uploads", "courses"),
-        os.path.join(app.root_path, "uploads", "courses"),
-    ]:
-        if os.path.exists(os.path.join(dir_path, filename)):
-            return send_from_directory(dir_path, filename)
-    abort(404)
+    return find_and_serve_upload("courses", filename)
 
 
 @app.route("/uploads/catalogue/<path:filename>")
 def serve_catalogue_upload_image(filename):
-    for dir_path in [
-        os.path.join(app.root_path, "static", "uploads", "catalogue"),
-        os.path.join(app.root_path, "uploads", "catalogue"),
-    ]:
-        if os.path.exists(os.path.join(dir_path, filename)):
-            return send_from_directory(dir_path, filename)
-    abort(404)
+    return find_and_serve_upload("catalogue", filename)
 
 
 @app.route("/uploads/products/<path:filename>")
 def serve_product_upload_image(filename):
-    for dir_path in [
-        os.path.join(app.root_path, "static", "uploads", "products"),
-        os.path.join(app.root_path, "uploads", "products"),
-    ]:
-        if os.path.exists(os.path.join(dir_path, filename)):
-            return send_from_directory(dir_path, filename)
-    abort(404)
+    return find_and_serve_upload("products", filename)
+
+
+@app.route("/uploads/solutions/<path:filename>")
+def serve_solution_upload_image(filename):
+    return find_and_serve_upload("solutions", filename)
+
+
+@app.route("/uploads/composite_lab/<path:filename>")
+def serve_composite_lab_upload_image(filename):
+    return find_and_serve_upload("composite_lab", filename)
+
+
+@app.route("/uploads/<path:filepath>")
+def serve_generic_upload(filepath):
+    parts = filepath.split("/", 1)
+    if len(parts) == 2:
+        return find_and_serve_upload(parts[0], parts[1])
+    return find_and_serve_upload("", filepath)
 
 
 
@@ -11128,13 +11220,7 @@ def lab_setup_inquiry():
 
 @app.route("/uploads/labs/<path:filename>")
 def serve_lab_upload_image(filename):
-    for dir_path in [
-        os.path.join(app.root_path, "static", "uploads", "labs"),
-        os.path.join(app.root_path, "uploads", "labs"),
-    ]:
-        if os.path.exists(os.path.join(dir_path, filename)):
-            return send_from_directory(dir_path, filename)
-    abort(404)
+    return find_and_serve_upload("labs", filename)
 
 
 @app.route("/admin/labs")

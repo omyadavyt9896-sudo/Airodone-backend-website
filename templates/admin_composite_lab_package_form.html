@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if action == 'edit' else 'Add' }} Package | Composite Skill Lab Admin{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_composite_lab') }}">Composite Skill Lab</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_composite_lab_packages') }}">Packages</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ 'Edit Package' if action == 'edit' else 'New Package' }}</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>{{ 'Edit Package: ' ~ (package.name if package else '') if action == 'edit' else 'Create Turnkey Package' }}</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    Set package tier specifications, transparent pricing, target classes, and detailed features.
+                </p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin_composite_lab_packages') }}" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 0.9rem;">
+                    &larr; Back to Packages
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% set admin_active = 'composite_lab' %}
+{% include "admin_nav.html" %}
+
+<section class="section" style="padding-top: 1rem; padding-bottom: 4rem;">
+    <div class="container" style="max-width: 850px; margin: 0 auto;">
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}" style="margin-bottom: 1.5rem; border-radius: 10px;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="card" style="padding: 2.25rem; border-radius: 16px; background: #ffffff; border: 1px solid var(--color-border, #e2e8f0); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);">
+            <form method="POST">
+                
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label for="name" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Package Name <span style="color: #ef4444;">*</span></label>
+                        <input type="text" id="name" name="name" required value="{{ package.name if package else '' }}" placeholder="e.g. Makerspace Lab" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                    </div>
+
+                    <div>
+                        <label for="slug" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Slug</label>
+                        <input type="text" id="slug" name="slug" value="{{ package.slug if package else '' }}" placeholder="auto-generated from name" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label for="price" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Numeric Price (₹)</label>
+                        <input type="number" step="1" id="price" name="price" value="{{ package.price|int if package and package.price else 199999 }}" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                    </div>
+
+                    <div>
+                        <label for="price_display" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Price Display Text</label>
+                        <input type="text" id="price_display" name="price_display" value="{{ package.price_display if package else '₹1,99,999' }}" placeholder="e.g. ₹3,99,999" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                    </div>
+
+                    <div>
+                        <label for="badge" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Badge Text (Optional)</label>
+                        <input type="text" id="badge" name="badge" value="{{ package.badge if package and package.badge else '' }}" placeholder="e.g. Most Popular" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label for="target_grades" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Target Grade Levels</label>
+                        <input type="text" id="target_grades" name="target_grades" value="{{ package.target_grades if package else 'Classes VI to X' }}" placeholder="e.g. Classes VI to X" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                    </div>
+
+                    <div>
+                        <label for="display_order" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Display Order</label>
+                        <input type="number" id="display_order" name="display_order" value="{{ package.display_order if package else 1 }}" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="ideal_for" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Ideal For</label>
+                    <input type="text" id="ideal_for" name="ideal_for" value="{{ package.ideal_for if package and package.ideal_for else '' }}" placeholder="e.g. Middle schools establishing foundational practical learning" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                </div>
+
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="description" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Description</label>
+                    <textarea id="description" name="description" rows="3" placeholder="Overview of what this package offers..." style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem; font-family: inherit;">{{ package.description if package else '' }}</textarea>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="features" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
+                        Package Features &amp; Inclusions <span style="font-weight: normal; color: #64748b;">(One feature per line)</span>
+                    </label>
+                    <textarea id="features" name="features" rows="6" placeholder="3 Core Skill Sectors Covered&#10;Turnkey hardware for 20 students&#10;CBSE mapped teacher manuals" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem; font-family: inherit;">{{ package.features if package else '' }}</textarea>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.92rem; font-weight: 600; color: #1e293b;">
+                        <input type="checkbox" name="is_active" value="1" {% if not package or package.is_active %}checked{% endif %} style="width: 18px; height: 18px; accent-color: #2563eb;">
+                        <span>Publish package live on the website</span>
+                    </label>
+                </div>
+
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 1.5rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                    <a href="{{ url_for('admin_composite_lab_packages') }}" class="btn btn-secondary" style="padding: 0.75rem 1.4rem;">Cancel</a>
+                    <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.8rem; font-weight: 700;">
+                        {{ 'Update Package' if action == 'edit' else 'Create Package' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

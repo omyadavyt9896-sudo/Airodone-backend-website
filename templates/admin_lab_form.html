@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}{% if action == 'edit' %}Edit {{ lab.name }}{% else %}Add New Laboratory{% endif %} | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_labs') }}">Lab Setup</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{% if action == 'edit' %}Edit Lab{% else %}Add Lab{% endif %}</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>{% if action == 'edit' %}Edit Laboratory: {{ lab.name }}{% else %}Add New Laboratory Package{% endif %}</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    Configure laboratory specifications, equipment list, student learning benefits, and media assets.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% set admin_active = 'labs' %}
+{% include "admin_nav.html" %}
+
+<section class="section" style="padding-top: 0.5rem; padding-bottom: 4rem;">
+    <div class="container" style="max-width: 900px; margin: 0 auto;">
+        
+        <nav style="margin-bottom: 1.5rem;">
+            <a href="{{ url_for('admin_labs') }}" style="color: #0284c7; text-decoration: none; font-weight: 600; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                &larr; Back to Laboratories List
+            </a>
+        </nav>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}" style="margin-bottom: 1.5rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="card" style="padding: 2.25rem; border-radius: 16px; background: var(--color-card-bg, #ffffff); border: 1px solid var(--color-border, #e2e8f0); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);">
+            <form action="{% if action == 'edit' %}{{ url_for('admin_edit_lab', lab_id=lab.id) }}{% else %}{{ url_for('admin_add_lab') }}{% endif %}" method="POST" enctype="multipart/form-data">
+                
+                <!-- Lab Name -->
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="name" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                        Laboratory Name <span style="color: #dc2626;">*</span>
+                    </label>
+                    <input type="text" id="name" name="name" required value="{{ lab.name if lab else '' }}" placeholder="e.g. Robotics &amp; Automation Lab" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--color-border, #cbd5e1); font-size: 1rem; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a);">
+                </div>
+
+                <!-- Editorial gallery: reused across the public visual story and equipment cards -->
+                <div style="margin: 0 0 1.5rem; background: linear-gradient(135deg, #f8fbff, #f7f8fc); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--color-border, #e2e8f0);">
+                    <div style="margin-bottom: 1rem;">
+                        <strong style="color: var(--color-text, #0b1220);">Laboratory Visual Story Gallery</strong>
+                        <p style="margin: .3rem 0 0; color: var(--color-text-muted); font-size: .87rem;">Add authentic lab, equipment and student-project photography. Images are ordered and reused by the dynamic public template.</p>
+                    </div>
+
+                    {% if gallery %}
+                    <div style="display: grid; gap: .85rem; margin-bottom: 1.25rem;">
+                        {% for media in gallery %}
+                        <div style="display: grid; grid-template-columns: 104px 1fr auto; gap: .85rem; align-items: center; padding: .7rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;">
+                            <img src="{{ image_url(media.image_path) }}" alt="{{ media.alt_text or 'Laboratory gallery image' }}" style="width: 104px; height: 70px; object-fit: cover; border-radius: 7px;">
+                            <div style="display:grid; gap:.45rem;">
+                                <input type="text" name="media_alt_{{ media.id }}" value="{{ media.alt_text or '' }}" placeholder="Describe this image for accessibility" aria-label="Alt text for gallery image {{ loop.index }}" style="width:100%; padding:.55rem .65rem; border:1px solid #cbd5e1; border-radius:6px;">
+                                <label style="font-size:.8rem; color:#64748b;">Display order <input type="number" name="media_order_{{ media.id }}" value="{{ media.display_order }}" min="1" style="width:58px; margin-left:.3rem; padding:.35rem; border:1px solid #cbd5e1; border-radius:5px;"></label>
+                            </div>
+                            <label style="font-size:.8rem; color:#b91c1c; white-space:nowrap;"><input type="checkbox" name="remove_media_{{ media.id }}" value="1"> Remove</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div id="galleryUploadRows" style="display:grid; gap:.75rem;">
+                        <div class="gallery-upload-row" style="display:grid; grid-template-columns: 1fr 1fr; gap:.75rem;">
+                            <input type="file" name="gallery_image_files" accept=".jpg,.jpeg,.png,.webp" aria-label="Upload gallery image">
+                            <input type="text" name="gallery_alt_texts" placeholder="Image alt text (e.g. Students assembling a robotics prototype)" style="padding:.6rem .75rem; border:1px solid #cbd5e1; border-radius:7px;">
+                        </div>
+                    </div>
+                    <button type="button" id="addGalleryImage" class="btn btn-secondary" style="margin-top:.85rem; padding:.45rem .75rem; font-size:.82rem;">+ Add another image</button>
+                </div>
+
+                <!-- URL Slug & Badge Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label for="slug" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                            URL Slug <span style="font-weight: 400; color: #64748b; font-size: 0.85rem;">(Auto-generated if empty)</span>
+                        </label>
+                        <input type="text" id="slug" name="slug" value="{{ lab.slug if lab else '' }}" placeholder="e.g. robotics-lab" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.95rem; font-family: monospace; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a);">
+                    </div>
+
+                    <div>
+                        <label for="badge" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                            Header Badge Tag <span style="font-weight: 400; color: #64748b; font-size: 0.85rem;">(Uppercase pill)</span>
+                        </label>
+                        <input type="text" id="badge" name="badge" value="{{ lab.badge if lab else '' }}" placeholder="e.g. NITI AAYOG ALIGNED" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.95rem; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a);">
+                    </div>
+                </div>
+
+                <!-- Cover Image Configuration -->
+                <div style="margin-bottom: 1.5rem; background: var(--color-bg-subtle, #f8fafc); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--color-border, #e2e8f0);">
+                    <label style="display: block; font-weight: 700; margin-bottom: 0.5rem; color: var(--color-text, #0b1220); font-size: 0.95rem;">
+                        Laboratory Cover Image
+                    </label>
+
+                    {% if lab and lab.cover_image %}
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        {% set cur_url = image_url(lab.cover_image) %}
+                        {% if cur_url %}
+                        <img src="{{ cur_url }}" alt="Current cover" style="width: 120px; height: 75px; object-fit: cover; border-radius: 8px; border: 1px solid var(--color-border);">
+                        {% endif %}
+                        <div style="font-size: 0.85rem; color: var(--color-text-muted);">
+                            <strong>Current Image:</strong> <code>{{ lab.cover_image }}</code>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem;">
+                        <div>
+                            <label for="cover_image_file" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem; color: var(--color-text);">
+                                Upload New Image File (.jpg, .png, .webp)
+                            </label>
+                            <input type="file" id="cover_image_file" name="cover_image_file" accept=".jpg,.jpeg,.png,.webp" style="width: 100%; font-size: 0.85rem;">
+                        </div>
+
+                        <div>
+                            <label for="cover_image_preset" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem; color: var(--color-text);">
+                                Or Select Existing Service Image
+                            </label>
+                            <select id="cover_image_preset" name="cover_image_preset" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.9rem; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a);">
+                                <option value="">-- Choose Built-In Preset --</option>
+                                <option value="images/services/atl.jpg" {% if lab and lab.cover_image == 'images/services/atl.jpg' %}selected{% endif %}>ATL Lab (images/services/atl.jpg)</option>
+                                <option value="images/services/robotics.jpg" {% if lab and lab.cover_image == 'images/services/robotics.jpg' %}selected{% endif %}>Robotics Lab (images/services/robotics.jpg)</option>
+                                <option value="images/services/ai.jpg" {% if lab and lab.cover_image == 'images/services/ai.jpg' %}selected{% endif %}>Artificial Intelligence Lab (images/services/ai.jpg)</option>
+                                <option value="images/services/electronics.jpg" {% if lab and lab.cover_image == 'images/services/electronics.jpg' %}selected{% endif %}>STEM &amp; Electronics Lab (images/services/electronics.jpg)</option>
+                                <option value="images/services/drone.jpg" {% if lab and lab.cover_image == 'images/services/drone.jpg' %}selected{% endif %}>Drone Technology Lab (images/services/drone.jpg)</option>
+                                <option value="images/services/workshop.jpg" {% if lab and lab.cover_image == 'images/services/workshop.jpg' %}selected{% endif %}>Custom Workshop / FabLab (images/services/workshop.jpg)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:1rem; margin-top:1rem; flex-wrap:wrap;">
+                        <input type="text" id="cover_image_alt" name="cover_image_alt" value="{{ lab.cover_image_alt if lab else '' }}" placeholder="Cover image alt text" style="flex:1 1 300px; padding:.65rem .85rem; border:1px solid #cbd5e1; border-radius:8px;">
+                        {% if lab and lab.cover_image %}<label style="font-size:.85rem; color:#b91c1c;"><input type="checkbox" name="remove_cover_image" value="1"> Remove cover image</label>{% endif %}
+                    </div>
+                </div>
+
+                <!-- Dedicated About Section Image Configuration -->
+                <div style="margin-bottom: 1.5rem; background: var(--color-bg-subtle, #f8fafc); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--color-border, #e2e8f0);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <div>
+                            <label style="display: block; font-weight: 700; color: var(--color-text, #0b1220); font-size: 0.95rem;">
+                                About Section Image
+                            </label>
+                            <p style="margin: 0.2rem 0 0; color: var(--color-text-muted); font-size: 0.85rem;">
+                                Large showcase photograph prominently displayed in the public laboratory details About section (~45% width).
+                            </p>
+                        </div>
+                        <span style="font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(37, 99, 235, 0.1); color: var(--color-accent, #2563eb);">
+                            Public About Section
+                        </span>
+                    </div>
+
+                    <!-- Current / Live Preview Box -->
+                    <div id="aboutImagePreviewContainer" style="display: flex; align-items: center; gap: 1.25rem; margin: 1rem 0; padding: 0.85rem; background: #ffffff; border: 1px solid var(--color-border, #cbd5e1); border-radius: 10px;">
+                        {% set about_preview_url = image_url(lab.about_image) if (lab and lab.about_image) else None %}
+                        <div style="width: 140px; height: 95px; border-radius: 8px; overflow: hidden; background: #f1f5f9; border: 1px solid var(--color-border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; position: relative;">
+                            <img id="aboutImagePreview" src="{{ about_preview_url or url_for('static', filename='images/services/atl.jpg') }}" alt="About section preview" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.src='{{ url_for('static', filename='images/services/atl.jpg') }}';">
+                        </div>
+                        <div style="flex: 1; font-size: 0.85rem;">
+                            <div id="aboutImageStatus" style="font-weight: 700; color: var(--color-text, #0f172a); margin-bottom: 0.25rem;">
+                                {% if lab and lab.about_image %}
+                                    Current Image Active
+                                {% else %}
+                                    Using Default Fallback Image
+                                {% endif %}
+                            </div>
+                            <div id="aboutImagePathText" style="color: var(--color-text-muted); word-break: break-all; font-family: monospace; font-size: 0.8rem; margin-bottom: 0.25rem;">
+                                {{ lab.about_image if (lab and lab.about_image) else 'Auto-selected based on laboratory domain' }}
+                            </div>
+                            <div style="font-size: 0.78rem; color: #64748b;">
+                                Uploading a new file or choosing a preset replaces the current image immediately upon saving.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem;">
+                        <div>
+                            <label for="about_image_file" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem; color: var(--color-text);">
+                                Upload New Image / Replace (.jpg, .png, .webp)
+                            </label>
+                            <input type="file" id="about_image_file" name="about_image_file" accept=".jpg,.jpeg,.png,.webp" style="width: 100%; font-size: 0.85rem;">
+                        </div>
+
+                        <div>
+                            <label for="about_image_preset" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem; color: var(--color-text);">
+                                Or Select Laboratory Preset
+                            </label>
+                            <select id="about_image_preset" name="about_image_preset" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.9rem; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a);">
+                                <option value="">-- Choose Built-In Preset / Keep Upload --</option>
+                                <option value="images/services/atl.jpg" {% if lab and lab.about_image == 'images/services/atl.jpg' %}selected{% endif %}>ATL Lab (images/services/atl.jpg)</option>
+                                <option value="images/services/robotics.jpg" {% if lab and lab.about_image == 'images/services/robotics.jpg' %}selected{% endif %}>Robotics Lab (images/services/robotics.jpg)</option>
+                                <option value="images/services/ai.jpg" {% if lab and lab.about_image == 'images/services/ai.jpg' %}selected{% endif %}>Artificial Intelligence Lab (images/services/ai.jpg)</option>
+                                <option value="images/services/electronics.jpg" {% if lab and lab.about_image == 'images/services/electronics.jpg' %}selected{% endif %}>STEM &amp; Electronics Lab (images/services/electronics.jpg)</option>
+                                <option value="images/services/drone.jpg" {% if lab and lab.about_image == 'images/services/drone.jpg' %}selected{% endif %}>Drone Technology Lab (images/services/drone.jpg)</option>
+                                <option value="images/services/workshop.jpg" {% if lab and lab.about_image == 'images/services/workshop.jpg' %}selected{% endif %}>Custom Workshop / FabLab (images/services/workshop.jpg)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                        <input type="text" id="about_image_alt" name="about_image_alt" value="{{ lab.about_image_alt if lab else '' }}" placeholder="Image Alt Text (e.g. Students programming humanoid robots in modern robotics lab)" style="flex: 1 1 300px; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;">
+                        {% if lab and lab.about_image %}
+                        <label style="font-size: 0.85rem; color: #b91c1c; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+                            <input type="checkbox" id="remove_about_image" name="remove_about_image" value="1"> Remove About image (revert to default)
+                        </label>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Short Description -->
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="short_description" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                        Short Summary <span style="font-weight: 400; color: #64748b; font-size: 0.85rem;">(1-2 sentences for cards)</span>
+                    </label>
+                    <input type="text" id="short_description" name="short_description" value="{{ lab.short_description if lab else '' }}" placeholder="Brief summary of laboratory" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.95rem; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a);">
+                </div>
+
+                <!-- Full Description -->
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="description" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                        Full Detailed Description <span style="color: #dc2626;">*</span>
+                    </label>
+                    <textarea id="description" name="description" required rows="4" placeholder="Comprehensive description of the laboratory architecture, pedagogical methodology, and setup..." style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.95rem; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a); resize: vertical;">{{ lab.description if lab else '' }}</textarea>
+                </div>
+
+                <!-- Features & Equipment (Multi-line textareas) -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+                    <div>
+                        <label for="features" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                            Key Features &amp; Highlights <span style="font-weight: 400; color: #64748b; font-size: 0.85rem;">(One item per line)</span>
+                        </label>
+                        <textarea id="features" name="features" rows="5" placeholder="NEP 2020 Aligned Curriculum&#10;Modular Ergonomic Workstations&#10;Teacher Certification Program" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.9rem; font-family: monospace; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a); resize: vertical;">{{ lab.features if lab else '' }}</textarea>
+                    </div>
+
+                    <div>
+                        <label for="equipment" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                            Equipment &amp; Facilities Included <span style="font-weight: 400; color: #64748b; font-size: 0.85rem;">(One item per line)</span>
+                        </label>
+                        <textarea id="equipment" name="equipment" rows="5" placeholder="3D Printer &amp; PLA Spools&#10;Robotics Assembly Chassis&#10;Microcontroller Boards (Arduino/ESP32)&#10;Safety Eyewear &amp; ESD Mats" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.9rem; font-family: monospace; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a); resize: vertical;">{{ lab.equipment if lab else '' }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Benefits & Target Audience -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+                    <div>
+                        <label for="benefits" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                            Student Learning Benefits <span style="font-weight: 400; color: #64748b; font-size: 0.85rem;">(One benefit per line)</span>
+                        </label>
+                        <textarea id="benefits" name="benefits" rows="4" placeholder="Hands-on computational problem solving&#10;Prepares for ATL Marathon and Hackathons&#10;Real-world embedded hardware experience" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.9rem; font-family: monospace; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a); resize: vertical;">{{ lab.benefits if lab else '' }}</textarea>
+                    </div>
+
+                    <div>
+                        <label for="target_audience" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                            Target Audience &amp; Institutions
+                        </label>
+                        <input type="text" id="target_audience" name="target_audience" value="{{ lab.target_audience if lab else '' }}" placeholder="e.g. K-12 Schools, CBSE/ICSE, Engineering Colleges" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.95rem; margin-bottom: 1rem; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a);">
+
+                        <label for="cta_text" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--color-text, #0b1220);">
+                            CTA Button Text
+                        </label>
+                        <input type="text" id="cta_text" name="cta_text" value="{{ lab.cta_text if lab else 'Book a Lab Setup' }}" placeholder="Book a Lab Setup" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.95rem; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a);">
+                    </div>
+                </div>
+
+                <!-- Display Order & Active Toggle -->
+                <div style="display: flex; align-items: center; gap: 2rem; padding: 1.25rem 0; border-top: 1px solid var(--color-border, #e2e8f0); border-bottom: 1px solid var(--color-border, #e2e8f0); margin-bottom: 1.75rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <label for="display_order" style="font-weight: 600; color: var(--color-text, #0b1220);">Display Order:</label>
+                        <input type="number" id="display_order" name="display_order" min="1" value="{{ lab.display_order if lab else 1 }}" style="width: 90px; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--color-border, #cbd5e1); font-size: 1rem; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a);">
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 0.65rem;">
+                        <input type="checkbox" id="is_active" name="is_active" value="1" {% if not lab or lab.is_active %}checked{% endif %} style="width: 20px; height: 20px; cursor: pointer; accent-color: #0284c7;">
+                        <label for="is_active" style="font-weight: 700; color: var(--color-text, #0b1220); cursor: pointer;">
+                            Publish on Website (Live on <code>/lab-setup</code>)
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Form Submit Actions -->
+                <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                    <a href="{{ url_for('admin_labs') }}" class="btn btn-secondary" style="padding: 0.75rem 1.5rem; text-decoration: none;">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem; font-weight: 700; border: none; cursor: pointer;">
+                        {% if action == 'edit' %}Save Changes{% else %}Create Laboratory{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.getElementById('addGalleryImage')?.addEventListener('click', function () {
+    const row = document.querySelector('.gallery-upload-row');
+    if (!row) return;
+    const clone = row.cloneNode(true);
+    clone.querySelectorAll('input').forEach(input => input.value = '');
+    document.getElementById('galleryUploadRows').appendChild(clone);
+});
+
+// Live Preview and Replace/Remove for About Section Image
+(function() {
+    const aboutFileInput = document.getElementById('about_image_file');
+    const aboutPresetSelect = document.getElementById('about_image_preset');
+    const aboutRemoveCheckbox = document.getElementById('remove_about_image');
+    const aboutImgPreview = document.getElementById('aboutImagePreview');
+    const aboutImgStatus = document.getElementById('aboutImageStatus');
+    const aboutImgPathText = document.getElementById('aboutImagePathText');
+
+    if (aboutFileInput && aboutImgPreview) {
+        aboutFileInput.addEventListener('change', function(e) {
+            const file = e.target.files && e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    aboutImgPreview.src = evt.target.result;
+                    aboutImgPreview.style.opacity = '1';
+                    if (aboutImgStatus) aboutImgStatus.textContent = 'New Image Selected (Upload Pending Save)';
+                    if (aboutImgPathText) aboutImgPathText.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+                    if (aboutRemoveCheckbox) aboutRemoveCheckbox.checked = false;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    if (aboutPresetSelect && aboutImgPreview) {
+        aboutPresetSelect.addEventListener('change', function(e) {
+            const val = e.target.value;
+            if (val) {
+                aboutImgPreview.src = '/static/' + val;
+                aboutImgPreview.style.opacity = '1';
+                if (aboutImgStatus) aboutImgStatus.textContent = 'Preset Selected (Pending Save)';
+                if (aboutImgPathText) aboutImgPathText.textContent = val;
+                if (aboutFileInput) aboutFileInput.value = '';
+                if (aboutRemoveCheckbox) aboutRemoveCheckbox.checked = false;
+            }
+        });
+    }
+
+    if (aboutRemoveCheckbox && aboutImgPreview) {
+        aboutRemoveCheckbox.addEventListener('change', function(e) {
+            if (e.target.checked) {
+                aboutImgPreview.style.opacity = '0.35';
+                if (aboutImgStatus) aboutImgStatus.textContent = 'Marked for Removal (Will revert to default on save)';
+            } else {
+                aboutImgPreview.style.opacity = '1';
+                if (aboutImgStatus) aboutImgStatus.textContent = 'Current Image Active';
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

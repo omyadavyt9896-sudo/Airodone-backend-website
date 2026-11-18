@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Inquiry #{{ inquiry.id }} &bull; {{ inquiry.institution_name }} | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_lab_inquiries') }}">Lab Inquiries</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Inquiry #{{ inquiry.id }}</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>{{ inquiry.institution_name }}</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    Submitted on {{ inquiry.created_at }} &bull; Reference ID: <span style="font-family: monospace; font-weight: 700; color: #0284c7;">#LAB-{{ '%04d' % inquiry.id }}</span>
+                </p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                {% set st = inquiry.status or 'New' %}
+                <span class="badge-status badge-active" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                    Status: {{ st }}
+                </span>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% set admin_active = 'lab_inquiries' %}
+{% include "admin_nav.html" %}
+
+<section class="section" style="padding-top: 0.5rem; padding-bottom: 4rem;">
+    <div class="container" style="max-width: 1100px; margin: 0 auto;">
+        
+        <nav style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+            <a href="{{ url_for('admin_lab_inquiries') }}" style="color: #0284c7; text-decoration: none; font-weight: 600; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                &larr; Back to All Lab Inquiries
+            </a>
+            
+            <form action="{{ url_for('admin_delete_lab_inquiry', inquiry_id=inquiry.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this inquiry from {{ inquiry.institution_name }}?');">
+                <button type="submit" class="btn btn-danger btn-sm" style="padding: 0.45rem 1rem; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    Delete Inquiry
+                </button>
+            </form>
+        </nav>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}" style="margin-bottom: 1.75rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+            
+            <!-- Left Column: Inquiry Submission Data -->
+            <div style="display: flex; flex-direction: column; gap: 1.75rem;">
+                
+                <!-- Institution Details Card -->
+                <div class="card" style="padding: 1.75rem; border-radius: 14px; background: var(--color-card-bg, #ffffff); border: 1px solid var(--color-border, #e2e8f0); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);">
+                    <h2 style="font-size: 1.15rem; font-weight: 800; color: var(--color-primary, #0284c7); margin: 0 0 1.25rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        Institution Details
+                    </h2>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; font-size: 0.925rem;">
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Institution Name</span>
+                            <strong style="color: var(--color-text); font-size: 1.05rem;">{{ inquiry.institution_name }}</strong>
+                        </div>
+
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Institution Type</span>
+                            <span style="background: var(--color-bg-subtle, #f1f5f9); padding: 0.2rem 0.6rem; border-radius: 6px; font-weight: 600; color: var(--color-text);">{{ inquiry.institution_type }}</span>
+                        </div>
+
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Location</span>
+                            <span style="color: var(--color-text);">{{ inquiry.city }}, {{ inquiry.state }} &bull; {{ inquiry.pincode }}</span>
+                        </div>
+
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Campus Address</span>
+                            <span style="color: var(--color-text);">{{ inquiry.address }}</span>
+                        </div>
+
+                        {% if inquiry.institution_website %}
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Website</span>
+                            <a href="{{ inquiry.institution_website }}" target="_blank" rel="noopener noreferrer" style="color: #0284c7; word-break: break-all;">
+                                {{ inquiry.institution_website }} &nearr;
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Contact Person Card -->
+                <div class="card" style="padding: 1.75rem; border-radius: 14px; background: var(--color-card-bg, #ffffff); border: 1px solid var(--color-border, #e2e8f0); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);">
+                    <h2 style="font-size: 1.15rem; font-weight: 800; color: #10b981; margin: 0 0 1.25rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Contact Person Details
+                    </h2>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; font-size: 0.925rem;">
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Contact Name</span>
+                            <strong style="color: var(--color-text); font-size: 1.05rem;">{{ inquiry.contact_person }}</strong>
+                        </div>
+
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Designation</span>
+                            <span style="color: var(--color-text); font-weight: 600;">{{ inquiry.designation }}</span>
+                        </div>
+
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Email Address</span>
+                            <a href="mailto:{{ inquiry.email }}" style="color: #0284c7; font-weight: 600; text-decoration: none;">
+                                {{ inquiry.email }} &nearr;
+                            </a>
+                        </div>
+
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Mobile Number</span>
+                            <a href="tel:{{ inquiry.phone }}" style="color: #0284c7; font-weight: 700; text-decoration: none; font-size: 1rem;">
+                                {{ inquiry.phone }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Laboratory Requirements Card -->
+                <div class="card" style="padding: 1.75rem; border-radius: 14px; background: var(--color-card-bg, #ffffff); border: 1px solid var(--color-border, #e2e8f0); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);">
+                    <h2 style="font-size: 1.15rem; font-weight: 800; color: #8b5cf6; margin: 0 0 1.25rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31L4.36 17a3 3 0 0 0 2.5 4.5h10.28a3 3 0 0 0 2.5-4.5L14 9.31V2"/><line x1="8.5" y1="2" x2="15.5" y2="2"/></svg>
+                        Laboratory Requirements
+                    </h2>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <span style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.4rem;">Selected Laboratories</span>
+                        <div style="font-size: 1rem; font-weight: 700; color: var(--color-text); line-height: 1.5; background: var(--color-bg-subtle, #f8fafc); padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid var(--color-border);">
+                            {{ inquiry.selected_labs }}
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; font-size: 0.925rem; margin-bottom: 1.5rem;">
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Expected Students</span>
+                            <span style="color: var(--color-text); font-weight: 600;">{{ inquiry.expected_students or 'Not specified' }}</span>
+                        </div>
+
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Available Space</span>
+                            <span style="color: var(--color-text); font-weight: 600;">{{ inquiry.available_space or 'Not specified' }}</span>
+                        </div>
+
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Setup Timeline</span>
+                            <span style="color: var(--color-text); font-weight: 600;">{{ inquiry.setup_timeline or 'Not specified' }}</span>
+                        </div>
+
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Budget Range</span>
+                            <span style="color: var(--color-text); font-weight: 600;">{{ inquiry.approximate_budget or 'Consultation Needed' }}</span>
+                        </div>
+                    </div>
+
+                    {% if inquiry.additional_requirements %}
+                    <div>
+                        <span style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.4rem;">Additional Requirements &amp; Message</span>
+                        <div style="padding: 1rem; border-radius: 8px; background: var(--color-bg-subtle, #f8fafc); border: 1px solid var(--color-border); font-size: 0.95rem; line-height: 1.6; color: var(--color-text); white-space: pre-wrap;">{{ inquiry.additional_requirements }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <!-- Right Column: Status Pipeline & Confidential Administrative Notes -->
+            <div style="display: flex; flex-direction: column; gap: 1.75rem;">
+                
+                <!-- Status Pipeline Card -->
+                <div class="card" style="padding: 1.5rem; border-radius: 14px; background: var(--color-card-bg, #ffffff); border: 1px solid var(--color-border, #e2e8f0); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);">
+                    <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--color-text); margin: 0 0 1rem 0;">
+                        Update Inquiry Status
+                    </h3>
+
+                    <form action="{{ url_for('admin_update_lab_inquiry_status', inquiry_id=inquiry.id) }}" method="POST">
+                        <label for="status" style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--color-text-muted); margin-bottom: 0.4rem; text-transform: uppercase;">
+                            Pipeline Stage
+                        </label>
+                        <select id="status" name="status" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.95rem; margin-bottom: 1rem; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a);">
+                            {% for st_opt in ['New', 'Under Review', 'Contacted', 'Discussion in Progress', 'Proposal Sent', 'Approved', 'Rejected', 'Completed'] %}
+                            <option value="{{ st_opt }}" {% if inquiry.status == st_opt %}selected{% endif %}>
+                                {{ st_opt }}
+                            </option>
+                            {% endfor %}
+                        </select>
+
+                        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.65rem 1rem; font-weight: 700; border-radius: 6px; border: none; cursor: pointer;">
+                            Update Status
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Private Administrative Notes Card -->
+                <div class="card" style="padding: 1.5rem; border-radius: 14px; background: var(--color-card-bg, #ffffff); border: 1px solid var(--color-border, #e2e8f0); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--color-text); margin: 0;">
+                            Administrative Notes
+                        </h3>
+                        <span style="font-size: 0.75rem; background: #fee2e2; color: #b91c1c; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">
+                            CONFIDENTIAL
+                        </span>
+                    </div>
+
+                    <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">
+                        Internal notes are strictly private and never visible to the submitting institution.
+                    </p>
+
+                    <!-- Add Note Form -->
+                    <form action="{{ url_for('admin_add_lab_inquiry_note', inquiry_id=inquiry.id) }}" method="POST" style="margin-bottom: 1.5rem;">
+                        <textarea name="note" required rows="3" placeholder="Add consultation notes, callback results, discount discussions, follow-up dates..." style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.875rem; margin-bottom: 0.75rem; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a); resize: vertical;"></textarea>
+                        <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%; padding: 0.55rem 1rem; font-weight: 700; border-radius: 6px; cursor: pointer;">
+                            + Add Internal Note
+                        </button>
+                    </form>
+
+                    <!-- Historical Notes Log -->
+                    <div style="border-top: 1px solid var(--color-border); padding-top: 1rem;">
+                        <span style="font-size: 0.75rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; display: block; margin-bottom: 0.75rem;">
+                            History Log ({{ notes | length }})
+                        </span>
+
+                        {% if notes %}
+                        <div style="display: flex; flex-direction: column; gap: 0.85rem; max-height: 400px; overflow-y: auto;">
+                            {% for note in notes %}
+                            <div style="background: var(--color-bg-subtle, #f8fafc); border: 1px solid var(--color-border); border-radius: 8px; padding: 0.75rem 0.85rem; font-size: 0.85rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem; font-size: 0.75rem; color: var(--color-text-muted);">
+                                    <strong>{{ note.author_name }}</strong>
+                                    <span>{{ note.created_at[:16] }}</span>
+                                </div>
+                                <div style="color: var(--color-text); line-height: 1.45; white-space: pre-wrap;">{{ note.note }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div style="font-size: 0.85rem; color: var(--color-text-muted); text-align: center; padding: 1rem 0;">
+                            No internal notes added yet.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}

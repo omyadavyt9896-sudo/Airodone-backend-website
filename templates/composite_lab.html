@@ -1,0 +1,1016 @@
+{% extends "base.html" %}
+
+{% block title %}Composite Skill Lab Setup (CBSE) | AIRODRONE Turnkey School Solutions{% endblock %}
+{% block meta_description %}Establish CBSE-compliant Composite Skill Labs in your school. Turnkey setup with equipment, curriculum, spatial planning, and teacher training across Electronics, Robotics, AI, AVGC, Fabrication, and Design.{% endblock %}
+
+{% block content %}
+<!-- ==========================================================================
+     1. HERO SECTION (Animated Mesh Glow, Levitation composition & Micro-Interactions)
+     ========================================================================== -->
+<section class="page-hero csl-hero-wrapper" id="hero">
+    <!-- Ambient Animated Glow Orbs -->
+    <div class="csl-glow-orb csl-glow-orb--1" aria-hidden="true"></div>
+    <div class="csl-glow-orb csl-glow-orb--2" aria-hidden="true"></div>
+    <div class="csl-grid-mesh" aria-hidden="true"></div>
+
+    <div class="container page-hero-inner csl-hero-inner">
+        <!-- Hero Left Column: Staggered Content Entrance -->
+        <div class="csl-hero-content csl-animate-stagger">
+            <div class="csl-tag-badge">
+                <span class="csl-tag-dot" aria-hidden="true"></span>
+                <span>CBSE &amp; NEP 2020 SKILL EDUCATION MANDATE</span>
+            </div>
+
+            <h1 class="csl-hero-title">
+                {% if content.get('hero') and content['hero'].title %}
+                    {{ content['hero'].title }}
+                {% else %}
+                    Composite Skill Lab Setup for CBSE Schools
+                {% endif %}
+            </h1>
+
+            <p class="csl-hero-lead">
+                {% if content.get('hero') and content['hero'].subtitle %}
+                    {{ content['hero'].subtitle }}
+                {% else %}
+                    Empower your students with hands-on technical skills across Electronics, Robotics, AI, AVGC, Fabrication, and Design. A comprehensive, turnkey laboratory solution engineered specifically for CBSE affiliation and NEP 2020 experiential learning standards.
+                {% endif %}
+            </p>
+
+            <!-- Dual Action CTAs with Shine & Sheen Interactions -->
+            <div class="csl-hero-cta-group">
+                <a href="#packages" class="btn btn-primary csl-btn-glow" style="padding: 0.9rem 1.8rem; font-weight: 700;">
+                    <span>View Packages &amp; Pricing</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+                </a>
+                <a href="{{ url_for('composite_lab_contact') }}" class="btn btn-secondary csl-btn-glass" style="padding: 0.9rem 1.8rem; font-weight: 700;">
+                    <span>Request School Proposal</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+
+            <!-- Trust Verification Badges -->
+            <div class="csl-hero-trust-strip">
+                <div class="csl-trust-pill">
+                    <span class="csl-check-icon">✓</span>
+                    <span>100% CBSE Aligned</span>
+                </div>
+                <div class="csl-trust-pill">
+                    <span class="csl-check-icon">✓</span>
+                    <span>6 Core Skill Sectors</span>
+                </div>
+                <div class="csl-trust-pill">
+                    <span class="csl-check-icon">✓</span>
+                    <span>Turnkey Hardware &amp; Manuals</span>
+                </div>
+                <div class="csl-trust-pill">
+                    <span class="csl-check-icon">✓</span>
+                    <span>Faculty Enablement &amp; AMC</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero Right Column: Floating Multi-Layered Visual Composition -->
+        <div class="csl-hero-visual-col">
+            <div class="csl-visual-card-wrap">
+                <!-- Ambient Backlight Aura -->
+                <div class="csl-visual-aura" aria-hidden="true"></div>
+
+                <!-- Main Laboratory Card with Floating Levitation -->
+                <div class="csl-visual-card">
+                    <div class="csl-visual-media-wrap">
+                        {% set hero_img = content.get('hero') and content['hero'].image_path %}
+                        {% if hero_img %}
+                        <img src="{{ image_url(hero_img) }}" 
+                             alt="{{ content['hero'].image_alt or 'CBSE Composite Skill Lab Setup' }}" 
+                             class="csl-hero-img"
+                             onerror="this.src='{{ url_for('static', filename='images/services/atl.jpg') }}';">
+                        {% else %}
+                        <img src="{{ url_for('static', filename='images/services/atl.jpg') }}" 
+                             alt="CBSE Composite Skill Lab Setup by AIRODRONE" 
+                             class="csl-hero-img">
+                        {% endif %}
+                        <div class="csl-media-overlay-gradient"></div>
+                    </div>
+
+                    <!-- Floating Glassmorphic Inset 1: CBSE Aligned Badge -->
+                    <div class="csl-floating-badge csl-floating-badge--top">
+                        <div class="csl-badge-icon-wrap">
+                            <span class="csl-pulse-dot"></span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        </div>
+                        <div>
+                            <div class="csl-badge-title">CBSE Affiliation Standard</div>
+                            <div class="csl-badge-sub">NEP 2020 Compliant</div>
+                        </div>
+                    </div>
+
+                    <!-- Floating Glassmorphic Inset 2: Live In-Lab Support -->
+                    <div class="csl-floating-badge csl-floating-badge--bottom">
+                        <div class="csl-badge-icon-wrap" style="background: rgba(37, 99, 235, 0.15);">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        </div>
+                        <div>
+                            <div class="csl-badge-title">Turnkey Execution</div>
+                            <div class="csl-badge-sub">Ready in 14 Business Days</div>
+                        </div>
+                    </div>
+
+                    <!-- Metric Counters Strip -->
+                    <div class="csl-stat-strip">
+                        <div class="csl-stat-node">
+                            <div class="csl-stat-number"><span class="csl-counter" data-target="6">6</span></div>
+                            <div class="csl-stat-label">Skill Sectors</div>
+                        </div>
+                        <div class="csl-stat-divider" aria-hidden="true"></div>
+                        <div class="csl-stat-node">
+                            <div class="csl-stat-number"><span class="csl-counter" data-target="400">400</span><span class="csl-stat-plus">+</span></div>
+                            <div class="csl-stat-label">Sq. Ft. Layout</div>
+                        </div>
+                        <div class="csl-stat-divider" aria-hidden="true"></div>
+                        <div class="csl-stat-node">
+                            <div class="csl-stat-number"><span class="csl-counter" data-target="14">14</span><span class="csl-stat-plus">d</span></div>
+                            <div class="csl-stat-label">Full Turnkey</div>
+                        </div>
+                        <div class="csl-stat-divider" aria-hidden="true"></div>
+                        <div class="csl-stat-node">
+                            <div class="csl-stat-number"><span class="csl-counter" data-target="150">150</span><span class="csl-stat-plus">+</span></div>
+                            <div class="csl-stat-label">Partner Schools</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Flash Notice for Submissions -->
+{% if submitted %}
+<section class="section" style="padding-top: 1rem; padding-bottom: 0;">
+    <div class="container" style="max-width: 960px;">
+        <div class="csl-alert-banner csl-alert-success">
+            <div class="csl-alert-content">
+                <span class="csl-alert-icon">✓</span>
+                <div>
+                    <strong>Thank you for contacting AIRODRONE!</strong> Your school enquiry has been registered in our Composite Skill Lab system. Our regional academic manager will contact your leadership team within 24 business hours.
+                </div>
+            </div>
+            <a href="#packages" class="btn btn-secondary csl-btn-sm">Review Packages &rarr;</a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- ==========================================================================
+     2. WHAT IS A COMPOSITE SKILL LAB? (Pedagogical Framework & Discovery)
+     ========================================================================== -->
+<section class="section csl-section-light" id="about">
+    <div class="container">
+        <div class="csl-split-grid csl-reveal">
+            <!-- Left Narrative -->
+            <div>
+                <div class="csl-section-tag">
+                    <span class="csl-tag-dot csl-tag-dot--sky"></span>
+                    NEP 2020 PEDAGOGY
+                </div>
+                <h2 class="csl-section-title">
+                    {% if content.get('what_is') and content['what_is'].title %}
+                        {{ content['what_is'].title }}
+                    {% else %}
+                        What is a Composite Skill Lab?
+                    {% endif %}
+                </h2>
+                <div class="csl-prose">
+                    {% if content.get('what_is') and content['what_is'].body %}
+                        {{ content['what_is'].body|replace('\n', '<br>')|safe }}
+                    {% else %}
+                        <p>Under the Central Board of Secondary Education (CBSE) skill education directives aligned with NEP 2020, affiliated schools are encouraged to establish a dedicated <strong>Composite Skill Lab</strong>. Unlike single-subject science laboratories, a Composite Skill Lab provides a shared, cross-disciplinary space where students engage in vocational and vocational-exploratory modules from Classes VI to XII.</p>
+                        <p style="margin-top: 1rem;">AIRODRONE designs, equips, and delivers complete turnkey setups that allow institutions to introduce practical problem-solving, rapid prototyping, and digital literacy without requiring multiple separate rooms or prohibitive capital expense.</p>
+                    {% endif %}
+                </div>
+
+                <div class="csl-feature-highlights">
+                    <div class="csl-highlight-card">
+                        <div class="csl-highlight-icon-box">💡</div>
+                        <div>
+                            <h4 class="csl-highlight-title">Experiential Discovery</h4>
+                            <p class="csl-highlight-desc">Transforms textbook theoretical concepts into tactile engineering, coding, and physical prototypes.</p>
+                        </div>
+                    </div>
+                    <div class="csl-highlight-card">
+                        <div class="csl-highlight-icon-box">📐</div>
+                        <div>
+                            <h4 class="csl-highlight-title">Multi-Grade Adaptability</h4>
+                            <p class="csl-highlight-desc">Progressive curriculum scaffolds smoothly from Grade 6 foundational crafts up to Grade 10 advanced robotics.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Visual Composition -->
+            <div class="csl-image-composition csl-reveal">
+                <div class="csl-image-frame">
+                    {% set what_img = content.get('what_is') and content['what_is'].image_path %}
+                    {% if what_img %}
+                    <img src="{{ image_url(what_img) }}" 
+                         alt="{{ content['what_is'].image_alt or 'What is Composite Skill Lab' }}" 
+                         class="csl-framed-img"
+                         onerror="this.src='{{ url_for('static', filename='images/services/stem.jpg') }}';">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='images/services/stem.jpg') }}" 
+                         alt="Composite Skill Lab Workstations" 
+                         class="csl-framed-img">
+                    {% endif %}
+                    <div class="csl-image-corner-accent"></div>
+                </div>
+                <div class="csl-floating-caption-card">
+                    <span class="csl-caption-badge">Modular Zoning</span>
+                    <p>Designed for seamless transition between lecture, collaborative ideation, and dirty-work prototyping.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     3. CBSE REQUIREMENTS & LABORATORY SPECIFICATIONS (Interactive Cards)
+     ========================================================================== -->
+<section class="section csl-section-tint" id="cbse-specs">
+    <div class="container">
+        <div class="section-heading csl-reveal">
+            <span class="csl-section-tag">
+                <span class="csl-tag-dot csl-tag-dot--amber"></span>
+                OFFICIAL GUIDELINES
+            </span>
+            <h2 class="csl-section-title">
+                {% if content.get('cbse_specs') and content['cbse_specs'].title %}
+                    {{ content['cbse_specs'].title }}
+                {% else %}
+                    CBSE Requirements &amp; Laboratory Specifications
+                {% endif %}
+            </h2>
+            <p class="csl-section-subtitle">
+                {% if content.get('cbse_specs') and content['cbse_specs'].subtitle %}
+                    {{ content['cbse_specs'].subtitle }}
+                {% else %}
+                    Structured spatial, electrical, and pedagogical benchmarks recommended for institutional skill labs.
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="csl-specs-grid csl-reveal">
+            <!-- Spec Card 1: Room Dimensions -->
+            <div class="csl-spec-card csl-spec-card--blue">
+                <div class="csl-spec-card-header">
+                    <div class="csl-spec-icon-box">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="csl-spec-title">Spatial Footprint</h3>
+                        <span class="csl-spec-metric">400 – 600+ Sq. Ft.</span>
+                    </div>
+                </div>
+                <p class="csl-spec-desc">
+                    CBSE suggests a minimum floor space of <strong>400 sq. ft.</strong> (for 20 concurrent students) or <strong>600+ sq. ft.</strong> (for larger cohorts), divided into an ideation zone, an electronics bench, and a fabrication area.
+                </p>
+                <div class="csl-spec-footer">
+                    <span class="csl-spec-pill">20–30 Student Sizing</span>
+                </div>
+            </div>
+
+            <!-- Spec Card 2: Electrical & Safety -->
+            <div class="csl-spec-card csl-spec-card--emerald">
+                <div class="csl-spec-card-header">
+                    <div class="csl-spec-icon-box">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="csl-spec-title">Electrical &amp; Earthing</h3>
+                        <span class="csl-spec-metric">Dedicated Points &amp; Safety</span>
+                    </div>
+                </div>
+                <p class="csl-spec-desc">
+                    Proper 3-pin earthed power strips at each workbench, stabilized voltage supply, safety MCB switches, CO2/dry-powder fire extinguishers, and anti-static ESD-safe desktop mats.
+                </p>
+                <div class="csl-spec-footer">
+                    <span class="csl-spec-pill">ESD &amp; MCB Protected</span>
+                </div>
+            </div>
+
+            <!-- Spec Card 3: Storage & Furniture -->
+            <div class="csl-spec-card csl-spec-card--amber">
+                <div class="csl-spec-card-header">
+                    <div class="csl-spec-icon-box">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="10" y1="8" x2="14" y2="8"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="csl-spec-title">Modular Storage</h3>
+                        <span class="csl-spec-metric">Organized Tool Management</span>
+                    </div>
+                </div>
+                <p class="csl-spec-desc">
+                    Heavy-duty lockable metal cupboards, component bin organizer cabinets, transparent labeled component totes, and pegboards for quick access and inventory audit compliance.
+                </p>
+                <div class="csl-spec-footer">
+                    <span class="csl-spec-pill">Audit Ready Inventory</span>
+                </div>
+            </div>
+
+            <!-- Spec Card 4: Multi-Zone Layout -->
+            <div class="csl-spec-card csl-spec-card--violet">
+                <div class="csl-spec-card-header">
+                    <div class="csl-spec-icon-box">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="csl-spec-title">Multi-Activity Zoning</h3>
+                        <span class="csl-spec-metric">Reconfigurable Pods</span>
+                    </div>
+                </div>
+                <p class="csl-spec-desc">
+                    Hexagonal or mobile rectangular student workstations with castor locks, allowing smooth rearrangement from group presentations to individual mechanical fabrication sprints.
+                </p>
+                <div class="csl-spec-footer">
+                    <span class="csl-spec-pill">Castor Lock Ergonomics</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Infrastructure Audit CTA Strip -->
+        <div class="csl-audit-banner csl-reveal">
+            <div class="csl-audit-info">
+                <div class="csl-audit-title">
+                    <span style="display: inline-flex; align-items: center; vertical-align: middle; margin-right: 0.35rem;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    </span>
+                    Need an infrastructure feasibility check?
+                </div>
+                <div class="csl-audit-desc">Our education engineers assess your campus floor plans or conduct virtual walkthroughs with zero obligation.</div>
+            </div>
+            <a href="{{ url_for('composite_lab_contact') }}" class="csl-btn-enquire" style="width: auto; padding: 0.65rem 1.4rem; white-space: nowrap;">
+                Book Free Site Audit &rarr;
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     4. SIX INTEGRATED SKILL SECTORS (Visual Cards with Image Zoom & Accents)
+     ========================================================================== -->
+<section class="section csl-section-light" id="sectors">
+    <div class="container">
+        <div class="section-heading csl-reveal">
+            <span class="csl-section-tag">
+                <span class="csl-tag-dot csl-tag-dot--blue"></span>
+                CURRICULAR DOMAINS
+            </span>
+            <h2 class="csl-section-title">Six Core CBSE Skill Sectors</h2>
+            <p class="csl-section-subtitle">Comprehensive vocational domains designed to give students practical mastery in high-demand future technologies.</p>
+        </div>
+
+        <div class="csl-sectors-grid csl-reveal">
+            {% for s in sectors %}
+            {% set s_index = loop.index %}
+            <article class="csl-sector-card csl-sector-card--{{ s_index }}">
+                <!-- Sector Card Media with Hover Zoom Effect -->
+                <div class="csl-sector-media">
+                    {% if s.image_path %}
+                    <img src="{{ image_url(s.image_path) }}" 
+                         alt="{{ s.name }}" 
+                         class="csl-sector-img"
+                         loading="lazy"
+                         onerror="this.src='{{ url_for('static', filename='images/services/atl.jpg') }}';">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='images/services/atl.jpg') }}" 
+                         alt="{{ s.name }}" 
+                         class="csl-sector-img"
+                         loading="lazy">
+                    {% endif %}
+                    <div class="csl-sector-overlay"></div>
+
+                    <!-- Sector Top Tag -->
+                    <div class="csl-sector-top-badge">
+                        <span class="csl-sector-icon" aria-hidden="true">
+                            {% if s.icon == 'circuit' or s.icon == 'cpu' %}
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+                            {% elif s.icon == 'bot' or s.icon == 'robot' %}
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="16" y1="16" x2="16.01" y2="16"/></svg>
+                            {% elif s.icon == 'terminal' or s.icon == 'network' or s.icon == 'ai' %}
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                            {% elif s.icon == 'video' or s.icon == 'film' %}
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                            {% elif s.icon == 'tool' or s.icon == 'hammer' %}
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                            {% elif s.icon == 'scissors' or s.icon == 'shirt' %}
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+                            {% else %}
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/></svg>
+                            {% endif %}
+                        </span>
+                        {% if s.cbse_subject_code %}
+                        <span class="csl-cbse-code">{{ s.cbse_subject_code }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Sector Card Body -->
+                <div class="csl-sector-body">
+                    <h3 class="csl-sector-name">{{ s.name }}</h3>
+                    <p class="csl-sector-desc">{{ s.description }}</p>
+
+                    {% if s.equipment_highlights %}
+                    <div class="csl-sector-equipment-box">
+                        <span class="csl-equipment-title">Key Equipment &amp; Modules</span>
+                        <div class="csl-equipment-tags">
+                            {% for tag in s.equipment_highlights.split(',') %}
+                            <span class="csl-tag-pill">{{ tag.strip() }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     5. EQUIPMENT & INFRASTRUCTURE OVERVIEW (Categorized High-Tech Cards)
+     ========================================================================== -->
+<section class="section csl-section-tint" id="equipment">
+    <div class="container">
+        <div class="section-heading csl-reveal">
+            <span class="csl-section-tag">
+                <span class="csl-tag-dot csl-tag-dot--violet"></span>
+                LABORATORY HARDWARE
+            </span>
+            <h2 class="csl-section-title">Equipment &amp; Infrastructure Overview</h2>
+            <p class="csl-section-subtitle">Industry-grade, child-safe, certified tools and hardware kits tailored for classroom learning.</p>
+        </div>
+
+        <div class="csl-equipment-grid csl-reveal">
+            <!-- Hardware Category 1 -->
+            <div class="csl-hardware-card csl-hardware-card--blue">
+                <div class="csl-hardware-media">
+                    <img src="{{ url_for('static', filename='images/services/electronics.jpg') }}" alt="Electronics &amp; IoT Hardware" loading="lazy">
+                </div>
+                <div class="csl-hardware-content">
+                    <div class="csl-hardware-header">
+                        <div class="csl-hw-icon-box">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/></svg>
+                        </div>
+                        <div>
+                            <h4 class="csl-hw-title">Electronics &amp; IoT</h4>
+                            <span class="csl-hw-category">Sensors &amp; Microcontrollers</span>
+                        </div>
+                    </div>
+                    <ul class="csl-hw-checklist">
+                        <li><span class="csl-hw-bullet">✓</span> Arduino &amp; ESP32 Development Boards</li>
+                        <li><span class="csl-hw-bullet">✓</span> Digital Multimeters &amp; Logic Probes</li>
+                        <li><span class="csl-hw-bullet">✓</span> Component Breadboards &amp; Sensor Packs</li>
+                        <li><span class="csl-hw-bullet">✓</span> Temperature-Controlled Soldering Stations</li>
+                        <li><span class="csl-hw-bullet">✓</span> Regulated DC Benchtop Power Supplies</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Hardware Category 2 -->
+            <div class="csl-hardware-card csl-hardware-card--emerald">
+                <div class="csl-hardware-media">
+                    <img src="{{ url_for('static', filename='images/services/robotics.jpg') }}" alt="Robotics &amp; Drones Hardware" loading="lazy">
+                </div>
+                <div class="csl-hardware-content">
+                    <div class="csl-hardware-header">
+                        <div class="csl-hw-icon-box">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="16" y1="16" x2="16.01" y2="16"/></svg>
+                        </div>
+                        <div>
+                            <h4 class="csl-hw-title">Robotics &amp; Drones</h4>
+                            <span class="csl-hw-category">Autonomous &amp; Telemetry Kits</span>
+                        </div>
+                    </div>
+                    <ul class="csl-hw-checklist">
+                        <li><span class="csl-hw-bullet">✓</span> Modular 4WD Chassis &amp; Stepper Motors</li>
+                        <li><span class="csl-hw-bullet">✓</span> Line Follower &amp; Obstacle Sensor Arrays</li>
+                        <li><span class="csl-hw-bullet">✓</span> AIRODRONE Educational Quadcopter Kit</li>
+                        <li><span class="csl-hw-bullet">✓</span> Bluetooth &amp; Wi-Fi Telemetry Modules</li>
+                        <li><span class="csl-hw-bullet">✓</span> Visual Python &amp; Scratch Code Interface</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Hardware Category 3 -->
+            <div class="csl-hardware-card csl-hardware-card--amber">
+                <div class="csl-hardware-media">
+                    <img src="{{ url_for('static', filename='images/services/workshop.jpg') }}" alt="Prototyping &amp; Tools Hardware" loading="lazy">
+                </div>
+                <div class="csl-hardware-content">
+                    <div class="csl-hardware-header">
+                        <div class="csl-hw-icon-box">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                        </div>
+                        <div>
+                            <h4 class="csl-hw-title">Prototyping &amp; Tools</h4>
+                            <span class="csl-hw-category">3D Printing &amp; Fabrication</span>
+                        </div>
+                    </div>
+                    <ul class="csl-hw-checklist">
+                        <li><span class="csl-hw-bullet">✓</span> High-Precision Heated Bed 3D Printer</li>
+                        <li><span class="csl-hw-bullet">✓</span> Biodegradable PLA Filament Spools (Multi-color)</li>
+                        <li><span class="csl-hw-bullet">✓</span> Safety Hand Tools (Pliers, Cutters, Screwdrivers)</li>
+                        <li><span class="csl-hw-bullet">✓</span> Digital Vernier Caliper &amp; Micrometer</li>
+                        <li><span class="csl-hw-bullet">✓</span> Low-Temp Hot Glue Guns &amp; Craft Saws</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Hardware Category 4 -->
+            <div class="csl-hardware-card csl-hardware-card--violet">
+                <div class="csl-hardware-media">
+                    <img src="{{ url_for('static', filename='images/services/coding.jpg') }}" alt="Design &amp; Media Tools Hardware" loading="lazy">
+                </div>
+                <div class="csl-hardware-content">
+                    <div class="csl-hardware-header">
+                        <div class="csl-hw-icon-box">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                        </div>
+                        <div>
+                            <h4 class="csl-hw-title">Design &amp; Media Tools</h4>
+                            <span class="csl-hw-category">Creative &amp; AVGC Equipment</span>
+                        </div>
+                    </div>
+                    <ul class="csl-hw-checklist">
+                        <li><span class="csl-hw-bullet">✓</span> Digital Graphics Tablets with Stylus</li>
+                        <li><span class="csl-hw-bullet">✓</span> Heavy-Duty Fabric Scissors &amp; Rotary Cutters</li>
+                        <li><span class="csl-hw-bullet">✓</span> Mechanical Sewing &amp; Stitching Unit</li>
+                        <li><span class="csl-hw-bullet">✓</span> Stop-Motion Rig with Multi-Angle Mount</li>
+                        <li><span class="csl-hw-bullet">✓</span> Ring Light, Tripod &amp; Lapel Microphone</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     6. COMPLETE TURNKEY SETUP INCLUSIONS (Numbered Sequential Flow)
+     ========================================================================== -->
+<section class="section csl-section-light" id="turnkey">
+    <div class="container">
+        <div class="section-heading csl-reveal">
+            <span class="csl-section-tag">
+                <span class="csl-tag-dot csl-tag-dot--green"></span>
+                END-TO-END SUPPORT
+            </span>
+            <h2 class="csl-section-title">
+                {% if content.get('turnkey') and content['turnkey'].title %}
+                    {{ content['turnkey'].title }}
+                {% else %}
+                    Complete Turnkey Setup Inclusions
+                {% endif %}
+            </h2>
+            <p class="csl-section-subtitle">Everything your school needs from room design to successful daily operation without stress.</p>
+        </div>
+
+        <div class="csl-inclusions-row csl-reveal">
+            <div class="csl-inclusion-step">
+                <div class="csl-inc-step-num">01</div>
+                <div class="csl-inc-icon-wrap">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </div>
+                <h4 class="csl-inc-title">Space &amp; Branding</h4>
+                <p class="csl-inc-desc">Custom 2D/3D floor plan layout, wall graphics, motivational banners, and zoning signage.</p>
+            </div>
+
+            <div class="csl-inclusion-step">
+                <div class="csl-inc-step-num">02</div>
+                <div class="csl-inc-icon-wrap">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                </div>
+                <h4 class="csl-inc-title">Hardware &amp; Kits</h4>
+                <p class="csl-inc-desc">Complete testing instruments, robotic platforms, component kits, and organized storage systems.</p>
+            </div>
+
+            <div class="csl-inclusion-step">
+                <div class="csl-inc-step-num">03</div>
+                <div class="csl-inc-icon-wrap">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                </div>
+                <h4 class="csl-inc-title">CBSE Curriculum</h4>
+                <p class="csl-inc-desc">Lesson plans, student experiment manuals, evaluation rubrics, and project workbooks for Classes 6-10.</p>
+            </div>
+
+            <div class="csl-inclusion-step">
+                <div class="csl-inc-step-num">04</div>
+                <div class="csl-inc-icon-wrap">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <h4 class="csl-inc-title">Faculty Training</h4>
+                <p class="csl-inc-desc">Comprehensive on-campus faculty orientation with certificate of completion and refresher modules.</p>
+            </div>
+
+            <div class="csl-inclusion-step">
+                <div class="csl-inc-step-num">05</div>
+                <div class="csl-inc-icon-wrap">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h4 class="csl-inc-title">Warranty &amp; AMC</h4>
+                <p class="csl-inc-desc">12-month hardware warranty, quarterly maintenance visits, and replacement guarantee.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     7. PACKAGES & TRANSPARENT PRICING (Standout Centerpiece Cards)
+     ========================================================================== -->
+<section class="section csl-section-pricing" id="packages">
+    <div class="container">
+        <div class="section-heading csl-reveal">
+            <span class="csl-section-tag">
+                <span class="csl-tag-dot csl-tag-dot--blue"></span>
+                TRANSPARENT INSTITUTIONAL PRICING
+            </span>
+            <h2 class="csl-section-title">Composite Skill Lab Packages</h2>
+            <p class="csl-section-subtitle">Engineered to suit different school sizes, student batch requirements, and institutional budgets.</p>
+        </div>
+
+        <div class="csl-pricing-container csl-reveal">
+            {% for pkg in packages %}
+            {% set is_featured = 'Makerspace' in pkg.name or 'Popular' in (pkg.badge or '') %}
+            {% set f_list = [] %}
+            {% for raw_f in (pkg.features or '').split('\n') %}
+                {% if raw_f.strip() %}
+                    {% set _ = f_list.append(raw_f.strip()) %}
+                {% endif %}
+            {% endfor %}
+            {% set preview_features = f_list[:4] %}
+            {% set more_features = f_list[4:] %}
+
+            <div class="csl-pricing-card {% if is_featured %}csl-pricing-card--featured{% endif %}" id="pkg-card-{{ loop.index }}">
+                
+                {% if pkg.badge %}
+                <div class="csl-pricing-badge">
+                    <span>★ {{ pkg.badge }}</span>
+                </div>
+                {% endif %}
+
+                <div class="csl-pricing-header">
+                    <h3 class="csl-pkg-name">{{ pkg.name }}</h3>
+                    <p class="csl-pkg-grades">{{ pkg.target_grades or 'Classes VI to X' }}</p>
+
+                    <div class="csl-price-block">
+                        <span class="csl-price-val">
+                            {{ pkg.price_display or ('₹' + (pkg.price|int|string)) }}
+                        </span>
+                        <span class="csl-price-sub">+ GST &bull; Turnkey Setup</span>
+                    </div>
+
+                    {% if pkg.description %}
+                    <p class="csl-pkg-desc">{{ pkg.description }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="csl-pricing-divider" aria-hidden="true"></div>
+
+                <!-- Features Checklist with Smooth Expand/Collapse -->
+                <div class="csl-pricing-features">
+                    <span class="csl-features-label">Core Inclusions</span>
+                    <ul class="csl-feature-list">
+                        {% for f in preview_features %}
+                        <li>
+                            <span class="csl-check-roundel">✓</span>
+                            <span>{{ f }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+
+                    {% if more_features %}
+                    <div class="csl-features-collapsible" id="csl-collapse-{{ loop.index }}" aria-hidden="true">
+                        <div class="csl-collapsible-inner">
+                            <span class="csl-features-label csl-features-label--extended">Additional Equipment &amp; Modules</span>
+                            <ul class="csl-feature-list">
+                                {% for f in more_features %}
+                                <li>
+                                    <span class="csl-check-roundel csl-check-roundel--secondary">✓</span>
+                                    <span>{{ f }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+
+                            <div class="csl-pkg-extra-meta">
+                                <div class="csl-meta-item">
+                                    <strong>Installation:</strong> Complete On-site Turnkey Assembly
+                                </div>
+                                <div class="csl-meta-item">
+                                    <strong>Training:</strong> Multi-day Teacher Certification
+                                </div>
+                                <div class="csl-meta-item">
+                                    <strong>Support:</strong> 12 Months Comprehensive AMC
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" 
+                            class="csl-toggle-details-btn" 
+                            id="csl-toggle-btn-{{ loop.index }}"
+                            aria-expanded="false" 
+                            aria-controls="csl-collapse-{{ loop.index }}"
+                            onclick="togglePackageCard(this, 'csl-collapse-{{ loop.index }}')">
+                        <span class="csl-toggle-label">View More Inclusions</span>
+                        <svg class="csl-toggle-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    {% endif %}
+                </div>
+
+                <div class="csl-pricing-footer">
+                    <a href="{{ url_for('composite_lab_contact', package=pkg.name) }}" 
+                       class="csl-btn-enquire" 
+                       aria-label="Enquire for {{ pkg.name }}">
+                        <span>Enquire for {{ pkg.name }}</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     8. 14-DAY IMPLEMENTATION ROADMAP (Connected Interactive Timeline)
+     ========================================================================== -->
+<section class="section csl-section-light" id="roadmap">
+    <div class="container">
+        <div class="section-heading csl-reveal">
+            <span class="csl-section-tag">
+                <span class="csl-tag-dot csl-tag-dot--blue"></span>
+                STEP-BY-STEP EXECUTION
+            </span>
+            <h2 class="csl-section-title">14-Day Implementation Roadmap</h2>
+            <p class="csl-section-subtitle">From site survey to inaugural ribbon cutting, our standardized deployment process guarantees zero disruption to regular classes.</p>
+        </div>
+
+        <div class="csl-timeline-track csl-reveal">
+            <!-- Continuous glowing track line -->
+            <div class="csl-timeline-line" aria-hidden="true">
+                <div class="csl-timeline-progress" id="cslTimelineProgress"></div>
+            </div>
+
+            <!-- Stage 01 -->
+            <div class="csl-timeline-node">
+                <div class="csl-node-marker">
+                    <span class="csl-node-circle">1</span>
+                </div>
+                <div class="csl-node-card">
+                    <span class="csl-node-stage">Stage 01 &bull; Days 1–3</span>
+                    <h4 class="csl-node-title">Site Survey &amp; Layout</h4>
+                    <p class="csl-node-desc">Feasibility inspection, electrical audit, and 3D zone layout approval with school authorities.</p>
+                </div>
+            </div>
+
+            <!-- Stage 02 -->
+            <div class="csl-timeline-node">
+                <div class="csl-node-marker">
+                    <span class="csl-node-circle">2</span>
+                </div>
+                <div class="csl-node-card">
+                    <span class="csl-node-stage">Stage 02 &bull; Days 4–7</span>
+                    <h4 class="csl-node-title">Civil Readiness</h4>
+                    <p class="csl-node-desc">Electrical wiring, dedicated MCB installation, workbench positioning, and safety signage installation.</p>
+                </div>
+            </div>
+
+            <!-- Stage 03 -->
+            <div class="csl-timeline-node">
+                <div class="csl-node-marker">
+                    <span class="csl-node-circle">3</span>
+                </div>
+                <div class="csl-node-card">
+                    <span class="csl-node-stage">Stage 03 &bull; Days 8–10</span>
+                    <h4 class="csl-node-title">Equipment Setup</h4>
+                    <p class="csl-node-desc">Delivery of certified kits, 3D printer calibration, storage bin cataloging, and safe power-on tests.</p>
+                </div>
+            </div>
+
+            <!-- Stage 04 -->
+            <div class="csl-timeline-node">
+                <div class="csl-node-marker">
+                    <span class="csl-node-circle">4</span>
+                </div>
+                <div class="csl-node-card">
+                    <span class="csl-node-stage">Stage 04 &bull; Days 11–13</span>
+                    <h4 class="csl-node-title">Faculty Enablement</h4>
+                    <p class="csl-node-desc">Hands-on teacher training, curriculum alignment, experiment mock tests, and teacher rubric certification.</p>
+                </div>
+            </div>
+
+            <!-- Stage 05 -->
+            <div class="csl-timeline-node">
+                <div class="csl-node-marker csl-node-marker--final">
+                    <span class="csl-node-circle">5</span>
+                </div>
+                <div class="csl-node-card csl-node-card--final">
+                    <span class="csl-node-stage">Stage 05 &bull; Day 14+</span>
+                    <h4 class="csl-node-title">Launch &amp; Ongoing AMC</h4>
+                    <p class="csl-node-desc">Student orientation workshop, portal access, quarterly AMC schedule, and dedicated academic helpline.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     9. FREQUENTLY ASKED QUESTIONS (Smooth Accordion Micro-Interactions)
+     ========================================================================== -->
+<section class="section csl-section-tint" id="faqs">
+    <div class="container" style="max-width: 920px;">
+        <div class="section-heading csl-reveal">
+            <span class="csl-section-tag">
+                <span class="csl-tag-dot csl-tag-dot--slate"></span>
+                CLARIFICATIONS &amp; POLICIES
+            </span>
+            <h2 class="csl-section-title">Frequently Asked Questions</h2>
+            <p class="csl-section-subtitle">Everything you need to know about CBSE skill lab guidelines, implementation, and long-term maintenance.</p>
+        </div>
+
+        <div class="csl-faq-list csl-reveal">
+            {% for faq in faqs %}
+            <details class="csl-faq-item">
+                <summary class="csl-faq-summary">
+                    <span class="csl-faq-question">{{ faq.question }}</span>
+                    <span class="csl-faq-toggle-icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </span>
+                </summary>
+                <div class="csl-faq-answer">
+                    <p>{{ faq.answer|replace('\n', '<br>')|safe }}</p>
+                </div>
+            </details>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     10. STRONG INSTITUTIONAL ENQUIRY CTA (Rich Navy Canvas with Ambient Glow)
+     ========================================================================== -->
+<section class="section csl-cta-section" id="enquire">
+    <!-- Ambient Backdrop Light -->
+    <div class="csl-cta-glow-center" aria-hidden="true"></div>
+
+    <div class="container csl-cta-inner text-center">
+        <div class="csl-tag-badge csl-tag-badge--dark">
+            <span class="csl-tag-dot csl-tag-dot--cyan" aria-hidden="true"></span>
+            <span>ELEVATE YOUR SCHOOL'S STEM REPUTATION</span>
+        </div>
+
+        <h2 class="csl-cta-title">
+            Ready to Set Up a CBSE Composite Skill Lab in Your School?
+        </h2>
+
+        <p class="csl-cta-desc">
+            Join over 150+ progressive institutions across India. Our education engineers handle site survey, equipment delivery, faculty enablement, and curriculum handover seamlessly.
+        </p>
+
+        <div class="csl-cta-buttons">
+            <a href="{{ url_for('composite_lab_contact') }}" class="btn btn-primary csl-btn-glow csl-btn-lg" style="padding: 1rem 2.4rem; font-weight: 700; font-size: 1.05rem;">
+                <span>Book an Institutional Consultation</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+            <a href="tel:+918882000000" class="btn btn-secondary csl-btn-glass csl-btn-lg" style="padding: 1rem 2rem; font-weight: 700; font-size: 1.05rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                <span>Call Academic Advisor</span>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     LIGHTWEIGHT VANILLA JS ANIMATION CONTROLLER (Counters & Scroll Reveals)
+     ========================================================================== -->
+<script>
+(function() {
+    'use strict';
+    
+    // Check user preference for reduced motion
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    
+    // 1. Scroll-Triggered Reveal via IntersectionObserver
+    const revealElements = document.querySelectorAll('.csl-reveal');
+    if ('IntersectionObserver' in window && !prefersReducedMotion) {
+        const revealObserver = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('csl-visible');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+        revealElements.forEach(function(el) {
+            revealObserver.observe(el);
+        });
+    } else {
+        revealElements.forEach(function(el) {
+            el.classList.add('csl-visible');
+        });
+    }
+
+    // 2. Animated Numerical Counters
+    const counters = document.querySelectorAll('.csl-counter');
+    let countersStarted = false;
+    
+    function animateCounters() {
+        if (countersStarted) return;
+        countersStarted = true;
+
+        counters.forEach(function(counter) {
+            const target = parseInt(counter.getAttribute('data-target'), 10) || 0;
+            if (prefersReducedMotion || target === 0) {
+                counter.textContent = target;
+                return;
+            }
+
+            const duration = 1800; // ms
+            const startTime = performance.now();
+
+            function updateCounter(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                // easeOutExpo
+                const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+                const currentVal = Math.floor(easeProgress * target);
+                
+                counter.textContent = currentVal;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateCounter);
+                } else {
+                    counter.textContent = target;
+                }
+            }
+
+            requestAnimationFrame(updateCounter);
+        });
+    }
+
+    // Trigger counters when hero stats enter viewport
+    const statStrip = document.querySelector('.csl-stat-strip');
+    if (statStrip && 'IntersectionObserver' in window) {
+        const statObserver = new IntersectionObserver(function(entries) {
+            if (entries[0].isIntersecting) {
+                animateCounters();
+                statObserver.disconnect();
+            }
+        }, { threshold: 0.2 });
+        statObserver.observe(statStrip);
+    } else {
+        animateCounters();
+    }
+
+    // 3. Smooth Timeline Track Fill on Scroll
+    const timeline = document.querySelector('.csl-timeline-track');
+    const progressBar = document.getElementById('cslTimelineProgress');
+    if (timeline && progressBar && !prefersReducedMotion) {
+        window.addEventListener('scroll', function() {
+            const rect = timeline.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            if (rect.top < windowHeight && rect.bottom > 0) {
+                const totalHeight = rect.height;
+                const visiblePart = Math.max(0, windowHeight - rect.top);
+                const pct = Math.min(100, Math.max(0, (visiblePart / (totalHeight + 100)) * 100));
+                progressBar.style.width = pct + '%';
+            }
+        }, { passive: true });
+    }
+
+    // 4. Smooth Expand/Collapse for Package Pricing Cards
+    window.togglePackageCard = function(btn, targetId) {
+        const target = document.getElementById(targetId);
+        if (!target) return;
+
+        const isExpanded = target.classList.contains('is-expanded');
+        const label = btn.querySelector('.csl-toggle-label');
+
+        if (isExpanded) {
+            target.classList.remove('is-expanded');
+            target.setAttribute('aria-hidden', 'true');
+            btn.setAttribute('aria-expanded', 'false');
+            btn.classList.remove('is-active');
+            if (label) label.textContent = 'View More Inclusions';
+        } else {
+            target.classList.add('is-expanded');
+            target.setAttribute('aria-hidden', 'false');
+            btn.setAttribute('aria-expanded', 'true');
+            btn.classList.add('is-active');
+            if (label) label.textContent = 'View Less';
+        }
+    };
+})();
+</script>
+{% endblock %}

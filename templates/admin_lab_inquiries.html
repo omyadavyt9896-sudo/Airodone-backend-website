@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Lab Setup Inquiries | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Lab Setup Inquiries</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>Lab Setup Inquiries</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    Manage institutional bookings, school lab requests, status progression, and confidential administrative notes.
+                </p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <span class="badge-status badge-active" style="font-size: 0.85rem; padding: 0.5rem 0.85rem;">
+                    {{ total_count }} Total Inquiries
+                </span>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% set admin_active = 'lab_inquiries' %}
+{% include "admin_nav.html" %}
+
+<section class="section" style="padding-top: 0.5rem; padding-bottom: 4rem;">
+    <div class="container" style="max-width: 1250px; margin: 0 auto;">
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}" style="margin-bottom: 1.5rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Filter & Search Controls Card -->
+        <div class="card" style="padding: 1.5rem; border-radius: 14px; background: var(--color-card-bg, #ffffff); border: 1px solid var(--color-border, #e2e8f0); margin-bottom: 1.5rem; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);">
+            <form method="GET" action="{{ url_for('admin_lab_inquiries') }}" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: flex-end;">
+                
+                <!-- Search Query -->
+                <div>
+                    <label for="q" style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 0.35rem;">Search</label>
+                    <input type="text" id="q" name="q" value="{{ search_query }}" placeholder="Institution, Name, Email, City..." style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.9rem; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a);">
+                </div>
+
+                <!-- Status Filter -->
+                <div>
+                    <label for="status" style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 0.35rem;">Status</label>
+                    <select id="status" name="status" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.9rem; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a);">
+                        <option value="">All Statuses ({{ total_count }})</option>
+                        {% for st in ['New', 'Under Review', 'Contacted', 'Discussion in Progress', 'Proposal Sent', 'Approved', 'Rejected', 'Completed'] %}
+                        <option value="{{ st }}" {% if status_filter == st %}selected{% endif %}>
+                            {{ st }} ({{ status_counts.get(st, 0) }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Institution Type Filter -->
+                <div>
+                    <label for="type" style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 0.35rem;">Institution Type</label>
+                    <select id="type" name="type" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.9rem; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a);">
+                        <option value="">All Types</option>
+                        {% for t in institution_types %}
+                        <option value="{{ t }}" {% if type_filter == t %}selected{% endif %}>{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Lab Category Filter -->
+                <div>
+                    <label for="lab" style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 0.35rem;">Laboratory</label>
+                    <select id="lab" name="lab" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid var(--color-border, #cbd5e1); font-size: 0.9rem; background: var(--color-bg, #ffffff); color: var(--color-text, #0f172a);">
+                        <option value="">All Labs</option>
+                        {% for l in available_labs %}
+                        <option value="{{ l }}" {% if lab_filter == l %}selected{% endif %}>{{ l }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Filter Actions -->
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="submit" class="btn btn-primary" style="padding: 0.65rem 1.25rem; font-size: 0.9rem; font-weight: 700; border-radius: 6px; border: none; cursor: pointer; flex: 1;">
+                        Apply
+                    </button>
+                    <a href="{{ url_for('admin_lab_inquiries') }}" class="btn btn-secondary" style="padding: 0.65rem 0.85rem; font-size: 0.9rem; border-radius: 6px; text-decoration: none;">
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Inquiries Table Card -->
+        <div class="card" style="padding: 1.75rem; border-radius: 14px; background: var(--color-card-bg, #ffffff); border: 1px solid var(--color-border, #e2e8f0); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                    <h2 style="font-size: 1.25rem; margin: 0; color: var(--color-text);">Inquiry Records ({{ total_count }})</h2>
+                    <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: var(--color-text-muted);">Click on any inquiry to inspect complete details, progress status, and add private notes.</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center; font-size: 0.85rem;">
+                    <span style="color: var(--color-text-muted);">Page {{ page }} of {{ total_pages }}</span>
+                </div>
+            </div>
+
+            {% if inquiries %}
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--color-border); color: var(--color-text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            <th style="padding: 0.75rem 0.5rem; width: 60px;">ID</th>
+                            <th style="padding: 0.75rem 0.75rem;">Institution &amp; Location</th>
+                            <th style="padding: 0.75rem 0.75rem;">Contact Person</th>
+                            <th style="padding: 0.75rem 0.75rem;">Required Laboratories</th>
+                            <th style="padding: 0.75rem 0.5rem; width: 140px; text-align: center;">Status</th>
+                            <th style="padding: 0.75rem 0.5rem; width: 100px; text-align: right;">Date</th>
+                            <th style="padding: 0.75rem 0.5rem; width: 120px; text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inq in inquiries %}
+                        <tr style="border-bottom: 1px solid var(--color-border); transition: background 0.15s ease;">
+                            <td style="padding: 0.85rem 0.5rem; font-family: monospace; font-weight: 700; color: #0284c7;">
+                                #{{ inq.id }}
+                            </td>
+                            <td style="padding: 0.85rem 0.75rem;">
+                                <div style="font-weight: 700; color: var(--color-text); font-size: 0.95rem;">
+                                    <a href="{{ url_for('admin_view_lab_inquiry', inquiry_id=inq.id) }}" style="color: var(--color-text); text-decoration: none;">
+                                        {{ inq.institution_name }}
+                                    </a>
+                                </div>
+                                <div style="font-size: 0.8rem; color: var(--color-text-muted); display: flex; gap: 0.5rem; align-items: center; margin-top: 0.2rem;">
+                                    <span>{{ inq.city }}, {{ inq.state }}</span>
+                                    <span>&bull;</span>
+                                    <span style="background: var(--color-bg-subtle, #f1f5f9); padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.75rem;">{{ inq.institution_type }}</span>
+                                </div>
+                            </td>
+                            <td style="padding: 0.85rem 0.75rem;">
+                                <div style="font-weight: 600; color: var(--color-text);">{{ inq.contact_person }}</div>
+                                <div style="font-size: 0.8rem; color: var(--color-text-muted);">{{ inq.designation }}</div>
+                                <div style="font-size: 0.78rem; color: #0284c7; margin-top: 0.15rem;">
+                                    <a href="tel:{{ inq.phone }}" style="color: inherit; text-decoration: none;">{{ inq.phone }}</a>
+                                </div>
+                            </td>
+                            <td style="padding: 0.85rem 0.75rem;">
+                                <div style="font-size: 0.85rem; color: var(--color-text); line-height: 1.4;">
+                                    {{ inq.selected_labs }}
+                                </div>
+                                {% if inq.setup_timeline %}
+                                <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 0.2rem;">
+                                    Timeline: {{ inq.setup_timeline }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0.85rem 0.5rem; text-align: center;">
+                                {% set st = inq.status or 'New' %}
+                                {% if st == 'New' %}
+                                <span style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">New</span>
+                                {% elif st == 'Under Review' %}
+                                <span style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">Under Review</span>
+                                {% elif st == 'Contacted' or st == 'Discussion in Progress' %}
+                                <span style="background: #ede9fe; color: #6d28d9; border: 1px solid #ddd6fe; padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">{{ st }}</span>
+                                {% elif st == 'Proposal Sent' %}
+                                <span style="background: #ccfbf1; color: #0f766e; border: 1px solid #99f6e4; padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">Proposal Sent</span>
+                                {% elif st == 'Approved' or st == 'Completed' %}
+                                <span style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">{{ st }}</span>
+                                {% elif st == 'Rejected' %}
+                                <span style="background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">Rejected</span>
+                                {% else %}
+                                <span style="background: #f1f5f9; color: #475569; padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">{{ st }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0.85rem 0.5rem; text-align: right; font-size: 0.8rem; color: var(--color-text-muted); white-space: nowrap;">
+                                {{ inq.created_at[:10] }}
+                            </td>
+                            <td style="padding: 0.85rem 0.5rem; text-align: right; white-space: nowrap;">
+                                <div style="display: inline-flex; gap: 0.4rem; align-items: center;">
+                                    <a href="{{ url_for('admin_view_lab_inquiry', inquiry_id=inq.id) }}" class="btn btn-primary btn-sm" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 6px; text-decoration: none;">
+                                        View
+                                    </a>
+                                    <form action="{{ url_for('admin_delete_lab_inquiry', inquiry_id=inq.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete inquiry #{{ inq.id }} from {{ inq.institution_name }}?');">
+                                        <button type="submit" class="btn btn-danger btn-sm" style="padding: 0.35rem 0.6rem; font-size: 0.8rem; border-radius: 6px; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; cursor: pointer;">
+                                            &times;
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Bar -->
+            {% if total_pages > 1 %}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--color-border); flex-wrap: wrap; gap: 0.75rem;">
+                <span style="font-size: 0.85rem; color: var(--color-text-muted);">
+                    Showing {{ ((page - 1) * 15) + 1 }} to {{ [page * 15, total_count] | min }} of {{ total_count }} inquiries
+                </span>
+
+                <div style="display: flex; gap: 0.35rem;">
+                    {% if page > 1 %}
+                    <a href="{{ url_for('admin_lab_inquiries', page=page-1, q=search_query, status=status_filter, type=type_filter, lab=lab_filter, sort=sort_order) }}" class="btn btn-secondary btn-sm" style="padding: 0.35rem 0.75rem; border-radius: 6px; text-decoration: none;">
+                        &larr; Prev
+                    </a>
+                    {% endif %}
+
+                    {% for p in range(1, total_pages + 1) %}
+                    {% if p == page %}
+                    <span style="padding: 0.35rem 0.75rem; background: var(--color-primary, #0284c7); color: #ffffff; border-radius: 6px; font-weight: 700; font-size: 0.85rem;">{{ p }}</span>
+                    {% elif p <= 3 or p >= total_pages - 1 or (p >= page - 1 and p <= page + 1) %}
+                    <a href="{{ url_for('admin_lab_inquiries', page=p, q=search_query, status=status_filter, type=type_filter, lab=lab_filter, sort=sort_order) }}" class="btn btn-secondary btn-sm" style="padding: 0.35rem 0.75rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem;">{{ p }}</a>
+                    {% elif p == 4 or p == total_pages - 2 %}
+                    <span style="padding: 0.35rem 0.5rem; color: var(--color-text-muted);">&hellip;</span>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page < total_pages %}
+                    <a href="{{ url_for('admin_lab_inquiries', page=page+1, q=search_query, status=status_filter, type=type_filter, lab=lab_filter, sort=sort_order) }}" class="btn btn-secondary btn-sm" style="padding: 0.35rem 0.75rem; border-radius: 6px; text-decoration: none;">
+                        Next &rarr;
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div style="padding: 3rem 1rem; text-align: center; color: var(--color-text-muted);">
+                <p style="font-size: 1.05rem; margin-bottom: 0.5rem;">No lab setup inquiries match your criteria.</p>
+                {% if search_query or status_filter or type_filter or lab_filter %}
+                <a href="{{ url_for('admin_lab_inquiries') }}" class="btn btn-secondary btn-sm" style="margin-top: 0.5rem;">Clear Filters</a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</section>
+{% endblock %}

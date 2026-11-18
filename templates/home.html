@@ -17,7 +17,7 @@ STEM workshops designed for schools and institutions.{% endblock %}
             </p>
             <div class="hero-actions hero-actions-animate">
                 <a href="{{ url_for('learn') }}" class="btn btn-primary hero-btn-primary">Explore Learn <span class="btn-arrow" aria-hidden="true">&rarr;</span></a>
-                <a href="{{ url_for('solutions') }}" class="btn btn-secondary hero-btn-secondary">Explore Solutions <span class="btn-arrow" aria-hidden="true">&rarr;</span></a>
+                <a href="{{ url_for('public_products') }}" class="btn btn-secondary hero-btn-secondary">Explore Products <span class="btn-arrow" aria-hidden="true">&rarr;</span></a>
             </div>
             <div class="hero-meta hero-meta-animate">
                 <span class="hero-meta-item">
@@ -57,41 +57,93 @@ STEM workshops designed for schools and institutions.{% endblock %}
     </div>
 </section>
 
-<section class="section section-light">
-    <div class="container two-column">
-        <div class="column-text">
-            <h2>Why Choose Airodrone?</h2>
-            <p>
-                We build sustainable, high-impact STEM ecosystems tailored to your school's syllabus and NITI Aayog ATL guidelines. Our turnkey support combines equipment, mentor enablement, and structured activity calendars.
-            </p>
-            <div class="feature-list">
-                <div class="feature-item">
-                    <h3>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 6px; color: var(--color-accent);"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                        Curriculum-Aligned
-                    </h3>
-                    <p>NEP 2020-compliant modules across AI, Robotics, Coding, and Electronics.</p>
+<!-- About Section (Consolidated from About page) -->
+<section class="section section-light" id="about">
+    <div class="container">
+        <!-- Section 1: About Airodrone -->
+        <div class="two-column" style="margin-bottom: 3.5rem;">
+            <div class="column-text about-card">
+                <div class="section-badge" style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-accent); margin-bottom: 0.75rem;">
+                    About Us
                 </div>
-                <div class="feature-item">
-                    <h3>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 6px; color: var(--color-accent);"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                        End-to-End Enablement
-                    </h3>
-                    <p>Turnkey lab setup, equipment maintenance, teacher training, and event support.</p>
-                </div>
-                <div class="feature-item">
-                    <h3>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 6px; color: var(--color-accent);"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                        Practical Skill Building
-                    </h3>
-                    <p>Project-driven activities encouraging computational thinking and problem solving.</p>
-                </div>
+                <h2 style="margin-bottom: 1.25rem;">About airodrone</h2>
+                <p style="margin-bottom: 0; line-height: 1.7; font-size: 1.05rem;">
+                    We exist to make innovation accessible, meaningful, and sustainable in every classroom.
+                    Our team brings deep experience in education, technology, and lab enablement.
+                </p>
+            </div>
+            <div class="column-media" style="border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-large); height: 100%; min-height: 280px;">
+                <img src="{{ url_for('static', filename='images/about/about.jpg') }}" 
+                     alt="Facilitators collaborating in a lab environment"
+                     style="width: 100%; height: 100%; max-height: 380px; object-fit: cover; display: block; border-radius: var(--radius-lg);"
+                     loading="lazy">
             </div>
         </div>
-        <div class="column-media grid-media">
-            <img src="{{ url_for('static', filename='images/services/ai.jpg') }}" alt="AI lab session with students">
-            <img src="{{ url_for('static', filename='images/services/robotics.jpg') }}"
-                alt="Students assembling a robot">
+
+        <!-- Section 2: Our Mission & Section 3: How We Work -->
+        <div class="two-column" style="margin-bottom: 3.5rem;">
+            <div class="column-text about-card">
+                <h2 style="margin-bottom: 1.25rem;">Our Mission</h2>
+                <p style="line-height: 1.7; margin-bottom: 1.25rem;">
+                    airodrone partners with schools and institutions to build future-ready ATL and
+                    STEM ecosystems. We go beyond equipment supply to focus on pedagogy, mentorship, and
+                    long-term student engagement.
+                </p>
+                <p style="line-height: 1.7; margin-bottom: 0;">
+                    By combining structured curriculum, hands-on labs, and competition pathways, we help
+                    students discover their interests in AI, Robotics, Coding, Electronics, and emerging
+                    technologies while strengthening foundational skills.
+                </p>
+            </div>
+            <div class="column-text about-card">
+                <h2 style="margin-bottom: 1.25rem;">How We Work</h2>
+                <ul class="checklist" style="margin-top: 0.5rem;">
+                    <li>Diagnostic discussions to understand your current lab readiness and vision.</li>
+                    <li>Custom roadmaps for ATL setup, utilization, and integration into timetables.</li>
+                    <li>Expert-led training for teachers, coordinators, and student leaders.</li>
+                    <li>Year-round support via projects, competitions, and showcase opportunities.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 4: What Makes Us Different -->
+        <div class="about-differentiation">
+            <div class="section-heading" style="text-align: center; margin-bottom: 2.25rem;">
+                <h2>What Makes Us Different</h2>
+                <p>A holistic partner for your innovation journey, not just a one-time vendor.</p>
+            </div>
+            <div class="card-grid card-grid-3">
+                <article class="card">
+                    <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(14, 165, 233, 0.1); color: var(--color-accent); display: flex; align-items: center; justify-content: center; margin-bottom: 1.25rem;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    </div>
+                    <h3>Education-First Design</h3>
+                    <p style="color: var(--color-text-muted); line-height: 1.6; margin-bottom: 0;">
+                        Every program and lab plan is created with learning outcomes, assessment, and
+                        classroom realities at the center.
+                    </p>
+                </article>
+                <article class="card">
+                    <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(14, 165, 233, 0.1); color: var(--color-accent); display: flex; align-items: center; justify-content: center; margin-bottom: 1.25rem;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </div>
+                    <h3>Multi-Disciplinary Expertise</h3>
+                    <p style="color: var(--color-text-muted); line-height: 1.6; margin-bottom: 0;">
+                        Our mentors span AI, Robotics, Electronics, Design, and Entrepreneurship, enabling
+                        truly interdisciplinary experiences.
+                    </p>
+                </article>
+                <article class="card">
+                    <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(14, 165, 233, 0.1); color: var(--color-accent); display: flex; align-items: center; justify-content: center; margin-bottom: 1.25rem;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <h3>Long-Term Partnership</h3>
+                    <p style="color: var(--color-text-muted); line-height: 1.6; margin-bottom: 0;">
+                        From the first demo to subsequent academic years, we stay engaged to keep your lab
+                        active, visible, and impactful.
+                    </p>
+                </article>
+            </div>
         </div>
     </div>
 </section>

@@ -1,0 +1,788 @@
+{% extends "base.html" %}
+
+{% block title %}Let's Build Your Institution's Innovation Lab | airodrone{% endblock %}
+{% block meta_description %}Tell us about your institution and laboratory requirements. Our team will help you plan the right technology learning environment for your students.{% endblock %}
+
+{% block content %}
+<!-- Two-Column Institutional Booking Hero Section (Matching Learn Page Design System) -->
+<section class="page-hero" style="padding: 5rem 0 3.5rem; background-color: var(--color-bg); position: relative; border-bottom: 1px solid var(--color-border, #e2e8f0);">
+    <div class="container page-hero-inner">
+        <!-- Left Side: Content & Consultation Info -->
+        <div>
+            <!-- Breadcrumb Navigation -->
+            <nav class="course-breadcrumb" aria-label="Breadcrumb" style="margin-bottom: 1rem;">
+                <a href="{{ url_for('home') }}">Home</a>
+                <span aria-hidden="true">&rarr;</span>
+                <a href="{{ url_for('lab_setup') }}">Lab Setup</a>
+                <span aria-hidden="true">&rarr;</span>
+                <span class="current-breadcrumb">Booking Inquiry</span>
+            </nav>
+
+            <div class="hero-tagline-pill" style="margin-bottom: 0.85rem; display: inline-flex;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 5px;">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                INSTITUTIONAL CONSULTATION
+            </div>
+
+            <h1 class="inquiry-hero-title" style="margin-top: 0.5rem; font-size: clamp(2.1rem, 3.8vw, 3rem); font-weight: 800; color: #0A0F1D; line-height: 1.18;">
+                Let's Build Your Institution's Innovation Lab
+            </h1>
+
+            <p style="font-size: 1.125rem; line-height: 1.6; color: var(--color-text-muted); margin: 0.85rem 0 1.5rem; max-width: 580px;">
+                Tell us about your institution and laboratory requirements. Our team will help you plan the right technology learning environment for your students.
+            </p>
+
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; padding-top: 0.25rem;">
+                <div style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.92rem; font-weight: 600; color: var(--color-text);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent, #2563EB)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                    </svg>
+                    For Schools &bull; Colleges &bull; Universities
+                </div>
+                <div style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(37, 99, 235, 0.08); color: var(--color-accent, #2563EB); padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; font-size: 0.82rem;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    3-Step Fast Inquiry &bull; Advisory Support
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Laboratory Visual Composition -->
+        <div class="page-hero-media" style="position: relative; width: 100%; max-width: 480px; margin: 0 auto;">
+            <div style="position: relative; border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-large, 0 20px 40px -10px rgba(0,0,0,0.15)); border: 1px solid rgba(0, 0, 0, 0.08); background: #0f172a;">
+                <img src="{{ url_for('static', filename='images/services/atl.jpg') }}" 
+                     alt="Modern STEM and Innovation Laboratory Workstations" 
+                     style="width: 100%; height: 280px; object-fit: cover; display: block;"
+                     onerror="this.src='{{ url_for('static', filename='images/hero/hero.jpg') }}';">
+                
+                <!-- Floating Inset Visual (Robotics & Practical Projects) -->
+                <div class="inquiry-hero-inset" style="position: absolute; bottom: 12px; right: 12px; width: 155px; height: 100px; border-radius: 12px; overflow: hidden; border: 3px solid #ffffff; box-shadow: 0 10px 25px rgba(0,0,0,0.25); background: #1e293b;">
+                    <img src="{{ url_for('static', filename='images/services/robotics.jpg') }}" 
+                         alt="Robotics and Electronics Workstations" 
+                         style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                </div>
+
+                <!-- Floating Glass Badge -->
+                <div style="position: absolute; bottom: 14px; left: 14px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: #ffffff; padding: 0.4rem 0.8rem; border-radius: 9999px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.45rem; border: 1px solid rgba(255,255,255,0.18); box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                    <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+                    <span>Turnkey STEM &bull; Robotics &bull; AI</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Compact Institutional Trust & Information Strip -->
+<div style="background: var(--color-bg); padding: 2rem 0 0.5rem;">
+    <div class="container" style="max-width: 920px; margin: 0 auto;">
+        <div class="inquiry-trust-strip">
+            <div class="inquiry-trust-item">
+                <div class="inquiry-trust-icon purple">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                        <polyline points="2 17 12 22 22 17"/>
+                        <polyline points="2 12 12 17 22 12"/>
+                    </svg>
+                </div>
+                <div>
+                    <h5 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--color-text, #0f172a);">Customized Lab Planning</h5>
+                    <p style="margin: 0.2rem 0 0; font-size: 0.82rem; color: var(--color-text-muted, #64748b); line-height: 1.4;">Tailored to institutional space &amp; curriculum</p>
+                </div>
+            </div>
+
+            <div class="inquiry-trust-divider"></div>
+
+            <div class="inquiry-trust-item">
+                <div class="inquiry-trust-icon blue">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h5 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--color-text, #0f172a);">Equipment &amp; Infrastructure</h5>
+                    <p style="margin: 0.2rem 0 0; font-size: 0.82rem; color: var(--color-text-muted, #64748b); line-height: 1.4;">Tested hardware, kits &amp; workstations</p>
+                </div>
+            </div>
+
+            <div class="inquiry-trust-divider"></div>
+
+            <div class="inquiry-trust-item">
+                <div class="inquiry-trust-icon green">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                    </svg>
+                </div>
+                <div>
+                    <h5 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--color-text, #0f172a);">Training &amp; Support</h5>
+                    <p style="margin: 0.2rem 0 0; font-size: 0.82rem; color: var(--color-text-muted, #64748b); line-height: 1.4;">Curriculum, teacher training &amp; maintenance</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Form Container Section -->
+<section class="section" style="padding: 2rem 0 5.5rem; background: var(--color-bg);">
+    <div class="container" style="max-width: 880px; margin: 0 auto;">
+        
+        <!-- Flash Alerts -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}" style="margin-bottom: 2rem;">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% if submitted %}
+        <!-- Submission Success State -->
+        <div class="card" style="padding: 3.5rem 2rem; border-radius: var(--radius-xl, 18px); text-align: center; background: var(--color-card, #ffffff); border: 2px solid #10b981; box-shadow: var(--shadow-large);">
+            <div style="width: 72px; height: 72px; background: rgba(16, 185, 129, 0.12); color: #059669; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 2rem; border: 2px solid rgba(16, 185, 129, 0.3);">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+
+            <h2 style="font-size: 2.1rem; font-weight: 800; color: var(--color-primary, #0A0F1D); margin-bottom: 0.75rem;">
+                Lab Setup Inquiry Received!
+            </h2>
+
+            <p style="font-size: 1.05rem; color: var(--color-text-muted, #475569); max-width: 620px; margin: 0 auto 1.75rem; line-height: 1.6;">
+                Thank you, <strong>{{ contact_person }}</strong>. Your institutional consultation request for <strong>{{ institution_name }}</strong> has been logged successfully (Reference: <span style="font-family: var(--font-mono, monospace); font-weight: 700; color: var(--color-accent, #2563EB); background: rgba(37, 99, 235, 0.08); padding: 0.2rem 0.5rem; border-radius: 6px;">#LAB-{{ '%04d' % inquiry_ref }}</span>).
+            </p>
+
+            <div style="background: var(--color-bg-subtle, #f8fafc); border: 1px solid var(--color-border, #e2e8f0); border-radius: var(--radius-md, 12px); padding: 1.75rem; max-width: 580px; margin: 0 auto 2.5rem; text-align: left; font-size: 0.95rem;">
+                <div style="font-weight: 700; color: var(--color-text, #0f172a); margin-bottom: 0.65rem; font-size: 1rem; display: flex; align-items: center; gap: 0.4rem;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    What happens next?
+                </div>
+                <ul style="margin: 0; padding-left: 1.25rem; color: var(--color-text-muted, #475569); line-height: 1.75;">
+                    <li>Our Senior STEM Engineering Consultant will review your laboratory requirements.</li>
+                    <li>We will connect with you via phone or official email within <strong>24&ndash;48 business hours</strong>.</li>
+                    <li>You will receive a tailored laboratory proposal, equipment bill of materials (BoM), and space planning guidance.</li>
+                </ul>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="{{ url_for('lab_setup') }}" class="btn btn-secondary" style="padding: 0.75rem 1.6rem; font-weight: 600;">
+                    &larr; Back to Lab Setup
+                </a>
+                <a href="{{ url_for('home') }}" class="btn btn-primary" style="padding: 0.75rem 1.75rem; font-weight: 700;">
+                    Return to Homepage
+                </a>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Centered Professional Multi-Step Form Card -->
+        <div class="inquiry-form-card">
+            
+            <!-- 3-Step Wizard Progress Bar -->
+            <div class="inquiry-steps-bar" id="stepIndicatorBar" aria-label="Inquiry Steps">
+                <button type="button" class="inquiry-step-node active" id="stepNode1" onclick="goToStep(1)">
+                    <div class="inquiry-step-circle">1</div>
+                    <div class="inquiry-step-title">
+                        <span>Institution</span>
+                        <span class="inquiry-step-subtitle">Campus &amp; Location</span>
+                    </div>
+                </button>
+
+                <div class="inquiry-step-divider" id="stepDiv1"></div>
+
+                <button type="button" class="inquiry-step-node" id="stepNode2" onclick="goToStep(2)">
+                    <div class="inquiry-step-circle">2</div>
+                    <div class="inquiry-step-title">
+                        <span>Contact Person</span>
+                        <span class="inquiry-step-subtitle">Lead Coordinator</span>
+                    </div>
+                </button>
+
+                <div class="inquiry-step-divider" id="stepDiv2"></div>
+
+                <button type="button" class="inquiry-step-node" id="stepNode3" onclick="goToStep(3)">
+                    <div class="inquiry-step-circle">3</div>
+                    <div class="inquiry-step-title">
+                        <span>Lab Requirements</span>
+                        <span class="inquiry-step-subtitle">Packages &amp; Space</span>
+                    </div>
+                </button>
+            </div>
+
+            <form method="POST" action="{{ url_for('lab_setup_inquiry') }}" id="labInquiryForm" novalidate>
+                <input type="hidden" name="preselected_slug" value="{{ preselected_slug }}">
+
+                <!-- ============================================================ -->
+                <!-- STEP 1: Institution Information                             -->
+                <!-- ============================================================ -->
+                <div class="form-step-pane" id="stepPane1">
+                    <div style="margin-bottom: 1.75rem;">
+                        <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--color-primary); margin: 0 0 0.35rem 0;">
+                            Step 1 &ndash; Institution Information
+                        </h2>
+                        <p style="font-size: 0.9rem; color: var(--color-text-muted); margin: 0;">
+                            Please enter your school, college, or institutional details.
+                        </p>
+                    </div>
+
+                    <div class="inquiry-grid-2">
+                        <div class="inquiry-form-group">
+                            <label for="institution_name">
+                                Institution Name <span class="required-star">*</span>
+                            </label>
+                            <input type="text" id="institution_name" name="institution_name" class="inquiry-input" required 
+                                   value="{{ form_data.get('institution_name', '') }}" 
+                                   placeholder="e.g. Delhi Public School / Apex Institute of Technology">
+                            <div class="inquiry-error-msg" id="err_institution_name" style="display: none;">Institution name is required.</div>
+                        </div>
+
+                        <div class="inquiry-form-group">
+                            <label for="institution_type">
+                                Institution Type <span class="required-star">*</span>
+                            </label>
+                            <select id="institution_type" name="institution_type" class="inquiry-select" required>
+                                <option value="" disabled {% if not form_data.get('institution_type') %}selected{% endif %}>Select Institution Type</option>
+                                <option value="School (K-12)" {% if form_data.get('institution_type') == 'School (K-12)' %}selected{% endif %}>School (K-12 / CBSE / ICSE / State / IB)</option>
+                                <option value="Junior College" {% if form_data.get('institution_type') == 'Junior College' %}selected{% endif %}>Junior College (11th &amp; 12th / Pre-University)</option>
+                                <option value="Engineering College" {% if form_data.get('institution_type') == 'Engineering College' %}selected{% endif %}>Engineering College / Technical Institute</option>
+                                <option value="Polytechnic" {% if form_data.get('institution_type') == 'Polytechnic' %}selected{% endif %}>Polytechnic / Diploma Institution</option>
+                                <option value="University" {% if form_data.get('institution_type') == 'University' %}selected{% endif %}>University / Autonomous Institute</option>
+                                <option value="Educational Trust / NGO" {% if form_data.get('institution_type') == 'Educational Trust / NGO' %}selected{% endif %}>Educational Trust / Foundation / NGO</option>
+                                <option value="Other" {% if form_data.get('institution_type') == 'Other' %}selected{% endif %}>Other Institution</option>
+                            </select>
+                            <div class="inquiry-error-msg" id="err_institution_type" style="display: none;">Please select your institution type.</div>
+                        </div>
+                    </div>
+
+                    <div class="inquiry-grid-3">
+                        <div class="inquiry-form-group">
+                            <label for="state">
+                                State <span class="required-star">*</span>
+                            </label>
+                            <input type="text" id="state" name="state" class="inquiry-input" required 
+                                   value="{{ form_data.get('state', '') }}" 
+                                   placeholder="e.g. Maharashtra, Karnataka">
+                            <div class="inquiry-error-msg" id="err_state" style="display: none;">State is required.</div>
+                        </div>
+
+                        <div class="inquiry-form-group">
+                            <label for="city">
+                                City <span class="required-star">*</span>
+                            </label>
+                            <input type="text" id="city" name="city" class="inquiry-input" required 
+                                   value="{{ form_data.get('city', '') }}" 
+                                   placeholder="e.g. Pune, Bangalore, Delhi">
+                            <div class="inquiry-error-msg" id="err_city" style="display: none;">City is required.</div>
+                        </div>
+
+                        <div class="inquiry-form-group">
+                            <label for="pincode">
+                                Pincode <span class="required-star">*</span>
+                            </label>
+                            <input type="text" id="pincode" name="pincode" class="inquiry-input" required 
+                                   value="{{ form_data.get('pincode', '') }}" 
+                                   placeholder="6-digit pincode" pattern="[0-9]{6}" maxlength="6">
+                            <div class="inquiry-error-msg" id="err_pincode" style="display: none;">Valid 6-digit pincode is required.</div>
+                        </div>
+                    </div>
+
+                    <div class="inquiry-grid-2">
+                        <div class="inquiry-form-group">
+                            <label for="address">
+                                Campus Address <span class="required-star">*</span>
+                            </label>
+                            <input type="text" id="address" name="address" class="inquiry-input" required 
+                                   value="{{ form_data.get('address', '') }}" 
+                                   placeholder="Campus road, sector or landmark">
+                            <div class="inquiry-error-msg" id="err_address" style="display: none;">Campus address is required.</div>
+                        </div>
+
+                        <div class="inquiry-form-group">
+                            <label for="institution_website">
+                                Website <span class="optional-hint">(Optional)</span>
+                            </label>
+                            <input type="url" id="institution_website" name="institution_website" class="inquiry-input" 
+                                   value="{{ form_data.get('institution_website', '') }}" 
+                                   placeholder="https://institution.edu.in">
+                        </div>
+                    </div>
+
+                    <div class="inquiry-step-footer">
+                        <div style="font-size: 0.85rem; color: var(--color-text-muted);">
+                            Step 1 of 3 &bull; Institution Details
+                        </div>
+                        <button type="button" class="inquiry-btn-next" onclick="validateAndGoTo(2)">
+                            <span>Continue to Contact Person</span>
+                            <span aria-hidden="true">&rarr;</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ============================================================ -->
+                <!-- STEP 2: Contact Person Information                          -->
+                <!-- ============================================================ -->
+                <div class="form-step-pane" id="stepPane2" style="display: none;">
+                    <div style="margin-bottom: 1.75rem;">
+                        <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--color-primary); margin: 0 0 0.35rem 0;">
+                            Step 2 &ndash; Contact Person Information
+                        </h2>
+                        <p style="font-size: 0.9rem; color: var(--color-text-muted); margin: 0;">
+                            Details of the principal, lab coordinator, or representative handling this inquiry.
+                        </p>
+                    </div>
+
+                    <div class="inquiry-grid-2">
+                        <div class="inquiry-form-group">
+                            <label for="contact_person">
+                                Contact Person Name <span class="required-star">*</span>
+                            </label>
+                            <input type="text" id="contact_person" name="contact_person" class="inquiry-input" required 
+                                   value="{{ form_data.get('contact_person', '') }}" 
+                                   placeholder="Full Name (e.g. Dr. Rajesh Sharma)">
+                            <div class="inquiry-error-msg" id="err_contact_person" style="display: none;">Contact person name is required.</div>
+                        </div>
+
+                        <div class="inquiry-form-group">
+                            <label for="designation">
+                                Designation <span class="required-star">*</span>
+                            </label>
+                            <select id="designation" name="designation" class="inquiry-select" required>
+                                <option value="" disabled {% if not form_data.get('designation') %}selected{% endif %}>Select Designation</option>
+                                <option value="Principal / Head of Institution" {% if form_data.get('designation') == 'Principal / Head of Institution' %}selected{% endif %}>Principal / Head of Institution</option>
+                                <option value="Trustee / Director / Management" {% if form_data.get('designation') == 'Trustee / Director / Management' %}selected{% endif %}>Trustee / Director / Management</option>
+                                <option value="STEM / ATL Incharge / Coordinator" {% if form_data.get('designation') == 'STEM / ATL Incharge / Coordinator' %}selected{% endif %}>STEM / ATL Incharge / Coordinator</option>
+                                <option value="HOD / Department Head" {% if form_data.get('designation') == 'HOD / Department Head' %}selected{% endif %}>HOD / Department Head</option>
+                                <option value="Senior Teacher / Faculty" {% if form_data.get('designation') == 'Senior Teacher / Faculty' %}selected{% endif %}>Senior Teacher / Faculty</option>
+                                <option value="Procurement / Admin Officer" {% if form_data.get('designation') == 'Procurement / Admin Officer' %}selected{% endif %}>Procurement / Admin Officer</option>
+                                <option value="Other" {% if form_data.get('designation') == 'Other' %}selected{% endif %}>Other</option>
+                            </select>
+                            <div class="inquiry-error-msg" id="err_designation" style="display: none;">Please select your designation.</div>
+                        </div>
+                    </div>
+
+                    <div class="inquiry-grid-2">
+                        <div class="inquiry-form-group">
+                            <label for="email">
+                                Official Email Address <span class="required-star">*</span>
+                            </label>
+                            <input type="email" id="email" name="email" class="inquiry-input" required 
+                                   value="{{ form_data.get('email', '') }}" 
+                                   placeholder="principal@institution.edu.in">
+                            <div class="inquiry-error-msg" id="err_email" style="display: none;">A valid official email is required.</div>
+                        </div>
+
+                        <div class="inquiry-form-group">
+                            <label for="phone">
+                                Mobile / Phone Number <span class="required-star">*</span>
+                            </label>
+                            <input type="tel" id="phone" name="phone" class="inquiry-input" required 
+                                   value="{{ form_data.get('phone', '') }}" 
+                                   placeholder="10-digit mobile number">
+                            <div class="inquiry-error-msg" id="err_phone" style="display: none;">A valid 10-digit mobile number is required.</div>
+                        </div>
+                    </div>
+
+                    <div class="inquiry-step-footer">
+                        <button type="button" class="inquiry-btn-prev" onclick="goToStep(1)">
+                            <span aria-hidden="true">&larr;</span>
+                            <span>Previous: Institution</span>
+                        </button>
+                        <button type="button" class="inquiry-btn-next" onclick="validateAndGoTo(3)">
+                            <span>Continue to Lab Requirements</span>
+                            <span aria-hidden="true">&rarr;</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ============================================================ -->
+                <!-- STEP 3: Laboratory Requirements                             -->
+                <!-- ============================================================ -->
+                <div class="form-step-pane" id="stepPane3" style="display: none;">
+                    <div style="margin-bottom: 1.75rem;">
+                        <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--color-primary); margin: 0 0 0.35rem 0;">
+                            Step 3 &ndash; Laboratory Requirements
+                        </h2>
+                        <p style="font-size: 0.9rem; color: var(--color-text-muted); margin: 0;">
+                            Select the laboratories you are interested in establishing and specify your campus scope.
+                        </p>
+                    </div>
+
+                    <!-- Selectable Laboratory Cards -->
+                    <div class="inquiry-form-group">
+                        <label style="margin-bottom: 0.75rem;">
+                            Required Laboratories <span class="required-star">*</span>
+                            <span class="optional-hint">(Select one or multiple laboratories)</span>
+                        </label>
+                        <div class="inquiry-error-msg" id="err_selected_labs" style="display: none; margin-bottom: 0.75rem;">
+                            Please select at least one laboratory category.
+                        </div>
+
+                        <div class="lab-select-grid">
+                            {% for lab in laboratories %}
+                            {% set is_checked = (lab.slug == preselected_slug) or (lab.name in selected_labs_list) %}
+                            <label class="lab-select-card {% if is_checked %}selected{% endif %}" id="card-{{ lab.slug }}">
+                                <input type="checkbox" name="selected_labs" value="{{ lab.name }}" 
+                                       {% if is_checked %}checked{% endif %} 
+                                       onchange="toggleLabCardSelection(this)">
+                                
+                                <div class="lab-select-icon">
+                                    {% if 'robot' in lab.slug or 'robot' in lab.name.lower() %}
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4M8 16h.01M16 16h.01"/></svg>
+                                    {% elif 'drone' in lab.slug or 'drone' in lab.name.lower() %}
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M5 5l4 4M19 5l-4 4M5 19l4-4M19 19l-4-4"/><circle cx="4" cy="4" r="2"/><circle cx="20" cy="4" r="2"/><circle cx="4" cy="20" r="2"/><circle cx="20" cy="20" r="2"/></svg>
+                                    {% elif 'ai' in lab.slug or 'artificial' in lab.name.lower() or 'intelligence' in lab.name.lower() %}
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+                                    {% elif 'atl' in lab.slug or 'tinkering' in lab.name.lower() %}
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                                    {% elif 'stem' in lab.slug or 'innovation' in lab.name.lower() %}
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31M14 9.3V1.99M8.5 2h7M14 9.3a6.5 6.5 0 1 1-4 0"/></svg>
+                                    {% else %}
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                    {% endif %}
+                                </div>
+
+                                <div class="lab-select-body">
+                                    <div class="lab-select-name">{{ lab.name }}</div>
+                                    <p class="lab-select-desc">
+                                        {{ lab.short_description or 'Turnkey laboratory setup with complete hardware, curriculum, and teacher training.' }}
+                                    </p>
+                                </div>
+
+                                <div class="lab-select-indicator">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </div>
+                            </label>
+                            {% endfor %}
+
+                            <!-- Other / Custom Laboratory Option -->
+                            {% set custom_checked = ('Other / Multi-Disciplinary Custom Lab' in selected_labs_list) %}
+                            <label class="lab-select-card {% if custom_checked %}selected{% endif %}" id="card-custom-lab">
+                                <input type="checkbox" name="selected_labs" value="Other / Multi-Disciplinary Custom Lab" 
+                                       {% if custom_checked %}checked{% endif %} 
+                                       onchange="toggleLabCardSelection(this)">
+
+                                <div class="lab-select-icon">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                </div>
+
+                                <div class="lab-select-body">
+                                    <div class="lab-select-name">Other / Custom Lab</div>
+                                    <p class="lab-select-desc">
+                                        Bespoke laboratory configuration combining custom hardware, robotics, IoT, and fabrication.
+                                    </p>
+                                </div>
+
+                                <div class="lab-select-indicator">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="inquiry-grid-2">
+                        <div class="inquiry-form-group">
+                            <label for="expected_students">
+                                Expected Students Benefitted <span class="required-star">*</span>
+                            </label>
+                            <select id="expected_students" name="expected_students" class="inquiry-select" required>
+                                <option value="" disabled {% if not form_data.get('expected_students') %}selected{% endif %}>Select Student Range</option>
+                                <option value="Less than 100 students" {% if form_data.get('expected_students') == 'Less than 100 students' %}selected{% endif %}>Less than 100 students</option>
+                                <option value="100 - 300 students" {% if form_data.get('expected_students') == '100 - 300 students' %}selected{% endif %}>100 &ndash; 300 students</option>
+                                <option value="300 - 600 students" {% if form_data.get('expected_students') == '300 - 600 students' %}selected{% endif %}>300 &ndash; 600 students</option>
+                                <option value="600 - 1,000 students" {% if form_data.get('expected_students') == '600 - 1,000 students' %}selected{% endif %}>600 &ndash; 1,000 students</option>
+                                <option value="1,000+ students" {% if form_data.get('expected_students') == '1,000+ students' %}selected{% endif %}>1,000+ students (Entire Campus)</option>
+                            </select>
+                            <div class="inquiry-error-msg" id="err_expected_students" style="display: none;">Please select expected student range.</div>
+                        </div>
+
+                        <div class="inquiry-form-group">
+                            <label for="available_space">
+                                Available Space for Lab <span class="required-star">*</span>
+                            </label>
+                            <select id="available_space" name="available_space" class="inquiry-select" required>
+                                <option value="" disabled {% if not form_data.get('available_space') %}selected{% endif %}>Select Space Available</option>
+                                <option value="Under 500 sq. ft." {% if form_data.get('available_space') == 'Under 500 sq. ft.' %}selected{% endif %}>Under 500 sq. ft. (Compact Classroom)</option>
+                                <option value="500 - 1,000 sq. ft." {% if form_data.get('available_space') == '500 - 1,000 sq. ft.' %}selected{% endif %}>500 &ndash; 1,000 sq. ft. (Standard Lab Room)</option>
+                                <option value="1,000 - 1,500 sq. ft." {% if form_data.get('available_space') == '1,000 - 1,500 sq. ft.' %}selected{% endif %}>1,000 &ndash; 1,500 sq. ft. (Large Innovation Hub)</option>
+                                <option value="1,500+ sq. ft." {% if form_data.get('available_space') == '1,500+ sq. ft.' %}selected{% endif %}>1,500+ sq. ft. (Multi-Hall Center)</option>
+                                <option value="Space not finalized / Need planning assistance" {% if form_data.get('available_space') == 'Space not finalized / Need planning assistance' %}selected{% endif %}>Not finalized / Planning assistance needed</option>
+                            </select>
+                            <div class="inquiry-error-msg" id="err_available_space" style="display: none;">Please select available space.</div>
+                        </div>
+                    </div>
+
+                    <div class="inquiry-grid-2">
+                        <div class="inquiry-form-group">
+                            <label for="setup_timeline">
+                                Expected Setup Timeline <span class="required-star">*</span>
+                            </label>
+                            <select id="setup_timeline" name="setup_timeline" class="inquiry-select" required>
+                                <option value="" disabled {% if not form_data.get('setup_timeline') %}selected{% endif %}>Select Timeline</option>
+                                <option value="Immediate (Within 1 Month)" {% if form_data.get('setup_timeline') == 'Immediate (Within 1 Month)' %}selected{% endif %}>Immediate (Within 1 Month)</option>
+                                <option value="1 - 3 Months" {% if form_data.get('setup_timeline') == '1 - 3 Months' %}selected{% endif %}>1 &ndash; 3 Months</option>
+                                <option value="3 - 6 Months" {% if form_data.get('setup_timeline') == '3 - 6 Months' %}selected{% endif %}>3 &ndash; 6 Months</option>
+                                <option value="Next Academic Session" {% if form_data.get('setup_timeline') == 'Next Academic Session' %}selected{% endif %}>Next Academic Session</option>
+                                <option value="Exploratory / Planning Stage" {% if form_data.get('setup_timeline') == 'Exploratory / Planning Stage' %}selected{% endif %}>Exploratory / Planning Stage</option>
+                            </select>
+                            <div class="inquiry-error-msg" id="err_setup_timeline" style="display: none;">Please select expected setup timeline.</div>
+                        </div>
+
+                        <div class="inquiry-form-group">
+                            <label for="approximate_budget">
+                                Approximate Budget <span class="optional-hint">(Optional)</span>
+                            </label>
+                            <select id="approximate_budget" name="approximate_budget" class="inquiry-select">
+                                <option value="" {% if not form_data.get('approximate_budget') %}selected{% endif %}>To be discussed with consultant</option>
+                                <option value="₹2 - ₹5 Lakhs" {% if form_data.get('approximate_budget') == '₹2 - ₹5 Lakhs' %}selected{% endif %}>₹2 &ndash; ₹5 Lakhs (Starter Setup)</option>
+                                <option value="₹5 - ₹10 Lakhs" {% if form_data.get('approximate_budget') == '₹5 - ₹10 Lakhs' %}selected{% endif %}>₹5 &ndash; ₹10 Lakhs (Standard ATL / Robotics)</option>
+                                <option value="₹10 - ₹20 Lakhs" {% if form_data.get('approximate_budget') == '₹10 - ₹20 Lakhs' %}selected{% endif %}>₹10 &ndash; ₹20 Lakhs (Advanced AI / STEM Center)</option>
+                                <option value="₹20 Lakhs+" {% if form_data.get('approximate_budget') == '₹20 Lakhs+' %}selected{% endif %}>₹20 Lakhs+ (Campus Innovation Hub)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="inquiry-form-group">
+                        <label for="additional_requirements">
+                            Additional Requirements / Message <span class="optional-hint">(Optional)</span>
+                        </label>
+                        <textarea id="additional_requirements" name="additional_requirements" rows="4" class="inquiry-textarea" 
+                                  placeholder="Mention any specific technologies, board affiliations (CBSE/ICSE), grant programs (AIM/ATL), or existing facilities on campus...">{{ form_data.get('additional_requirements', '') }}</textarea>
+                    </div>
+
+                    <div class="inquiry-step-footer">
+                        <button type="button" class="inquiry-btn-prev" onclick="goToStep(2)">
+                            <span aria-hidden="true">&larr;</span>
+                            <span>Previous: Contact Person</span>
+                        </button>
+
+                        <button type="submit" id="submitBtn" class="inquiry-btn-submit">
+                            <span id="submitBtnText">Submit Lab Setup Inquiry</span>
+                            <span id="submitBtnArrow" aria-hidden="true">&rarr;</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+
+<!-- Client-Side Progressive 3-Step Wizard & Accessibility Script -->
+<script>
+    let currentStep = 1;
+
+    function toggleLabCardSelection(checkbox) {
+        const card = checkbox.closest('.lab-select-card');
+        if (checkbox.checked) {
+            card.classList.add('selected');
+        } else {
+            card.classList.remove('selected');
+        }
+        // Clear error if at least one selected
+        const anyChecked = document.querySelectorAll('input[name="selected_labs"]:checked').length > 0;
+        const errElem = document.getElementById('err_selected_labs');
+        if (anyChecked && errElem) {
+            errElem.style.display = 'none';
+        }
+    }
+
+    function setFieldError(fieldId, isError) {
+        const input = document.getElementById(fieldId);
+        const errElem = document.getElementById('err_' + fieldId);
+        if (input) {
+            if (isError) {
+                input.classList.add('has-error');
+                if (errElem) errElem.style.display = 'flex';
+            } else {
+                input.classList.remove('has-error');
+                if (errElem) errElem.style.display = 'none';
+            }
+        }
+    }
+
+    function validateStep1() {
+        let valid = true;
+        const fields = ['institution_name', 'institution_type', 'state', 'city', 'pincode', 'address'];
+        fields.forEach(f => {
+            const el = document.getElementById(f);
+            if (!el || !el.value.trim()) {
+                setFieldError(f, true);
+                valid = false;
+            } else {
+                setFieldError(f, false);
+            }
+        });
+
+        // Pincode length check
+        const pin = document.getElementById('pincode');
+        if (pin && pin.value.trim() && pin.value.trim().length !== 6) {
+            setFieldError('pincode', true);
+            valid = false;
+        }
+
+        return valid;
+    }
+
+    function validateStep2() {
+        let valid = true;
+        const fields = ['contact_person', 'designation', 'email', 'phone'];
+        fields.forEach(f => {
+            const el = document.getElementById(f);
+            if (!el || !el.value.trim()) {
+                setFieldError(f, true);
+                valid = false;
+            } else {
+                setFieldError(f, false);
+            }
+        });
+
+        // Email regex check
+        const email = document.getElementById('email');
+        if (email && email.value.trim() && !email.value.includes('@')) {
+            setFieldError('email', true);
+            valid = false;
+        }
+
+        // Phone digits check
+        const phone = document.getElementById('phone');
+        if (phone && phone.value.trim() && phone.value.replace(/\D/g, '').length < 10) {
+            setFieldError('phone', true);
+            valid = false;
+        }
+
+        return valid;
+    }
+
+    function validateStep3() {
+        let valid = true;
+        const checkedLabs = document.querySelectorAll('input[name="selected_labs"]:checked');
+        const labErr = document.getElementById('err_selected_labs');
+        if (checkedLabs.length === 0) {
+            if (labErr) labErr.style.display = 'flex';
+            valid = false;
+        } else {
+            if (labErr) labErr.style.display = 'none';
+        }
+
+        const selects = ['expected_students', 'available_space', 'setup_timeline'];
+        selects.forEach(s => {
+            const el = document.getElementById(s);
+            if (!el || !el.value.trim()) {
+                setFieldError(s, true);
+                valid = false;
+            } else {
+                setFieldError(s, false);
+            }
+        });
+
+        return valid;
+    }
+
+    function goToStep(targetStep) {
+        // Can only jump forward if prior steps validate
+        if (targetStep > currentStep) {
+            if (currentStep === 1 && !validateStep1()) return;
+            if (currentStep === 2 && !validateStep2()) return;
+            if (targetStep === 3 && currentStep === 1) {
+                if (!validateStep1() || !validateStep2()) return;
+            }
+        }
+
+        // Hide all panes
+        document.getElementById('stepPane1').style.display = 'none';
+        document.getElementById('stepPane2').style.display = 'none';
+        document.getElementById('stepPane3').style.display = 'none';
+
+        // Show target pane
+        document.getElementById('stepPane' + targetStep).style.display = 'block';
+
+        // Update step indicator classes
+        for (let i = 1; i <= 3; i++) {
+            const node = document.getElementById('stepNode' + i);
+            if (i === targetStep) {
+                node.className = 'inquiry-step-node active';
+            } else if (i < targetStep) {
+                node.className = 'inquiry-step-node completed';
+            } else {
+                node.className = 'inquiry-step-node';
+            }
+        }
+
+        const div1 = document.getElementById('stepDiv1');
+        const div2 = document.getElementById('stepDiv2');
+        if (div1) div1.className = targetStep > 1 ? 'inquiry-step-divider completed' : 'inquiry-step-divider';
+        if (div2) div2.className = targetStep > 2 ? 'inquiry-step-divider completed' : 'inquiry-step-divider';
+
+        currentStep = targetStep;
+
+        // Smooth scroll to top of card
+        const card = document.querySelector('.inquiry-form-card');
+        if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    function validateAndGoTo(nextStep) {
+        if (nextStep === 2 && validateStep1()) {
+            goToStep(2);
+        } else if (nextStep === 3 && validateStep2()) {
+            goToStep(3);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const form = document.getElementById("labInquiryForm");
+        const submitBtn = document.getElementById("submitBtn");
+        const submitBtnText = document.getElementById("submitBtnText");
+        const submitBtnArrow = document.getElementById("submitBtnArrow");
+
+        // Clear inline errors as user types/changes fields
+        const allInputs = document.querySelectorAll('.inquiry-input, .inquiry-select, .inquiry-textarea');
+        allInputs.forEach(input => {
+            input.addEventListener('input', function () {
+                if (this.value.trim()) {
+                    setFieldError(this.id, false);
+                }
+            });
+            input.addEventListener('change', function () {
+                if (this.value.trim()) {
+                    setFieldError(this.id, false);
+                }
+            });
+        });
+
+        // Form submit handling
+        if (form && submitBtn) {
+            form.addEventListener("submit", function (e) {
+                // Ensure all 3 steps are valid
+                if (!validateStep1()) {
+                    e.preventDefault();
+                    goToStep(1);
+                    return false;
+                }
+                if (!validateStep2()) {
+                    e.preventDefault();
+                    goToStep(2);
+                    return false;
+                }
+                if (!validateStep3()) {
+                    e.preventDefault();
+                    goToStep(3);
+                    return false;
+                }
+
+                // Prevent double submissions
+                submitBtn.disabled = true;
+                if (submitBtnText) submitBtnText.textContent = "Submitting Consultation Request...";
+                if (submitBtnArrow) submitBtnArrow.style.display = "none";
+            });
+        }
+    });
+</script>
+{% endblock %}

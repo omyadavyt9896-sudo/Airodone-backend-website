@@ -1,6 +1,6 @@
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 import re
 import json
@@ -576,7 +576,7 @@ def create_index_if_not_exists(cur, index_name, table, columns):
                     # Index does not exist and error was not 1061: do not hide unrelated database errors
                     raise e
 
-CURRENT_SCHEMA_VERSION = 1
+CURRENT_SCHEMA_VERSION = 2
 _db_initialized = False
 
 def is_schema_initialized():
@@ -1133,6 +1133,8 @@ def init_db():
 
     conn.commit()
 
+
+
     # Create targeted performance indexes across PostgreSQL, MySQL, and SQLite
     create_index_if_not_exists(cur, "idx_courses_grade", "courses", ["grade"])
     create_index_if_not_exists(cur, "idx_learning_categories_slug", "learning_categories", ["slug"])
@@ -1278,6 +1280,345 @@ def init_db():
     create_index_if_not_exists(cur, "idx_solution_items_solution_id", "solution_items", ["solution_id"])
     create_index_if_not_exists(cur, "idx_solution_items_display_order", "solution_items", ["display_order"])
 
+    # Create laboratories table (Lab Setup Management)
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS laboratories (
+            id {pk_def},
+            name TEXT NOT NULL,
+            slug VARCHAR(255) UNIQUE NOT NULL,
+            badge TEXT DEFAULT NULL,
+            cover_image TEXT DEFAULT NULL,
+            short_description TEXT DEFAULT NULL,
+            description TEXT DEFAULT NULL,
+            features TEXT DEFAULT NULL,
+            equipment TEXT DEFAULT NULL,
+            benefits TEXT DEFAULT NULL,
+            target_audience TEXT DEFAULT NULL,
+            cta_text TEXT DEFAULT 'Book a Lab Setup',
+            display_order INTEGER NOT NULL DEFAULT 1,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    add_column_if_not_exists(cur, "laboratories", "name", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "laboratories", "slug", "VARCHAR(255) DEFAULT ''")
+    add_column_if_not_exists(cur, "laboratories", "badge", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "laboratories", "cover_image", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "laboratories", "short_description", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "laboratories", "description", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "laboratories", "features", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "laboratories", "equipment", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "laboratories", "benefits", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "laboratories", "target_audience", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "laboratories", "cta_text", "TEXT DEFAULT 'Book a Lab Setup'")
+    add_column_if_not_exists(cur, "laboratories", "display_order", "INTEGER NOT NULL DEFAULT 1")
+    add_column_if_not_exists(cur, "laboratories", "is_active", "INTEGER NOT NULL DEFAULT 1")
+    add_column_if_not_exists(cur, "laboratories", "created_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "laboratories", "updated_at", "TEXT DEFAULT ''")
+
+    create_index_if_not_exists(cur, "idx_laboratories_slug", "laboratories", ["slug"])
+    create_index_if_not_exists(cur, "idx_laboratories_display_order", "laboratories", ["display_order"])
+    create_index_if_not_exists(cur, "idx_laboratories_is_active", "laboratories", ["is_active"])
+
+    # Create lab_inquiries table (Institutional Lab Setup Inquiries)
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS lab_inquiries (
+            id {pk_def},
+            institution_name TEXT NOT NULL,
+            institution_type VARCHAR(100) NOT NULL,
+            institution_website TEXT DEFAULT NULL,
+            state VARCHAR(100) NOT NULL,
+            city VARCHAR(100) NOT NULL,
+            address TEXT NOT NULL,
+            pincode VARCHAR(20) NOT NULL,
+            contact_person TEXT NOT NULL,
+            designation VARCHAR(100) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            phone VARCHAR(50) NOT NULL,
+            selected_labs TEXT NOT NULL,
+            expected_students VARCHAR(100) DEFAULT NULL,
+            available_space VARCHAR(100) DEFAULT NULL,
+            approximate_budget VARCHAR(100) DEFAULT NULL,
+            setup_timeline VARCHAR(100) DEFAULT NULL,
+            additional_requirements TEXT DEFAULT NULL,
+            status VARCHAR(50) NOT NULL DEFAULT 'New',
+            internal_notes TEXT DEFAULT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    add_column_if_not_exists(cur, "lab_inquiries", "institution_name", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiries", "institution_type", "VARCHAR(100) NOT NULL DEFAULT 'School'")
+    add_column_if_not_exists(cur, "lab_inquiries", "institution_website", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "lab_inquiries", "state", "VARCHAR(100) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiries", "city", "VARCHAR(100) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiries", "address", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiries", "pincode", "VARCHAR(20) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiries", "contact_person", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiries", "designation", "VARCHAR(100) NOT NULL DEFAULT 'Coordinator'")
+    add_column_if_not_exists(cur, "lab_inquiries", "email", "VARCHAR(255) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiries", "phone", "VARCHAR(50) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiries", "selected_labs", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiries", "expected_students", "VARCHAR(100) DEFAULT NULL")
+    add_column_if_not_exists(cur, "lab_inquiries", "available_space", "VARCHAR(100) DEFAULT NULL")
+    add_column_if_not_exists(cur, "lab_inquiries", "approximate_budget", "VARCHAR(100) DEFAULT NULL")
+    add_column_if_not_exists(cur, "lab_inquiries", "setup_timeline", "VARCHAR(100) DEFAULT NULL")
+    add_column_if_not_exists(cur, "lab_inquiries", "additional_requirements", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "lab_inquiries", "status", "VARCHAR(50) NOT NULL DEFAULT 'New'")
+    add_column_if_not_exists(cur, "lab_inquiries", "internal_notes", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "lab_inquiries", "created_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiries", "updated_at", "TEXT DEFAULT ''")
+
+    create_index_if_not_exists(cur, "idx_lab_inquiries_status", "lab_inquiries", ["status"])
+    create_index_if_not_exists(cur, "idx_lab_inquiries_created_at", "lab_inquiries", ["created_at"])
+
+    # Create lab_inquiry_notes table (Private administrative notes)
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS lab_inquiry_notes (
+            id {pk_def},
+            inquiry_id INTEGER NOT NULL REFERENCES lab_inquiries(id) ON DELETE CASCADE,
+            author_id INTEGER DEFAULT NULL,
+            author_name TEXT NOT NULL,
+            note TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    add_column_if_not_exists(cur, "lab_inquiry_notes", "inquiry_id", "INTEGER NOT NULL DEFAULT 0")
+    add_column_if_not_exists(cur, "lab_inquiry_notes", "author_id", "INTEGER DEFAULT NULL")
+    add_column_if_not_exists(cur, "lab_inquiry_notes", "author_name", "TEXT NOT NULL DEFAULT 'Admin'")
+    add_column_if_not_exists(cur, "lab_inquiry_notes", "note", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "lab_inquiry_notes", "created_at", "TEXT DEFAULT ''")
+
+    create_index_if_not_exists(cur, "idx_lab_inquiry_notes_inquiry", "lab_inquiry_notes", ["inquiry_id"])
+
+    # -------------------------------------------------------------
+    # Composite Skill Lab (CBSE) Dedicated Tables & Indexes
+    # -------------------------------------------------------------
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS composite_lab_enquiries (
+            id {pk_def},
+            school_name TEXT NOT NULL,
+            institution_type VARCHAR(100) NOT NULL,
+            cbse_affiliation_no VARCHAR(100) DEFAULT NULL,
+            contact_person TEXT NOT NULL,
+            designation VARCHAR(100) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            phone VARCHAR(50) NOT NULL,
+            state VARCHAR(100) NOT NULL,
+            city VARCHAR(100) NOT NULL,
+            address TEXT NOT NULL,
+            student_strength VARCHAR(100) DEFAULT NULL,
+            existing_lab VARCHAR(100) DEFAULT NULL,
+            required_sectors TEXT NOT NULL,
+            preferred_package VARCHAR(100) NOT NULL,
+            room_size VARCHAR(100) DEFAULT NULL,
+            budget VARCHAR(100) DEFAULT NULL,
+            additional_requirements TEXT DEFAULT NULL,
+            status VARCHAR(50) NOT NULL DEFAULT 'New',
+            assigned_to INTEGER DEFAULT NULL,
+            assigned_to_name TEXT DEFAULT NULL,
+            internal_notes TEXT DEFAULT NULL,
+            ip_address VARCHAR(50) DEFAULT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "school_name", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "institution_type", "VARCHAR(100) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "cbse_affiliation_no", "VARCHAR(100) DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "contact_person", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "designation", "VARCHAR(100) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "email", "VARCHAR(255) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "phone", "VARCHAR(50) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "state", "VARCHAR(100) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "city", "VARCHAR(100) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "address", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "student_strength", "VARCHAR(100) DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "existing_lab", "VARCHAR(100) DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "required_sectors", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "preferred_package", "VARCHAR(100) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "room_size", "VARCHAR(100) DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "budget", "VARCHAR(100) DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "additional_requirements", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "status", "VARCHAR(50) NOT NULL DEFAULT 'New'")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "assigned_to", "INTEGER DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "assigned_to_name", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "internal_notes", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "ip_address", "VARCHAR(50) DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "created_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_enquiries", "updated_at", "TEXT DEFAULT ''")
+
+    create_index_if_not_exists(cur, "idx_comp_enq_status", "composite_lab_enquiries", ["status"])
+    create_index_if_not_exists(cur, "idx_comp_enq_created", "composite_lab_enquiries", ["created_at"])
+    create_index_if_not_exists(cur, "idx_comp_enq_pkg", "composite_lab_enquiries", ["preferred_package"])
+
+    # Composite Lab Notes
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS composite_lab_notes (
+            id {pk_def},
+            enquiry_id INTEGER NOT NULL REFERENCES composite_lab_enquiries(id) ON DELETE CASCADE,
+            author_id INTEGER DEFAULT NULL,
+            author_name TEXT NOT NULL DEFAULT 'Admin',
+            note TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    add_column_if_not_exists(cur, "composite_lab_notes", "enquiry_id", "INTEGER NOT NULL DEFAULT 0")
+    add_column_if_not_exists(cur, "composite_lab_notes", "author_id", "INTEGER DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_notes", "author_name", "TEXT NOT NULL DEFAULT 'Admin'")
+    add_column_if_not_exists(cur, "composite_lab_notes", "note", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_notes", "created_at", "TEXT DEFAULT ''")
+    create_index_if_not_exists(cur, "idx_comp_notes_enq", "composite_lab_notes", ["enquiry_id"])
+
+    # Composite Lab Activity Logs
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS composite_lab_activity_logs (
+            id {pk_def},
+            enquiry_id INTEGER NOT NULL REFERENCES composite_lab_enquiries(id) ON DELETE CASCADE,
+            user_id INTEGER DEFAULT NULL,
+            user_name TEXT NOT NULL DEFAULT 'System',
+            action TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    add_column_if_not_exists(cur, "composite_lab_activity_logs", "enquiry_id", "INTEGER NOT NULL DEFAULT 0")
+    add_column_if_not_exists(cur, "composite_lab_activity_logs", "user_id", "INTEGER DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_activity_logs", "user_name", "TEXT NOT NULL DEFAULT 'System'")
+    add_column_if_not_exists(cur, "composite_lab_activity_logs", "action", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_activity_logs", "created_at", "TEXT DEFAULT ''")
+    create_index_if_not_exists(cur, "idx_comp_act_enq", "composite_lab_activity_logs", ["enquiry_id"])
+
+    # Composite Lab Packages
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS composite_lab_packages (
+            id {pk_def},
+            name VARCHAR(150) NOT NULL,
+            slug VARCHAR(150) UNIQUE NOT NULL,
+            price NUMERIC(10, 2) NOT NULL,
+            price_display VARCHAR(50) NOT NULL,
+            badge VARCHAR(50) DEFAULT NULL,
+            target_grades VARCHAR(100) DEFAULT 'Grades 6 - 10',
+            ideal_for TEXT DEFAULT NULL,
+            description TEXT NOT NULL,
+            features TEXT NOT NULL,
+            display_order INTEGER NOT NULL DEFAULT 1,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    add_column_if_not_exists(cur, "composite_lab_packages", "name", "VARCHAR(150) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_packages", "slug", "VARCHAR(150) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_packages", "price", "NUMERIC(10, 2) NOT NULL DEFAULT 0")
+    add_column_if_not_exists(cur, "composite_lab_packages", "price_display", "VARCHAR(50) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_packages", "badge", "VARCHAR(50) DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_packages", "target_grades", "VARCHAR(100) DEFAULT 'Grades 6 - 10'")
+    add_column_if_not_exists(cur, "composite_lab_packages", "ideal_for", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_packages", "description", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_packages", "features", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_packages", "display_order", "INTEGER NOT NULL DEFAULT 1")
+    add_column_if_not_exists(cur, "composite_lab_packages", "is_active", "INTEGER NOT NULL DEFAULT 1")
+    add_column_if_not_exists(cur, "composite_lab_packages", "created_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_packages", "updated_at", "TEXT DEFAULT ''")
+    create_index_if_not_exists(cur, "idx_comp_pkg_order", "composite_lab_packages", ["display_order"])
+
+    # Composite Lab Skill Sectors
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS composite_lab_sectors (
+            id {pk_def},
+            name VARCHAR(150) NOT NULL,
+            code VARCHAR(50) UNIQUE NOT NULL,
+            icon VARCHAR(50) DEFAULT 'cpu',
+            image_path TEXT DEFAULT NULL,
+            description TEXT NOT NULL,
+            equipment_highlights TEXT NOT NULL,
+            cbse_subject_code VARCHAR(100) DEFAULT NULL,
+            display_order INTEGER NOT NULL DEFAULT 1,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    add_column_if_not_exists(cur, "composite_lab_sectors", "name", "VARCHAR(150) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_sectors", "code", "VARCHAR(50) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_sectors", "icon", "VARCHAR(50) DEFAULT 'cpu'")
+    add_column_if_not_exists(cur, "composite_lab_sectors", "image_path", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_sectors", "description", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_sectors", "equipment_highlights", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_sectors", "cbse_subject_code", "VARCHAR(100) DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_sectors", "display_order", "INTEGER NOT NULL DEFAULT 1")
+    add_column_if_not_exists(cur, "composite_lab_sectors", "is_active", "INTEGER NOT NULL DEFAULT 1")
+    add_column_if_not_exists(cur, "composite_lab_sectors", "created_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_sectors", "updated_at", "TEXT DEFAULT ''")
+    create_index_if_not_exists(cur, "idx_comp_sec_order", "composite_lab_sectors", ["display_order"])
+
+    # Composite Lab FAQs
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS composite_lab_faqs (
+            id {pk_def},
+            question TEXT NOT NULL,
+            answer TEXT NOT NULL,
+            category VARCHAR(50) DEFAULT 'General',
+            display_order INTEGER NOT NULL DEFAULT 1,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    add_column_if_not_exists(cur, "composite_lab_faqs", "question", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_faqs", "answer", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_faqs", "category", "VARCHAR(50) DEFAULT 'General'")
+    add_column_if_not_exists(cur, "composite_lab_faqs", "display_order", "INTEGER NOT NULL DEFAULT 1")
+    add_column_if_not_exists(cur, "composite_lab_faqs", "is_active", "INTEGER NOT NULL DEFAULT 1")
+    add_column_if_not_exists(cur, "composite_lab_faqs", "created_at", "TEXT DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_faqs", "updated_at", "TEXT DEFAULT ''")
+    create_index_if_not_exists(cur, "idx_comp_faq_order", "composite_lab_faqs", ["display_order"])
+
+    # Composite Lab Content (CMS)
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS composite_lab_content (
+            id {pk_def},
+            section_key VARCHAR(100) UNIQUE NOT NULL,
+            title TEXT NOT NULL,
+            subtitle TEXT DEFAULT NULL,
+            body TEXT DEFAULT NULL,
+            image_path TEXT DEFAULT NULL,
+            image_alt TEXT DEFAULT NULL,
+            extra_data TEXT DEFAULT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    add_column_if_not_exists(cur, "composite_lab_content", "section_key", "VARCHAR(100) NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_content", "title", "TEXT NOT NULL DEFAULT ''")
+    add_column_if_not_exists(cur, "composite_lab_content", "subtitle", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_content", "body", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_content", "image_path", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_content", "image_alt", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_content", "extra_data", "TEXT DEFAULT NULL")
+    add_column_if_not_exists(cur, "composite_lab_content", "updated_at", "TEXT DEFAULT ''")
+    create_index_if_not_exists(cur, "idx_comp_cnt_key", "composite_lab_content", ["section_key"])
+
     conn.commit()
 
     # Create default admin user if none exists
@@ -1312,6 +1653,12 @@ def init_db():
 
     # Seed initial 6 institutional solutions if not present
     seed_initial_solutions(cur, conn)
+
+    # Seed initial 6 laboratories if not present
+    seed_initial_laboratories(cur, conn)
+
+    # Seed initial Composite Skill Lab (CBSE) packages, sectors, faqs and content
+    seed_initial_composite_lab(cur, conn)
 
     # Stamp schema_version sentinel table to mark complete initialization
     cur.execute(
@@ -2341,6 +2688,474 @@ def seed_initial_solutions(cur, conn):
     conn.commit()
 
 
+def seed_initial_laboratories(cur, conn):
+    """Seed default 6 Laboratory Categories if not present."""
+    cur.execute("SELECT slug FROM laboratories")
+    existing_rows = cur.fetchall() or []
+    existing_slugs = {row["slug"] if isinstance(row, dict) else row[0] for row in existing_rows}
+
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    initial_labs = [
+        {
+            "name": "ATL Lab (Atal Tinkering Lab)",
+            "slug": "atl-lab",
+            "badge": "ATL Lab",
+            "cover_image": "images/services/atl.jpg",
+            "cover_image_alt": "Atal Tinkering Lab Setup by Airodrone",
+            "about_image": "images/services/atl.jpg",
+            "about_image_alt": "Students collaborating in modern Atal Tinkering Lab with 3D printers and electronics prototyping workstations",
+            "short_description": "A government-backed innovation space to foster creativity, tinkering and problem solving.",
+            "description": "Comprehensive turnkey setup for Atal Tinkering Laboratories (ATL) established under the Atal Innovation Mission (AIM), NITI Aayog. Designed for schools across India to build experiential, problem-solving, and computational mindsets among students of Grades 6 to 12 through tinkering, rapid prototyping, and real-world innovation.",
+            "features": "Prototyping & Innovation\n3D Design & Fabrication\nNEP 2020 Aligned\nStructured Year-Round ATL Curriculum & Lesson Plans",
+            "equipment": "STEM & DIY Electronics Prototyping Kits\n3D Printers & Eco-Friendly PLA Filament Spools\nRobotics Assembly Chassis, Sensors & Motor Drivers\nMechanical & Electrical Hand Tools with Full Safety Gear\nArduino, Raspberry Pi & Microcontroller Boards",
+            "benefits": "Builds foundational design thinking and problem-solving skills\nPrepares students for national hackathons, ATL Marathons & science fairs\nHands-on experiential learning bridging classroom theory with prototypes\nEmpowers schools with a government-recognized center of STEM excellence",
+            "target_audience": "K-12 Schools, CBSE, ICSE, and State Board Institutions eligible for or operating ATLs",
+            "cta_text": "Book a Lab Setup",
+            "display_order": 1,
+            "is_active": 1,
+        },
+        {
+            "name": "Robotics Lab",
+            "slug": "robotics-lab",
+            "badge": "Robotics Lab",
+            "cover_image": "images/services/robotics.jpg",
+            "cover_image_alt": "Robotics Laboratory Setup by Airodrone",
+            "about_image": "images/services/robotics.jpg",
+            "about_image_alt": "Students assembling autonomous robots at modern mechatronics workstations",
+            "short_description": "Hands-on learning with robotics kits, automation and real-world engineering projects.",
+            "description": "State-of-the-art Robotics and Mechatronics laboratory designed to teach mechanical assembly, embedded systems, sensory automation, and autonomous robotics. Students progress from basic wired and remote-controlled bots to autonomous navigation, robotic manipulators, and competitive robotics arena challenges.",
+            "features": "Robot Design & Building\nProgramming & Automation\nCompetitions & Projects\nAutonomous Navigation & Obstacle Avoidance",
+            "equipment": "High-Torque Metal Geared Motors & Servo Actuators\nSensor Packs (Ultrasonic, Infrared, Gyro/IMU, LIDAR, Encoders)\nModular Robotic Aluminium & Acrylic Chassis Frameworks\nMicrocontroller Development Workbenches & Power Supply Units\nModular Robotics Testing Arena & Obstacle Track Mattings",
+            "benefits": "Deep understanding of mechanical-electrical synergy and embedded systems\nPractical programming skills from visual block logic to C++ and Python\nBoosts teamwork, iterative engineering design, and debugging capability\nPrepares students for national and international robotics olympiads",
+            "target_audience": "Middle Schools, High Schools, Engineering Colleges, Polytechnics, and Maker Spaces",
+            "cta_text": "Book a Lab Setup",
+            "display_order": 2,
+            "is_active": 1,
+        },
+        {
+            "name": "Artificial Intelligence Lab",
+            "slug": "artificial-intelligence-lab",
+            "badge": "Artificial Intelligence Lab",
+            "cover_image": "images/services/ai.jpg",
+            "cover_image_alt": "Artificial Intelligence Laboratory Setup by Airodrone",
+            "about_image": "images/services/ai.jpg",
+            "about_image_alt": "High-compute AI and edge inferencing laboratory with vision sensors",
+            "short_description": "Build future-ready skills in AI, machine learning and data-driven problem solving.",
+            "description": "Cutting-edge AI and Machine Learning laboratory equipped with high-compute edge devices, vision sensors, and curated curricula spanning computer vision, natural language processing, predictive modeling, and ethical AI. Students train, optimize, and physically deploy machine learning models on smart edge hardware.",
+            "features": "AI & Machine Learning\nComputer Vision & Data\nReal-World AI Applications\nEdge Computing & Real-Time Inferencing",
+            "equipment": "NVIDIA Jetson / Edge AI Acceleration Hardware Modules\nHigh-Performance Neural Compute Accelerators & Micro-PCs\nHD Wide-Angle & Depth Sensing Computer Vision Cameras\nPre-Configured Python, Jupyter & Edge Inference Environments\nInteractive Smart Sensor Arrays for Real-Time Model Testing",
+            "benefits": "Demystifies artificial intelligence through physical interactive devices\nEnables students to build smart assistive systems, face recognition, and autonomous bots\nBuilds critical thinking around data ethics and responsible technology use\nProvides an early career springboard into high-demand AI, ML, and software fields",
+            "target_audience": "High Schools (Grades 8-12), Higher Secondary, Colleges, and Universities",
+            "cta_text": "Book a Lab Setup",
+            "display_order": 3,
+            "is_active": 1,
+        },
+        {
+            "name": "STEM Innovation Lab",
+            "slug": "stem-innovation-lab",
+            "badge": "STEM Innovation Lab",
+            "cover_image": "images/services/electronics.jpg",
+            "cover_image_alt": "STEM Innovation Laboratory Setup by Airodrone",
+            "about_image": "images/services/electronics.jpg",
+            "about_image_alt": "Students conducting physical computing and electronics experiments in STEM lab",
+            "short_description": "An integrated lab for interdisciplinary learning across science, technology, engineering and math.",
+            "description": "A vibrant multi-disciplinary workspace integrating Science, Technology, Engineering, and Mathematics with hands-on maker culture, IoT, clean technology, and physical computing experiments. Encourages tactile experimentation, cross-subject discovery, and rapid prototype generation.",
+            "features": "Integrated STEM Modules\nExperimentation & Design Thinking\nInnovation Challenges\nIoT & Smart Connected Systems Prototyping",
+            "equipment": "Smart IoT Development Kits & Cloud Connectivity Gateways\nRenewable Energy Demonstrators (Solar, Wind, Smart Grid Modules)\nPrecision Digital Multimeters & Benchtop Testing Instruments\nModular Ergonomic Workbenches, ESD Mats & Tool Storage Units\nElectronic Prototyping Breadboards, Component Bins & Sensory Modules",
+            "benefits": "Bridges theoretical classroom science concepts with real physical devices\nNurtures interdisciplinary curiosity and independent inquiry\nFosters an inventive maker mindset and student patent/prototype culture\nEngages learners across diverse learning styles through tactile projects",
+            "target_audience": "Primary, Middle, and Secondary Schools (K-12) & Science Education Centers",
+            "cta_text": "Book a Lab Setup",
+            "display_order": 4,
+            "is_active": 1,
+        },
+        {
+            "name": "Drone Technology Lab",
+            "slug": "drone-technology-lab",
+            "badge": "Drone Technology Lab",
+            "cover_image": "images/services/drone.jpg",
+            "cover_image_alt": "Drone Technology Laboratory Setup by Airodrone",
+            "about_image": "images/services/drone.jpg",
+            "about_image_alt": "Students assembling and configuring drone avionics and multi-rotor flight frames",
+            "short_description": "Learn aerodynamics, drone programming, assembly and real-world UAV applications.",
+            "description": "Comprehensive Aeromodelling and Drone Technology setup covering aerodynamics, UAV assembly, flight controllers, simulator training, and DGCA-aligned safety standards. Students gain hands-on experience soldering, assembling, configuring flight firmware, and piloting both simulated and physical drones.",
+            "features": "Drone Assembly & Configuration\nFlight Training & Simulation\nAerial Data & Mapping\nAerodynamics & Telemetry Systems",
+            "equipment": "Quadcopter DIY Assembly Kits & Carbon Fiber Airframe Kits\nBrushless DC Motors (BLDC), ESCs & Multi-Rotor Flight Controllers\nProfessional Radio Transmitters & Multi-Screen Flight Simulators\nProtective Flight Arena Netting, LiPo Safe Charging Cabinets & Toolsets\nSoldering Stations with Fume Extractors & Digital Calibration Gear",
+            "benefits": "Mastery of aerodynamic theory, flight mechanics, and telemetry systems\nHands-on hardware assembly, wiring, soldering, and troubleshooting expertise\nDirect exposure to India's burgeoning commercial drone and aerospace sector\nSafe, regulated indoor flight training framework under expert guidelines",
+            "target_audience": "Schools (Grades 7+), Engineering Colleges, Polytechnics, and Aviation Clubs",
+            "cta_text": "Book a Lab Setup",
+            "display_order": 5,
+            "is_active": 1,
+        },
+        {
+            "name": "Custom & Multi-Disciplinary Laboratories",
+            "slug": "custom-laboratories",
+            "badge": "Custom & Multi-Disciplinary",
+            "cover_image": "images/services/workshop.jpg",
+            "cover_image_alt": "Custom Multi-Disciplinary Lab Setup by Airodrone",
+            "about_image": "images/services/workshop.jpg",
+            "about_image_alt": "Turnkey institutional innovation lab and modern digital fabrication hub",
+            "short_description": "Tailored laboratory solutions combining robotics, AI, electronics, drones and more.",
+            "description": "Bespoke institutional innovation hubs, fabrication laboratories (FabLabs), and specialized technical centers customized to your institution's specific curriculum, available infrastructure, and strategic goals. We collaborate with leadership from 3D architectural layout to turnkey execution and trainer placement.",
+            "features": "Flexible & Modular Setup\nDomain Combinations\nFor Schools, Colleges & Institutions\nCustom Curriculum Tailored to Institutional Vision",
+            "equipment": "Tailored Equipment Mix (Laser Cutters, 3D Printers, CNC, Electronics, AI & UAVs)\nHeavy-Duty Modular Furniture, Storage Wall Systems & Audio-Visual Hubs\nCentralized Inventory Tracking & Component Dispensing Systems\nComprehensive Lab Safety, Fire Retardant & First-Aid Installations",
+            "benefits": "Maximizes utilization of available institutional square footage and budget\nCreates a flagship innovation center that attracts students and institutional honors\nEnables institutional accreditation readiness (NAAC, NIRF, CBSE/ICSE inspections)\nContinuous operational support, kit replenishments, and masterclass visits",
+            "target_audience": "Universities, Autonomous Colleges, International Schools, and Educational Trusts",
+            "cta_text": "Book a Lab Setup",
+            "display_order": 6,
+            "is_active": 1,
+        },
+    ]
+
+    for lab in initial_labs:
+        if lab["slug"] in existing_slugs:
+            cur.execute(
+                """
+                UPDATE laboratories
+                SET about_image = COALESCE(about_image, %s),
+                    about_image_alt = COALESCE(about_image_alt, %s)
+                WHERE slug = %s
+                """,
+                (lab["about_image"], lab["about_image_alt"], lab["slug"]),
+            )
+            continue
+
+        cur.execute(
+            """
+            INSERT INTO laboratories (
+                name, slug, badge, cover_image, cover_image_alt, about_image, about_image_alt,
+                short_description, description,
+                features, equipment, benefits, target_audience, cta_text,
+                display_order, is_active, created_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                lab["name"],
+                lab["slug"],
+                lab["badge"],
+                lab["cover_image"],
+                lab.get("cover_image_alt"),
+                lab["about_image"],
+                lab["about_image_alt"],
+                lab["short_description"],
+                lab["description"],
+                lab["features"],
+                lab["equipment"],
+                lab["benefits"],
+                lab["target_audience"],
+                lab["cta_text"],
+                lab["display_order"],
+                lab["is_active"],
+                now_str,
+                now_str,
+            ),
+        )
+    conn.commit()
+
+
+def seed_initial_composite_lab(cur, conn):
+    """Seed initial Packages, Skill Sectors, FAQs, and CMS Content for Composite Skill Lab."""
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+    # 1. Packages
+    cur.execute("SELECT slug FROM composite_lab_packages")
+    existing_pkg_slugs = {r["slug"] if isinstance(r, dict) else r[0] for r in (cur.fetchall() or [])}
+
+    default_packages = [
+        {
+            "name": "Foundation Lab",
+            "slug": "foundation-lab",
+            "price": 199999.00,
+            "price_display": "₹1,99,999",
+            "badge": "Starter Compliance",
+            "target_grades": "Grades 6 - 8 (Middle School)",
+            "ideal_for": "CBSE Middle Schools initiating mandatory vocational exposure.",
+            "description": "Core turnkey foundation lab fulfilling CBSE composite skill norms for middle classes with essential electronics, robotics, and design tools.",
+            "features": (
+                "3 Core Skill Sectors (Electronics, Robotics & Coding, Design Basics)\n"
+                "15x Student Multi-Skill Kits & Prototyping Modules\n"
+                "Soldering & Electronics Workbench Tools\n"
+                "Microcontroller Kits with Sensor Interfaces\n"
+                "Complete Middle-School Activity Handbooks & Worksheets\n"
+                "2-Day Comprehensive Faculty Enablement Workshop\n"
+                "Standard Spatial Layout Blueprint\n"
+                "1-Year Hardware Replacement Warranty"
+            ),
+            "display_order": 1,
+            "is_active": 1,
+        },
+        {
+            "name": "Makerspace Lab",
+            "slug": "makerspace-lab",
+            "price": 399999.00,
+            "price_display": "₹3,99,999",
+            "badge": "Most Popular",
+            "target_grades": "Grades 6 - 10 (Secondary)",
+            "ideal_for": "Comprehensive vocational training across middle and secondary wings.",
+            "description": "Advanced multi-disciplinary makerspace covering 5 major CBSE skill sectors with 3D additive manufacturing and robotics engineering.",
+            "features": (
+                "5 Skill Sectors (Electronics, Robotics, 3D Fabrication, IT/AI, AVGC)\n"
+                "High-Precision Industrial 3D Printer & Filaments\n"
+                "Modular Robotics Rovers & Microcontroller Workstations\n"
+                "Digital Multimeters, Oscilloscope & Prototyping Gear\n"
+                "Safe Benchtop Mini-Woodworking & Fabrication Station\n"
+                "Comprehensive CBSE-Aligned Lesson Plans & Project Guides\n"
+                "4-Day Hands-On Faculty Enablement & Certification\n"
+                "Custom Room Layout, Signage & Safety Compliance Package\n"
+                "Quarterly Mentorship & Technical Refresh Support\n"
+                "1-Year Comprehensive Warranty"
+            ),
+            "display_order": 2,
+            "is_active": 1,
+        },
+        {
+            "name": "Future Lab",
+            "slug": "future-lab",
+            "price": 649999.00,
+            "price_display": "₹6,49,999",
+            "badge": "Turnkey Flagship",
+            "target_grades": "Grades 6 - 12 (Senior Secondary)",
+            "ideal_for": "Premier institutions seeking a benchmark innovation & skill center.",
+            "description": "The definitive state-of-the-art Composite Skill Center encompassing all 6 CBSE skill domains, dual 3D printers, AI workstations, and hackathon incubation.",
+            "features": (
+                "All 6 CBSE Skill Sectors Fully Equipped\n"
+                "Dual Precision 3D Printers with Advanced Material Support\n"
+                "Dedicated AI & Edge Computing Workstation\n"
+                "Advanced Robotics, Drone Prototyping & Sensor Suites\n"
+                "AVGC Media Suite with Graphic Pen Tablets & Audio Rig\n"
+                "Complete Student Fabrication & Apparel Prototyping Stations\n"
+                "Full-Year Progressive Curriculum for Grades 6 through 12\n"
+                "In-Depth Faculty Certification & Master Trainer Enablement\n"
+                "1-Year Dedicated AMC, Maintenance & Consumable Support\n"
+                "ATL Marathon & National Skill Competition Mentorship\n"
+                "Priority Tech Support & Annual Curriculum Refresh"
+            ),
+            "display_order": 3,
+            "is_active": 1,
+        },
+    ]
+
+    for pkg in default_packages:
+        if pkg["slug"] not in existing_pkg_slugs:
+            cur.execute(
+                """
+                INSERT INTO composite_lab_packages (
+                    name, slug, price, price_display, badge, target_grades, ideal_for,
+                    description, features, display_order, is_active, created_at, updated_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    pkg["name"], pkg["slug"], pkg["price"], pkg["price_display"],
+                    pkg["badge"], pkg["target_grades"], pkg["ideal_for"],
+                    pkg["description"], pkg["features"], pkg["display_order"],
+                    pkg["is_active"], now_str, now_str,
+                ),
+            )
+
+    # 2. Skill Sectors
+    cur.execute("SELECT code FROM composite_lab_sectors")
+    existing_sec_codes = {r["code"] if isinstance(r, dict) else r[0] for r in (cur.fetchall() or [])}
+
+    default_sectors = [
+        {
+            "name": "Electronics and Mechatronics",
+            "code": "electronics",
+            "icon": "cpu",
+            "image_path": "images/services/electronics.jpg",
+            "description": "Fundamental and applied electronic engineering. Covers circuit prototyping, microcontrollers, sensor integration, digital multimeters, soldering, and basic IoT connectivity.",
+            "equipment_highlights": "Microcontrollers, breadboards, digital multimeters, multi-sensor modules, regulated power supplies, soldering stations with fume extractors.",
+            "cbse_subject_code": "Skill Subject / NEP 2020 Vocational Pillar",
+            "display_order": 1,
+            "is_active": 1,
+        },
+        {
+            "name": "Coding and Robotics",
+            "code": "robotics",
+            "icon": "bot",
+            "image_path": "images/services/robotics.jpg",
+            "description": "Hands-on robotics and computational thinking. Students build motorized rovers, mechanical linkages, robotic grippers, and program them using block-based and Python code.",
+            "equipment_highlights": "Modular robotics kits, DC/servo motors, motor drivers, obstacle avoidance sensors, wireless programming hubs, robotic arms.",
+            "cbse_subject_code": "Robotics & Automation / Coding",
+            "display_order": 2,
+            "is_active": 1,
+        },
+        {
+            "name": "IT/ITeS and Artificial Intelligence",
+            "code": "it_ai",
+            "icon": "terminal",
+            "image_path": "images/services/ai.jpg",
+            "description": "Artificial Intelligence concepts, computer vision, data science fundamentals, cloud tools, and modern software-driven engineering.",
+            "equipment_highlights": "AI camera modules, edge computing boards, machine learning datasets, voice recognition kits, high-speed networking.",
+            "cbse_subject_code": "Subject Code 417 (AI) / IT (402)",
+            "display_order": 3,
+            "is_active": 1,
+        },
+        {
+            "name": "AVGC and Digital Media",
+            "code": "avgc",
+            "icon": "video",
+            "image_path": "images/services/web.jpg",
+            "description": "Animation, Visual Effects, Gaming, and Comics. Equips students with creative digital storytelling, graphic pen tablets, audio recording, and video media creation.",
+            "equipment_highlights": "Graphic drawing tablets, podcast USB studio microphones, green screens, animation software workflows, digital sound gear.",
+            "cbse_subject_code": "AVGC / Multimedia & Web",
+            "display_order": 4,
+            "is_active": 1,
+        },
+        {
+            "name": "Carpentry and Fabrication",
+            "code": "fabrication",
+            "icon": "tool",
+            "image_path": "images/services/workshop.jpg",
+            "description": "Design and tangible physical fabrication. Bridges digital 3D models with physical artifacts through safe benchtop tools, 3D printers, precision assembly, and woodworking.",
+            "equipment_highlights": "Enclosed 3D printers, PLA filaments, safe student mini-saws and drills, hand tools, measuring verniers, safety goggles.",
+            "cbse_subject_code": "Design Thinking & Prototyping",
+            "display_order": 5,
+            "is_active": 1,
+        },
+        {
+            "name": "Apparel and Design",
+            "code": "apparel",
+            "icon": "scissors",
+            "image_path": "images/services/coding.jpg",
+            "description": "Textile engineering, fashion craft, and garment design. Introduces wearable technology, fabric crafting, pattern drafting, and smart materials.",
+            "equipment_highlights": "Electric sewing/embroidery machine, rotary fabric cutters, pattern rulers, smart conductive threads, wearable LED modules.",
+            "cbse_subject_code": "Apparel & Handicraft Skills",
+            "display_order": 6,
+            "is_active": 1,
+        },
+    ]
+
+    for sec in default_sectors:
+        if sec["code"] not in existing_sec_codes:
+            cur.execute(
+                """
+                INSERT INTO composite_lab_sectors (
+                    name, code, icon, image_path, description, equipment_highlights,
+                    cbse_subject_code, display_order, is_active, created_at, updated_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    sec["name"], sec["code"], sec["icon"], sec["image_path"],
+                    sec["description"], sec["equipment_highlights"],
+                    sec["cbse_subject_code"], sec["display_order"],
+                    sec["is_active"], now_str, now_str,
+                ),
+            )
+
+    # 3. FAQs
+    cur.execute("SELECT COUNT(*) AS count FROM composite_lab_faqs")
+    faq_count = (cur.fetchone() or {}).get("count", 0)
+
+    if faq_count == 0:
+        default_faqs = [
+            (
+                "What is a CBSE Composite Skill Lab?",
+                "A Composite Skill Lab is a specialized, multi-disciplinary vocational facility mandated by CBSE in alignment with NEP 2020. It gives students in classes 6 to 10 hands-on exposure to 21st-century vocational trades including robotics, electronics, AI, AVGC, fabrication, and design, moving education from rote learning to tangible practical competency.",
+                "General",
+                1,
+            ),
+            (
+                "What are the infrastructure and room size requirements for the lab?",
+                "CBSE guidelines recommend a dedicated, well-ventilated room with a minimum space of 400 sq. ft. for entry-level setups (such as our Foundation Lab) or 600+ sq. ft. for complete multi-sector labs (such as our Makerspace or Future Lab). The room requires standard electrical distribution boards, anti-static safety flooring or mats, student workbenches, and secure storage cabinets.",
+                "CBSE Compliance",
+                2,
+            ),
+            (
+                "Does AIRODRONE provide teacher enablement and teacher training?",
+                "Yes, complete teacher training is a core pillar of our turnkey solution. Our qualified STEM engineers conduct multi-day training workshops (offline and online), provide comprehensive teacher lesson plans, project workbooks, and assist teachers in grading student projects and mapping activities to CBSE skill subject learning outcomes.",
+                "Curriculum & Training",
+                3,
+            ),
+            (
+                "Are these packages compliant with CBSE affiliation bylaws and norms?",
+                "Yes. Our curriculum, equipment selection, and safety standards are meticulously mapped to CBSE Skill Education guidelines and circulars. However, because CBSE occasionally updates circular specifications, our team reviews each school's exact affiliation grade (Middle, Secondary, or Senior Secondary) to ensure 100% compliant delivery.",
+                "CBSE Compliance",
+                4,
+            ),
+            (
+                "Can the packages and skill sectors be customized for our school?",
+                "Absolutely. If your school already possesses certain robotics or computer equipment, our solutions architects will perform a gap audit and customize the sector equipment, saving cost while ensuring comprehensive compliance across all mandatory domains.",
+                "Setup & Infrastructure",
+                5,
+            ),
+            (
+                "What is the typical setup timeframe and post-installation support?",
+                "From order confirmation and room readiness, our on-site turnkey installation, workstation assembly, and equipment commissioning take between 10 to 18 business days. We provide a full 1-year hardware replacement warranty, periodic preventive maintenance, and continuous helpline support.",
+                "Setup & Infrastructure",
+                6,
+            ),
+        ]
+        for q, a, cat, order in default_faqs:
+            cur.execute(
+                """
+                INSERT INTO composite_lab_faqs (
+                    question, answer, category, display_order, is_active, created_at, updated_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                (q, a, cat, order, 1, now_str, now_str),
+            )
+
+    # 4. CMS Content
+    cur.execute("SELECT section_key FROM composite_lab_content")
+    existing_content_keys = {r["section_key"] if isinstance(r, dict) else r[0] for r in (cur.fetchall() or [])}
+
+    default_content = [
+        {
+            "section_key": "hero",
+            "title": "Composite Skill Lab Setup for CBSE Schools",
+            "subtitle": "Turnkey Multi-Disciplinary Vocational Excellence Aligned with NEP 2020 & CBSE Skill Education Mandates.",
+            "body": "Equip students from grades 6 through 10 with hands-on mastery in Electronics, Robotics, Artificial Intelligence, AVGC, Digital Fabrication, and Design in a single modular laboratory space.",
+            "image_path": "images/services/workshop.jpg",
+            "image_alt": "Composite Skill Lab for CBSE Schools by Airodrone",
+        },
+        {
+            "section_key": "what_is",
+            "title": "What is a Composite Skill Lab?",
+            "subtitle": "CBSE’s vision for 21st-century experiential vocational learning.",
+            "body": "In alignment with the National Education Policy (NEP 2020), CBSE requires affiliated institutions to establish Composite Skill Labs. Unlike traditional single-subject computer or science labs, Composite Skill Labs integrate physical making, digital computing, and creative arts into unified collaborative learning zones. Students don't just study theory—they build robots, solder electronic circuits, prototype with 3D printers, produce animated media, and craft tangible functional solutions.",
+            "image_path": "images/services/atl.jpg",
+            "image_alt": "Students collaborating in hands-on Composite Skill Lab",
+        },
+        {
+            "section_key": "cbse_specs",
+            "title": "CBSE Guidelines & Laboratory Specifications",
+            "subtitle": "Designed from the ground up for strict regulatory compliance, space efficiency, and student safety.",
+            "body": "Space Requirement: Minimum 400 sq. ft. for Middle Schools; 600+ sq. ft. recommended for full secondary multi-sector engagement. Power: 15A/5A multi-plug worktables with MCB protection and earthing. Safety: Fire-retardant mats, first-aid station, tool safety lockers, and fume exhaust for soldering. Zoning: Clear modular demarcation for heavy making (fabrication/apparel) and clean digital work (coding/AI/AVGC).",
+            "image_path": "images/services/electronics.jpg",
+            "image_alt": "CBSE laboratory technical specifications",
+        },
+        {
+            "section_key": "turnkey",
+            "title": "Complete Turnkey Setup Inclusions",
+            "subtitle": "End-to-end institutional support from spatial planning to teacher empowerment.",
+            "body": "AIRODRONE takes complete ownership of your laboratory journey. We handle architectural space layout, delivery and calibration of industrial-grade student-safe equipment, supply of grade-specific CBSE curriculum workbooks, on-site master trainer enablement workshops, and continuous year-round maintenance support.",
+            "image_path": "images/services/robotics.jpg",
+            "image_alt": "Turnkey institutional lab setup and enablement",
+        },
+    ]
+
+    for item in default_content:
+        if item["section_key"] not in existing_content_keys:
+            cur.execute(
+                """
+                INSERT INTO composite_lab_content (
+                    section_key, title, subtitle, body, image_path, image_alt, updated_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    item["section_key"], item["title"], item["subtitle"],
+                    item["body"], item["image_path"], item["image_alt"], now_str,
+                ),
+            )
+
+    conn.commit()
+
+
+
 # ---------- Upload Storage Setup ----------
 
 UPLOAD_FOLDER = os.path.join(app.root_path, "uploads")
@@ -2351,6 +3166,8 @@ CATEGORY_IMAGE_UPLOAD_FOLDER = os.path.join(app.root_path, "static", "uploads", 
 LEARNING_PATH_IMAGE_UPLOAD_FOLDER = os.path.join(app.root_path, "static", "uploads", "learning_paths")
 PRODUCT_IMAGE_UPLOAD_FOLDER = os.path.join(app.root_path, "static", "uploads", "products")
 SOLUTION_IMAGE_UPLOAD_FOLDER = os.path.join(app.root_path, "static", "uploads", "solutions")
+LAB_IMAGE_UPLOAD_FOLDER = os.path.join(app.root_path, "static", "uploads", "labs")
+COMPOSITE_LAB_IMAGE_UPLOAD_FOLDER = os.path.join(app.root_path, "static", "uploads", "composite_lab")
 os.makedirs(VIDEO_UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(PROJECT_UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(COURSE_IMAGE_UPLOAD_FOLDER, exist_ok=True)
@@ -2358,6 +3175,8 @@ os.makedirs(CATEGORY_IMAGE_UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(LEARNING_PATH_IMAGE_UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(PRODUCT_IMAGE_UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(SOLUTION_IMAGE_UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(LAB_IMAGE_UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(COMPOSITE_LAB_IMAGE_UPLOAD_FOLDER, exist_ok=True)
 
 
 ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
@@ -2929,49 +3748,6 @@ def get_active_learning_categories(conn=None):
 def home():
     categories = get_active_learning_categories()
     return render_template("home.html", active_page="home", categories=categories)
-
-
-@app.route("/about")
-def about():
-    return render_template("about.html", active_page="about")
-
-
-@app.route("/solutions")
-def solutions():
-    conn = get_db_connection()
-    cur = get_db_cursor(conn)
-    solutions_list = []
-    try:
-        cur.execute(
-            """
-            SELECT * FROM solutions
-            WHERE is_active = 1
-            ORDER BY display_order ASC, id ASC
-            """
-        )
-        raw_solutions = cur.fetchall()
-        for sol in raw_solutions:
-            sol_dict = dict(sol)
-            cur.execute(
-                """
-                SELECT * FROM solution_items
-                WHERE solution_id = %s AND is_active = 1
-                ORDER BY display_order ASC, id ASC
-                """,
-                (sol_dict["id"],)
-            )
-            items_list = [dict(it) for it in cur.fetchall()]
-            sol_dict["solution_items"] = items_list
-            sol_dict["items"] = items_list
-            solutions_list.append(sol_dict)
-    except Exception as e:
-        app.logger.error(f"Error loading solutions catalogue: {e}")
-        solutions_list = []
-    finally:
-        cur.close()
-        conn.close()
-
-    return render_template("solutions.html", active_page="solutions", solutions=solutions_list)
 
 
 @app.route("/contact", methods=["GET", "POST"])
@@ -4557,6 +5333,12 @@ def admin():
     total_products = safe_count("SELECT COUNT(*) AS count FROM products WHERE is_active = 1")
     total_orders = safe_count("SELECT COUNT(*) AS count FROM orders")
     total_solutions = safe_count("SELECT COUNT(*) AS count FROM solutions")
+    total_laboratories = safe_count("SELECT COUNT(*) AS count FROM laboratories")
+    published_laboratories = safe_count("SELECT COUNT(*) AS count FROM laboratories WHERE is_active = 1")
+    total_lab_inquiries = safe_count("SELECT COUNT(*) AS count FROM lab_inquiries")
+    unreviewed_lab_inquiries = safe_count("SELECT COUNT(*) AS count FROM lab_inquiries WHERE status = 'New' OR status IS NULL")
+    total_composite_enquiries = safe_count("SELECT COUNT(*) AS count FROM composite_lab_enquiries")
+    new_composite_enquiries = safe_count("SELECT COUNT(*) AS count FROM composite_lab_enquiries WHERE status = 'New' OR status IS NULL")
 
     # Pending project evaluations count
     pending_evaluations = 0
@@ -4677,6 +5459,12 @@ def admin():
         total_products=total_products,
         total_orders=total_orders,
         total_solutions=total_solutions,
+        total_laboratories=total_laboratories,
+        published_laboratories=published_laboratories,
+        total_lab_inquiries=total_lab_inquiries,
+        unreviewed_lab_inquiries=unreviewed_lab_inquiries,
+        total_composite_enquiries=total_composite_enquiries,
+        new_composite_enquiries=new_composite_enquiries,
         pending_evaluations=pending_evaluations,
         submissions=submissions,
         audit_logs=audit_logs,
@@ -10118,6 +10906,840 @@ def admin_delete_solution_item(solution_id, item_id):
     return redirect(url_for("admin_edit_solution", solution_id=solution_id))
 
 
+# ==============================================================================
+# ---------- Public Lab Setup & Institutional Booking Inquiry Routes ----------
+# ==============================================================================
+
+@app.route("/lab-setup")
+def lab_setup():
+    """
+    Public showcase page for turnkey institutional STEM & innovation laboratories.
+    Fetches published laboratories dynamically from the database.
+    Does NOT show the booking form on this page.
+    """
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute(
+        """
+        SELECT id, name, slug, badge, cover_image, short_description, description,
+               features, equipment, benefits, target_audience, cta_text, display_order, is_active
+        FROM laboratories
+        WHERE is_active = 1
+        ORDER BY display_order ASC, id ASC
+        """
+    )
+    laboratories = cur.fetchall() or []
+    cur.close()
+    conn.close()
+
+    return render_template("lab_setup.html", active_page="lab_setup", laboratories=laboratories)
+
+
+@app.route("/lab-setup/<slug>")
+def lab_detail(slug):
+    """
+    Dedicated individual Laboratory Details page.
+    Provides comprehensive curriculum alignment, equipment list, learning areas,
+    institutional benefits, and direct 'Book This Lab' call-to-action.
+    """
+    if slug == "inquiry":
+        return redirect(url_for("lab_setup_inquiry"))
+
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute(
+        """
+        SELECT * FROM laboratories
+        WHERE slug = %s AND is_active = 1
+        LIMIT 1
+        """,
+        (slug,),
+    )
+    lab = cur.fetchone()
+    if not lab:
+        cur.close()
+        conn.close()
+        abort(404)
+
+    cur.execute(
+        """
+        SELECT id, name, slug, badge, cover_image, short_description, target_audience
+        FROM laboratories
+        WHERE is_active = 1 AND slug != %s
+        ORDER BY display_order ASC, id ASC
+        LIMIT 3
+        """,
+        (slug,),
+    )
+    other_labs = cur.fetchall() or []
+    cur.close()
+    conn.close()
+
+    return render_template(
+        "lab_detail.html",
+        active_page="lab_setup",
+        lab=lab,
+        other_labs=other_labs,
+    )
+
+
+@app.route("/lab-setup-inquiry", methods=["GET", "POST"])
+def lab_setup_inquiry():
+    """
+    Dedicated Lab Setup Booking Inquiry form exclusively for schools, colleges, and institutions.
+    Accessible through 'Book a Lab Setup' buttons with optional preselected lab query (?lab=<slug>).
+    Saves submissions into the separate `lab_inquiries` table (not `contacts`).
+    """
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+
+    cur.execute(
+        """
+        SELECT id, name, slug, badge, short_description, cover_image
+        FROM laboratories
+        WHERE is_active = 1
+        ORDER BY display_order ASC, id ASC
+        """
+    )
+    all_labs = cur.fetchall() or []
+
+    if request.method == "POST":
+        institution_name = request.form.get("institution_name", "").strip()
+        institution_type = request.form.get("institution_type", "").strip()
+        institution_website = request.form.get("institution_website", "").strip()
+        state = request.form.get("state", "").strip()
+        city = request.form.get("city", "").strip()
+        address = request.form.get("address", "").strip()
+        pincode = request.form.get("pincode", "").strip()
+
+        contact_person = request.form.get("contact_person", "").strip()
+        designation = request.form.get("designation", "").strip()
+        email = request.form.get("email", "").strip()
+        phone = request.form.get("phone", "").strip()
+
+        selected_labs_list = request.form.getlist("selected_labs")
+        selected_labs = ", ".join([lab.strip() for lab in selected_labs_list if lab.strip()])
+        expected_students = request.form.get("expected_students", "").strip()
+        available_space = request.form.get("available_space", "").strip()
+        approximate_budget = request.form.get("approximate_budget", "").strip()
+        setup_timeline = request.form.get("setup_timeline", "").strip()
+        additional_requirements = request.form.get("additional_requirements", "").strip()
+
+        errors = []
+        if not institution_name:
+            errors.append("Institution Name is required.")
+        if not institution_type:
+            errors.append("Institution Type is required.")
+        if not state:
+            errors.append("State is required.")
+        if not city:
+            errors.append("City is required.")
+        if not address:
+            errors.append("Full Address is required.")
+        if not pincode:
+            errors.append("Pincode is required.")
+        if not contact_person:
+            errors.append("Contact Person Name is required.")
+        if not designation:
+            errors.append("Designation is required.")
+        if not email or "@" not in email:
+            errors.append("A valid official Email address is required.")
+        if not phone or len(re.sub(r"\D", "", phone)) < 10:
+            errors.append("A valid 10-digit Mobile Number is required.")
+        if not selected_labs:
+            errors.append("Please select at least one Laboratory category.")
+        if not expected_students:
+            errors.append("Expected Number of Students is required.")
+        if not available_space:
+            errors.append("Available Space for Lab is required.")
+        if not setup_timeline:
+            errors.append("Expected Setup Timeline is required.")
+
+        if errors:
+            for err in errors:
+                flash(err, "error")
+            cur.close()
+            conn.close()
+            return render_template(
+                "lab_setup_inquiry.html",
+                active_page="lab_setup",
+                laboratories=all_labs,
+                preselected_slug=request.form.get("preselected_slug", ""),
+                form_data=request.form,
+                selected_labs_list=selected_labs_list,
+            )
+
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute(
+            """
+            INSERT INTO lab_inquiries (
+                institution_name, institution_type, institution_website, state, city,
+                address, pincode, contact_person, designation, email, phone,
+                selected_labs, expected_students, available_space, approximate_budget,
+                setup_timeline, additional_requirements, status, created_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'New', %s, %s)
+            """,
+            (
+                institution_name, institution_type, institution_website or None, state, city,
+                address, pincode, contact_person, designation, email, phone,
+                selected_labs, expected_students, available_space, approximate_budget or None,
+                setup_timeline, additional_requirements or None, now_str, now_str
+            ),
+        )
+        conn.commit()
+
+        # Fetch inserted inquiry id for confirmation reference
+        cur.execute("SELECT id FROM lab_inquiries WHERE email = %s ORDER BY id DESC LIMIT 1", (email,))
+        inq_row = cur.fetchone()
+        inquiry_ref_id = inq_row["id"] if inq_row else 1
+
+        cur.close()
+        conn.close()
+
+        return render_template(
+            "lab_setup_inquiry.html",
+            active_page="lab_setup",
+            laboratories=all_labs,
+            submitted=True,
+            inquiry_ref=inquiry_ref_id,
+            institution_name=institution_name,
+            contact_person=contact_person,
+            selected_labs=selected_labs,
+        )
+
+    preselected_slug = request.args.get("lab", "").strip()
+    cur.close()
+    conn.close()
+
+    return render_template(
+        "lab_setup_inquiry.html",
+        active_page="lab_setup",
+        laboratories=all_labs,
+        preselected_slug=preselected_slug,
+        form_data={},
+        selected_labs_list=[],
+    )
+
+
+# ==============================================================================
+# ---------- Admin Lab Management Routes (CRUD) --------------------------------
+# ==============================================================================
+
+@app.route("/uploads/labs/<path:filename>")
+def serve_lab_upload_image(filename):
+    for dir_path in [
+        os.path.join(app.root_path, "static", "uploads", "labs"),
+        os.path.join(app.root_path, "uploads", "labs"),
+    ]:
+        if os.path.exists(os.path.join(dir_path, filename)):
+            return send_from_directory(dir_path, filename)
+    abort(404)
+
+
+@app.route("/admin/labs")
+@login_required
+@admin_or_subadmin_required
+def admin_labs():
+    """List all laboratories for administration."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute(
+        """
+        SELECT id, name, slug, badge, cover_image, short_description, description,
+               target_audience, cta_text, display_order, is_active, created_at, updated_at
+        FROM laboratories
+        ORDER BY display_order ASC, id ASC
+        """
+    )
+    laboratories = cur.fetchall() or []
+    cur.close()
+    conn.close()
+    return render_template("admin_labs.html", active_page="admin", admin_active="labs", laboratories=laboratories)
+
+
+@app.route("/admin/labs/new", methods=["GET", "POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_add_lab():
+    """Add a new laboratory package."""
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        slug = request.form.get("slug", "").strip()
+        badge = request.form.get("badge", "").strip()
+        cover_image_preset = request.form.get("cover_image_preset", "").strip()
+        short_description = request.form.get("short_description", "").strip()
+        description = request.form.get("description", "").strip()
+        features = request.form.get("features", "").strip()
+        equipment = request.form.get("equipment", "").strip()
+        benefits = request.form.get("benefits", "").strip()
+        target_audience = request.form.get("target_audience", "").strip()
+        cta_text = request.form.get("cta_text", "Book a Lab Setup").strip()
+        display_order = request.form.get("display_order", 1, type=int)
+        is_active = 1 if request.form.get("is_active") in ("1", "on", "true", "yes") else 0
+
+        if not name:
+            flash("Laboratory Name is required.", "error")
+            return render_template("admin_lab_form.html", active_page="admin", admin_active="labs", lab=request.form, action="add")
+
+        if not slug:
+            slug = re.sub(r"[^\w\s-]", "", name).strip().lower()
+            slug = re.sub(r"[-\s]+", "-", slug)
+
+        conn = get_db_connection()
+        cur = get_db_cursor(conn)
+        cur.execute("SELECT id FROM laboratories WHERE slug = %s", (slug,))
+        if cur.fetchone():
+            flash(f"A laboratory with slug '{slug}' already exists. Please choose a unique slug.", "error")
+            cur.close()
+            conn.close()
+            return render_template("admin_lab_form.html", active_page="admin", admin_active="labs", lab=request.form, action="add")
+
+        # Handle cover image
+        cover_image = cover_image_preset or None
+        cover_image_alt = request.form.get("cover_image_alt", "").strip() or None
+        img_file = request.files.get("cover_image_file")
+        if img_file and img_file.filename:
+            is_valid, val_err = validate_uploaded_image_file(img_file)
+            if not is_valid:
+                flash(val_err, "error")
+                cur.close()
+                conn.close()
+                return render_template("admin_lab_form.html", active_page="admin", admin_active="labs", lab=request.form, action="add")
+            success, saved_path, upload_err = storage.save_lab_image(img_file, 0, img_file.filename)
+            if not success:
+                flash(f"Image upload failed: {upload_err}", "error")
+                cur.close()
+                conn.close()
+                return render_template("admin_lab_form.html", active_page="admin", admin_active="labs", lab=request.form, action="add")
+            cover_image = saved_path
+
+        # Handle about section image
+        about_image_preset = request.form.get("about_image_preset", "").strip()
+        about_image = about_image_preset or None
+        about_image_alt = request.form.get("about_image_alt", "").strip() or None
+        about_file = request.files.get("about_image_file")
+        if about_file and about_file.filename:
+            is_valid, val_err = validate_uploaded_image_file(about_file)
+            if not is_valid:
+                flash(val_err, "error")
+                cur.close()
+                conn.close()
+                return render_template("admin_lab_form.html", active_page="admin", admin_active="labs", lab=request.form, action="add")
+            success, saved_path, upload_err = storage.save_lab_image(about_file, 0, about_file.filename)
+            if not success:
+                flash(f"About image upload failed: {upload_err}", "error")
+                cur.close()
+                conn.close()
+                return render_template("admin_lab_form.html", active_page="admin", admin_active="labs", lab=request.form, action="add")
+            about_image = saved_path
+
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute(
+            """
+            INSERT INTO laboratories (
+                name, slug, badge, cover_image, cover_image_alt, about_image, about_image_alt,
+                short_description, description,
+                features, equipment, benefits, target_audience, cta_text,
+                display_order, is_active, created_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                name, slug, badge or None, cover_image, cover_image_alt, about_image, about_image_alt,
+                short_description or None, description,
+                features or None, equipment or None, benefits or None, target_audience or None,
+                cta_text or 'Book a Lab Setup', display_order, is_active, now_str, now_str
+            )
+        )
+        conn.commit()
+
+        cur.execute("SELECT id FROM laboratories WHERE slug = %s", (slug,))
+        new_row = cur.fetchone()
+        new_id = new_row["id"] if new_row else None
+        cur.close()
+        conn.close()
+
+        log_audit(current_user.id, "create_lab", "laboratory", new_id, f"Created laboratory '{name}' ({slug})")
+        flash(f"Laboratory '{name}' was created successfully.", "success")
+        return redirect(url_for("admin_labs"))
+
+    return render_template("admin_lab_form.html", active_page="admin", admin_active="labs", lab=None, action="add")
+
+
+@app.route("/admin/labs/<int:lab_id>/edit", methods=["GET", "POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_edit_lab(lab_id):
+    """Edit an existing laboratory package."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT * FROM laboratories WHERE id = %s", (lab_id,))
+    lab = cur.fetchone()
+    if not lab:
+        cur.close()
+        conn.close()
+        flash("Laboratory not found.", "error")
+        return redirect(url_for("admin_labs"))
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        slug = request.form.get("slug", "").strip()
+        badge = request.form.get("badge", "").strip()
+        cover_image_preset = request.form.get("cover_image_preset", "").strip()
+        short_description = request.form.get("short_description", "").strip()
+        description = request.form.get("description", "").strip()
+        features = request.form.get("features", "").strip()
+        equipment = request.form.get("equipment", "").strip()
+        benefits = request.form.get("benefits", "").strip()
+        target_audience = request.form.get("target_audience", "").strip()
+        cta_text = request.form.get("cta_text", "Book a Lab Setup").strip()
+        display_order = request.form.get("display_order", 1, type=int)
+        is_active = 1 if request.form.get("is_active") in ("1", "on", "true", "yes") else 0
+
+        if not name:
+            flash("Laboratory Name is required.", "error")
+            cur.close()
+            conn.close()
+            return render_template("admin_lab_form.html", active_page="admin", admin_active="labs", lab=lab, action="edit")
+
+        if not slug:
+            slug = re.sub(r"[^\w\s-]", "", name).strip().lower()
+            slug = re.sub(r"[-\s]+", "-", slug)
+
+        cur.execute("SELECT id FROM laboratories WHERE slug = %s AND id != %s", (slug, lab_id))
+        if cur.fetchone():
+            flash(f"A laboratory with slug '{slug}' already exists. Please choose a unique slug.", "error")
+            cur.close()
+            conn.close()
+            return render_template("admin_lab_form.html", active_page="admin", admin_active="labs", lab=lab, action="edit")
+
+        cover_image = lab.get("cover_image")
+        if cover_image_preset:
+            cover_image = cover_image_preset
+
+        img_file = request.files.get("cover_image_file")
+        if img_file and img_file.filename:
+            is_valid, val_err = validate_uploaded_image_file(img_file)
+            if not is_valid:
+                flash(val_err, "error")
+                cur.close()
+                conn.close()
+                return render_template("admin_lab_form.html", active_page="admin", admin_active="labs", lab=lab, action="edit")
+            success, saved_path, upload_err = storage.save_lab_image(img_file, lab_id, img_file.filename)
+            if not success:
+                flash(f"Image upload failed: {upload_err}", "error")
+                cur.close()
+                conn.close()
+                return render_template("admin_lab_form.html", active_page="admin", admin_active="labs", lab=lab, action="edit")
+            old_image = lab.get("cover_image")
+            if old_image and "uploads/labs" in old_image:
+                try:
+                    storage.delete_lab_image(old_image)
+                except Exception:
+                    pass
+            cover_image = saved_path
+
+        cover_image_alt = request.form.get("cover_image_alt", "").strip() or None
+        about_image = lab.get("about_image")
+        about_image_preset = request.form.get("about_image_preset", "").strip()
+        if about_image_preset:
+            about_image = about_image_preset
+        if request.form.get("remove_about_image"):
+            if about_image and "uploads/labs" in about_image:
+                try:
+                    storage.delete_lab_image(about_image)
+                except Exception:
+                    pass
+            about_image = None
+        about_image_alt = request.form.get("about_image_alt", "").strip() or None
+
+        about_file = request.files.get("about_image_file")
+        if about_file and about_file.filename:
+            is_valid, val_err = validate_uploaded_image_file(about_file)
+            if not is_valid:
+                flash(val_err, "error")
+                cur.close()
+                conn.close()
+                return render_template("admin_lab_form.html", active_page="admin", admin_active="labs", lab=lab, action="edit")
+            success, saved_path, upload_err = storage.save_lab_image(about_file, lab_id, about_file.filename)
+            if not success:
+                flash(f"About image upload failed: {upload_err}", "error")
+                cur.close()
+                conn.close()
+                return render_template("admin_lab_form.html", active_page="admin", admin_active="labs", lab=lab, action="edit")
+            old_about = lab.get("about_image")
+            if old_about and "uploads/labs" in old_about:
+                try:
+                    storage.delete_lab_image(old_about)
+                except Exception:
+                    pass
+            about_image = saved_path
+
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute(
+            """
+            UPDATE laboratories
+            SET name = %s, slug = %s, badge = %s, cover_image = %s, cover_image_alt = %s,
+                about_image = %s, about_image_alt = %s,
+                short_description = %s, description = %s, features = %s,
+                equipment = %s, benefits = %s, target_audience = %s,
+                cta_text = %s, display_order = %s, is_active = %s, updated_at = %s
+            WHERE id = %s
+            """,
+            (
+                name, slug, badge or None, cover_image, cover_image_alt,
+                about_image, about_image_alt,
+                short_description or None, description, features or None,
+                equipment or None, benefits or None, target_audience or None,
+                cta_text or 'Book a Lab Setup', display_order, is_active, now_str, lab_id
+            )
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        log_audit(current_user.id, "edit_lab", "laboratory", lab_id, f"Updated laboratory '{name}' ({slug})")
+        flash(f"Laboratory '{name}' was updated successfully.", "success")
+        return redirect(url_for("admin_labs"))
+
+    cur.close()
+    conn.close()
+    return render_template("admin_lab_form.html", active_page="admin", admin_active="labs", lab=lab, action="edit")
+
+
+@app.route("/admin/labs/<int:lab_id>/toggle-active", methods=["POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_toggle_lab_active(lab_id):
+    """Toggle publish/unpublish status of a laboratory."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT id, name, is_active FROM laboratories WHERE id = %s", (lab_id,))
+    lab = cur.fetchone()
+    if not lab:
+        cur.close()
+        conn.close()
+        flash("Laboratory not found.", "error")
+        return redirect(url_for("admin_labs"))
+
+    new_active = 0 if lab["is_active"] else 1
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    cur.execute("UPDATE laboratories SET is_active = %s, updated_at = %s WHERE id = %s", (new_active, now_str, lab_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    status_str = "published" if new_active else "unpublished"
+    log_audit(current_user.id, "toggle_lab_active", "laboratory", lab_id, f"{status_str.capitalize()} laboratory '{lab['name']}'")
+    flash(f"Laboratory '{lab['name']}' is now {status_str}.", "success")
+    return redirect(url_for("admin_labs"))
+
+
+@app.route("/admin/labs/<int:lab_id>/delete", methods=["POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_delete_lab(lab_id):
+    """Delete a laboratory."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT id, name, cover_image FROM laboratories WHERE id = %s", (lab_id,))
+    lab = cur.fetchone()
+    if not lab:
+        cur.close()
+        conn.close()
+        flash("Laboratory not found.", "error")
+        return redirect(url_for("admin_labs"))
+
+    cur.execute("DELETE FROM laboratories WHERE id = %s", (lab_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    if lab.get("cover_image") and "uploads/labs" in lab["cover_image"]:
+        try:
+            storage.delete_lab_image(lab["cover_image"])
+        except Exception:
+            pass
+
+    log_audit(current_user.id, "delete_lab", "laboratory", lab_id, f"Deleted laboratory '{lab['name']}'")
+    flash(f"Laboratory '{lab['name']}' was deleted successfully.", "success")
+    return redirect(url_for("admin_labs"))
+
+
+@app.route("/admin/labs/<int:lab_id>/preview")
+@login_required
+@admin_or_subadmin_required
+def admin_preview_lab(lab_id):
+    """Preview laboratory details page."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT * FROM laboratories WHERE id = %s", (lab_id,))
+    lab = cur.fetchone()
+    cur.close()
+    conn.close()
+    if not lab:
+        flash("Laboratory not found.", "error")
+        return redirect(url_for("admin_labs"))
+    return render_template("lab_detail.html", active_page="lab_setup", lab=lab, is_preview=True, other_labs=[])
+
+
+# ==============================================================================
+# ---------- Admin Lab Setup Inquiry Management Routes -------------------------
+# ==============================================================================
+
+@app.route("/admin/lab-setup-inquiries")
+@login_required
+@admin_or_subadmin_required
+def admin_lab_inquiries():
+    """
+    Dedicated dashboard table for reviewing institutional Lab Setup inquiries.
+    Supports search, filter by lab type, institution type, status, sorting, and pagination.
+    """
+    search_query = request.args.get("q", "").strip()
+    status_filter = request.args.get("status", "").strip()
+    type_filter = request.args.get("type", "").strip()
+    lab_filter = request.args.get("lab", "").strip()
+    sort_order = request.args.get("sort", "date_desc").strip()
+    page = request.args.get("page", 1, type=int)
+    per_page = 15
+
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+
+    where_clauses = ["1=1"]
+    params = []
+
+    if search_query:
+        where_clauses.append(
+            "(institution_name LIKE %s OR contact_person LIKE %s OR email LIKE %s OR city LIKE %s OR phone LIKE %s)"
+        )
+        term = f"%{search_query}%"
+        params.extend([term, term, term, term, term])
+
+    if status_filter:
+        where_clauses.append("status = %s")
+        params.append(status_filter)
+
+    if type_filter:
+        where_clauses.append("institution_type = %s")
+        params.append(type_filter)
+
+    if lab_filter:
+        where_clauses.append("selected_labs LIKE %s")
+        params.append(f"%{lab_filter}%")
+
+    where_sql = " AND ".join(where_clauses)
+
+    if sort_order == "date_asc":
+        order_sql = "ORDER BY created_at ASC, id ASC"
+    elif sort_order == "inst_asc":
+        order_sql = "ORDER BY institution_name ASC, id ASC"
+    else:
+        order_sql = "ORDER BY created_at DESC, id DESC"
+
+    # Count total matching
+    cur.execute(f"SELECT COUNT(*) AS count FROM lab_inquiries WHERE {where_sql}", tuple(params))
+    total_count = cur.fetchone()["count"]
+    total_pages = max(1, (total_count + per_page - 1) // per_page)
+    offset = (max(1, min(page, total_pages)) - 1) * per_page
+
+    cur.execute(
+        f"""
+        SELECT id, institution_name, institution_type, city, state, contact_person, designation,
+               email, phone, selected_labs, expected_students, setup_timeline, status, created_at
+        FROM lab_inquiries
+        WHERE {where_sql}
+        {order_sql}
+        LIMIT {per_page} OFFSET {offset}
+        """,
+        tuple(params),
+    )
+    inquiries = cur.fetchall() or []
+
+    # Status breakdown counts
+    cur.execute(
+        """
+        SELECT status, COUNT(*) AS count
+        FROM lab_inquiries
+        GROUP BY status
+        """
+    )
+    status_rows = cur.fetchall() or []
+    status_counts = {r["status"]: r["count"] for r in status_rows}
+
+    # Distinct institution types for filter dropdown
+    cur.execute("SELECT DISTINCT institution_type FROM lab_inquiries ORDER BY institution_type ASC")
+    types_rows = cur.fetchall() or []
+    institution_types = [r["institution_type"] for r in types_rows if r["institution_type"]]
+
+    # Laboratory categories for filter dropdown
+    cur.execute("SELECT name FROM laboratories ORDER BY display_order ASC, id ASC")
+    labs_rows = cur.fetchall() or []
+    available_labs = [r["name"] for r in labs_rows]
+
+    cur.close()
+    conn.close()
+
+    return render_template(
+        "admin_lab_inquiries.html",
+        active_page="admin",
+        admin_active="lab_inquiries",
+        inquiries=inquiries,
+        total_count=total_count,
+        page=page,
+        total_pages=total_pages,
+        search_query=search_query,
+        status_filter=status_filter,
+        type_filter=type_filter,
+        lab_filter=lab_filter,
+        sort_order=sort_order,
+        status_counts=status_counts,
+        institution_types=institution_types,
+        available_labs=available_labs,
+    )
+
+
+@app.route("/admin/lab-setup-inquiries/<int:inquiry_id>")
+@login_required
+@admin_or_subadmin_required
+def admin_view_lab_inquiry(inquiry_id):
+    """View complete submission details and private administrative notes for a lab inquiry."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT * FROM lab_inquiries WHERE id = %s", (inquiry_id,))
+    inquiry = cur.fetchone()
+    if not inquiry:
+        cur.close()
+        conn.close()
+        flash("Lab Setup Inquiry not found.", "error")
+        return redirect(url_for("admin_lab_inquiries"))
+
+    cur.execute(
+        """
+        SELECT id, author_id, author_name, note, created_at
+        FROM lab_inquiry_notes
+        WHERE inquiry_id = %s
+        ORDER BY created_at DESC, id DESC
+        """,
+        (inquiry_id,),
+    )
+    notes = cur.fetchall() or []
+    cur.close()
+    conn.close()
+
+    return render_template(
+        "admin_lab_inquiry_detail.html",
+        active_page="admin",
+        admin_active="lab_inquiries",
+        inquiry=inquiry,
+        notes=notes,
+    )
+
+
+@app.route("/admin/lab-setup-inquiries/<int:inquiry_id>/status", methods=["POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_update_lab_inquiry_status(inquiry_id):
+    """Update status of a lab setup inquiry."""
+    new_status = request.form.get("status", "").strip()
+    valid_statuses = [
+        "New",
+        "Under Review",
+        "Contacted",
+        "Discussion in Progress",
+        "Proposal Sent",
+        "Approved",
+        "Rejected",
+        "Completed",
+    ]
+    if new_status not in valid_statuses:
+        flash("Invalid status value selected.", "error")
+        return redirect(url_for("admin_view_lab_inquiry", inquiry_id=inquiry_id))
+
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    cur.execute(
+        "UPDATE lab_inquiries SET status = %s, updated_at = %s WHERE id = %s",
+        (new_status, now_str, inquiry_id),
+    )
+    conn.commit()
+
+    # Automatically add a system internal note for the status change
+    author_name = current_user.name if hasattr(current_user, "name") else "Staff"
+    cur.execute(
+        """
+        INSERT INTO lab_inquiry_notes (inquiry_id, author_id, author_name, note, created_at)
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        (inquiry_id, current_user.id, author_name, f"Status changed to '{new_status}'", now_str),
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    log_audit(current_user.id, "update_lab_inquiry_status", "lab_inquiry", inquiry_id, f"Changed status to '{new_status}'")
+    flash(f"Inquiry status updated to '{new_status}'.", "success")
+    return redirect(url_for("admin_view_lab_inquiry", inquiry_id=inquiry_id))
+
+
+@app.route("/admin/lab-setup-inquiries/<int:inquiry_id>/notes", methods=["POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_add_lab_inquiry_note(inquiry_id):
+    """Add a private internal administrative note to a lab inquiry."""
+    note = request.form.get("note", "").strip()
+    if not note:
+        flash("Note text cannot be empty.", "error")
+        return redirect(url_for("admin_view_lab_inquiry", inquiry_id=inquiry_id))
+
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    author_name = current_user.name if hasattr(current_user, "name") else "Staff"
+    cur.execute(
+        """
+        INSERT INTO lab_inquiry_notes (inquiry_id, author_id, author_name, note, created_at)
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        (inquiry_id, current_user.id, author_name, note, now_str),
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    flash("Internal administrative note saved.", "success")
+    return redirect(url_for("admin_view_lab_inquiry", inquiry_id=inquiry_id))
+
+
+@app.route("/admin/lab-setup-inquiries/<int:inquiry_id>/delete", methods=["POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_delete_lab_inquiry(inquiry_id):
+    """Delete a lab setup inquiry."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT institution_name FROM lab_inquiries WHERE id = %s", (inquiry_id,))
+    row = cur.fetchone()
+    if not row:
+        cur.close()
+        conn.close()
+        flash("Inquiry not found.", "error")
+        return redirect(url_for("admin_lab_inquiries"))
+
+    inst_name = row["institution_name"]
+    cur.execute("DELETE FROM lab_inquiry_notes WHERE inquiry_id = %s", (inquiry_id,))
+    cur.execute("DELETE FROM lab_inquiries WHERE id = %s", (inquiry_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    log_audit(current_user.id, "delete_lab_inquiry", "lab_inquiry", inquiry_id, f"Deleted lab inquiry from '{inst_name}'")
+    flash(f"Inquiry from '{inst_name}' has been deleted.", "success")
+    return redirect(url_for("admin_lab_inquiries"))
+
+
 @app.route("/admin/solutions/<int:solution_id>/items/<int:item_id>/toggle-active", methods=["POST"])
 @login_required
 @admin_or_subadmin_required
@@ -10175,6 +11797,1184 @@ def admin_reorder_solution_item(solution_id, item_id):
     cur.close()
     conn.close()
     return redirect(url_for("admin_edit_solution", solution_id=solution_id))
+
+
+# ==============================================================================
+# COMPOSITE SKILL LAB MODULE (CBSE) - Public, Admin & Dashboard Routes
+# ==============================================================================
+
+@app.route("/composite-lab")
+def composite_lab():
+    """Public landing page for CBSE Composite Skill Lab setup."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+
+    # 1. Active Packages
+    cur.execute(
+        """
+        SELECT * FROM composite_lab_packages
+        WHERE is_active = 1
+        ORDER BY display_order ASC, id ASC
+        """
+    )
+    packages = cur.fetchall() or []
+
+    # 2. Active Skill Sectors
+    cur.execute(
+        """
+        SELECT * FROM composite_lab_sectors
+        WHERE is_active = 1
+        ORDER BY display_order ASC, id ASC
+        """
+    )
+    sectors = cur.fetchall() or []
+
+    # 3. Active FAQs
+    cur.execute(
+        """
+        SELECT * FROM composite_lab_faqs
+        WHERE is_active = 1
+        ORDER BY display_order ASC, id ASC
+        """
+    )
+    faqs = cur.fetchall() or []
+
+    # 4. CMS Content Sections
+    cur.execute("SELECT * FROM composite_lab_content")
+    content_rows = cur.fetchall() or []
+    content = {r["section_key"]: r for r in content_rows}
+
+    cur.close()
+    conn.close()
+
+    submitted = request.args.get("submitted") == "1"
+
+    return render_template(
+        "composite_lab.html",
+        active_page="composite_lab",
+        packages=packages,
+        sectors=sectors,
+        faqs=faqs,
+        content=content,
+        submitted=submitted,
+    )
+
+
+@app.route("/composite-lab/contact", methods=["GET", "POST"])
+def composite_lab_contact():
+    """Dedicated institutional contact and enquiry system for Composite Skill Lab."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+
+    # Fetch active packages and sectors for form dropdowns & checkboxes
+    cur.execute("SELECT id, name, slug, price_display FROM composite_lab_packages WHERE is_active = 1 ORDER BY display_order ASC")
+    packages = cur.fetchall() or []
+
+    cur.execute("SELECT id, name, code FROM composite_lab_sectors WHERE is_active = 1 ORDER BY display_order ASC")
+    sectors = cur.fetchall() or []
+
+    if request.method == "POST":
+        school_name = request.form.get("school_name", "").strip()
+        institution_type = request.form.get("institution_type", "").strip()
+        cbse_affiliation_no = request.form.get("cbse_affiliation_no", "").strip()
+        contact_person = request.form.get("contact_person", "").strip()
+        designation = request.form.get("designation", "").strip()
+        email = request.form.get("email", "").strip()
+        phone = request.form.get("phone", "").strip()
+        state = request.form.get("state", "").strip()
+        city = request.form.get("city", "").strip()
+        address = request.form.get("address", "").strip()
+        student_strength = request.form.get("student_strength", "").strip()
+        existing_lab = request.form.get("existing_lab", "").strip()
+        preferred_package = request.form.get("preferred_package", "").strip()
+        room_size = request.form.get("room_size", "").strip()
+        budget = request.form.get("budget", "").strip()
+        additional_requirements = request.form.get("additional_requirements", "").strip()
+
+        # Multi-select sectors
+        selected_sectors_list = request.form.getlist("required_sectors")
+        required_sectors = ", ".join(selected_sectors_list) if selected_sectors_list else ""
+
+        # Validation
+        errors = []
+        if not school_name:
+            errors.append("Institution / School Name is required.")
+        if not institution_type:
+            errors.append("Institution Type is required.")
+        if not contact_person:
+            errors.append("Contact Person name is required.")
+        if not designation:
+            errors.append("Designation is required.")
+        if not email or "@" not in email:
+            errors.append("A valid Email Address is required.")
+        if not phone or len(re.sub(r"\D", "", phone)) < 10:
+            errors.append("A valid 10-digit Mobile Number is required.")
+        if not state:
+            errors.append("State is required.")
+        if not city:
+            errors.append("City is required.")
+        if not address:
+            errors.append("School Address is required.")
+        if not required_sectors:
+            errors.append("Please select at least one required Skill Sector.")
+        if not preferred_package:
+            errors.append("Please select a Preferred Package or Consultation option.")
+        if not room_size:
+            errors.append("Please specify your Available Room Size.")
+
+        if errors:
+            for err in errors:
+                flash(err, "error")
+            cur.close()
+            conn.close()
+            return render_template(
+                "composite_lab_contact.html",
+                active_page="composite_lab",
+                packages=packages,
+                sectors=sectors,
+                form_data=request.form,
+                selected_sectors=selected_sectors_list,
+            )
+
+        # Duplicate protection: check if same school + email/phone submitted in the last 5 minutes
+        now = datetime.utcnow()
+        five_mins_ago = (now - timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute(
+            """
+            SELECT id FROM composite_lab_enquiries
+            WHERE (email = %s OR phone = %s OR (school_name = %s AND city = %s))
+              AND created_at >= %s
+            """,
+            (email, phone, school_name, city, five_mins_ago),
+        )
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            flash("An enquiry for your institution was recently submitted. Our CBSE educational consultants have received your details and will be in touch shortly.", "info")
+            return redirect(url_for("composite_lab", submitted=1))
+
+        now_str = now.strftime("%Y-%m-%d %H:%M:%S")
+        ip_addr = request.headers.get("X-Forwarded-For", request.remote_addr)
+
+        cur.execute(
+            """
+            INSERT INTO composite_lab_enquiries (
+                school_name, institution_type, cbse_affiliation_no, contact_person, designation,
+                email, phone, state, city, address, student_strength, existing_lab,
+                required_sectors, preferred_package, room_size, budget,
+                additional_requirements, status, ip_address, created_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                school_name, institution_type, cbse_affiliation_no or None, contact_person, designation,
+                email, phone, state, city, address, student_strength or None, existing_lab or None,
+                required_sectors, preferred_package, room_size or None, budget or None,
+                additional_requirements or None, "New", ip_addr, now_str, now_str,
+            ),
+        )
+        conn.commit()
+
+        # Get inserted enquiry ID
+        cur.execute(
+            "SELECT id FROM composite_lab_enquiries WHERE email = %s AND created_at = %s ORDER BY id DESC LIMIT 1",
+            (email, now_str),
+        )
+        new_enq = cur.fetchone()
+        new_id = new_enq["id"] if new_enq else 0
+
+        # Initial activity log
+        if new_id:
+            cur.execute(
+                """
+                INSERT INTO composite_lab_activity_logs (
+                    enquiry_id, user_id, user_name, action, created_at
+                )
+                VALUES (%s, %s, %s, %s, %s)
+                """,
+                (new_id, None, "Portal Visitor", f"New enquiry received from {school_name} ({city}, {state}) for {preferred_package}", now_str),
+            )
+            conn.commit()
+
+        cur.close()
+        conn.close()
+
+        flash("Your Composite Skill Lab enquiry has been received successfully! Our CBSE institutional coordinator will reach out to schedule an infrastructure assessment.", "success")
+        return redirect(url_for("composite_lab", submitted=1))
+
+    # GET Request
+    preselected_package = request.args.get("package", "").strip()
+    cur.close()
+    conn.close()
+    return render_template(
+        "composite_lab_contact.html",
+        active_page="composite_lab",
+        packages=packages,
+        sectors=sectors,
+        preselected_package=preselected_package,
+        form_data={},
+        selected_sectors=[],
+    )
+
+
+# ---------- Admin Composite Skill Lab Routes ----------
+
+@app.route("/admin/composite-lab")
+@login_required
+@admin_or_subadmin_required
+def admin_composite_lab():
+    """Admin enquiry management list with search, status & package filters."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+
+    status_filter = request.args.get("status", "").strip()
+    package_filter = request.args.get("package", "").strip()
+    search_q = request.args.get("q", "").strip()
+    date_from = request.args.get("date_from", "").strip()
+    date_to = request.args.get("date_to", "").strip()
+
+    # Status counts for filter pills
+    cur.execute("SELECT status, COUNT(*) AS count FROM composite_lab_enquiries GROUP BY status")
+    status_counts_raw = cur.fetchall() or []
+    status_counts = {r["status"]: r["count"] for r in status_counts_raw}
+    total_enquiries = sum(status_counts.values())
+
+    # Build query
+    query = "SELECT * FROM composite_lab_enquiries WHERE 1=1"
+    params = []
+
+    if status_filter and status_filter.lower() != "all":
+        query += " AND status = %s"
+        params.append(status_filter)
+
+    if package_filter:
+        query += " AND preferred_package = %s"
+        params.append(package_filter)
+
+    if search_q:
+        if get_db_type() == "postgres":
+            query += " AND (school_name ILIKE %s OR contact_person ILIKE %s OR email ILIKE %s OR city ILIKE %s OR state ILIKE %s)"
+        else:
+            query += " AND (school_name LIKE %s OR contact_person LIKE %s OR email LIKE %s OR city LIKE %s OR state LIKE %s)"
+        like_term = f"%{search_q}%"
+        params.extend([like_term, like_term, like_term, like_term, like_term])
+
+    if date_from:
+        query += " AND created_at >= %s"
+        params.append(f"{date_from} 00:00:00")
+
+    if date_to:
+        query += " AND created_at <= %s"
+        params.append(f"{date_to} 23:59:59")
+
+    query += " ORDER BY created_at DESC, id DESC"
+
+    cur.execute(query, tuple(params) if params else None)
+    enquiries = cur.fetchall() or []
+
+    # Get distinct packages for filter dropdown
+    cur.execute("SELECT DISTINCT preferred_package FROM composite_lab_enquiries WHERE preferred_package IS NOT NULL AND preferred_package != '' ORDER BY preferred_package ASC")
+    package_options = [r["preferred_package"] for r in (cur.fetchall() or [])]
+
+    cur.close()
+    conn.close()
+
+    return render_template(
+        "admin_composite_lab.html",
+        active_page="admin",
+        admin_active="composite_lab",
+        enquiries=enquiries,
+        status_counts=status_counts,
+        total_enquiries=total_enquiries,
+        package_options=package_options,
+        current_status=status_filter,
+        current_package=package_filter,
+        search_q=search_q,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+
+@app.route("/admin/composite-lab/enquiry/<int:enquiry_id>")
+@login_required
+@admin_or_subadmin_required
+def admin_composite_lab_enquiry_detail(enquiry_id):
+    """Detailed view of an individual Composite Skill Lab enquiry with notes and timeline."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+
+    cur.execute("SELECT * FROM composite_lab_enquiries WHERE id = %s", (enquiry_id,))
+    enquiry = cur.fetchone()
+    if not enquiry:
+        cur.close()
+        conn.close()
+        flash("Composite Lab Enquiry not found.", "error")
+        return redirect(url_for("admin_composite_lab"))
+
+    # Notes
+    cur.execute("SELECT * FROM composite_lab_notes WHERE enquiry_id = %s ORDER BY created_at DESC, id DESC", (enquiry_id,))
+    notes = cur.fetchall() or []
+
+    # Activity Timeline
+    cur.execute("SELECT * FROM composite_lab_activity_logs WHERE enquiry_id = %s ORDER BY created_at DESC, id DESC", (enquiry_id,))
+    activity_logs = cur.fetchall() or []
+
+    # Active admin/subadmin team members for assignment
+    cur.execute("SELECT id, name, role FROM users WHERE role IN ('admin', 'sub_admin') AND is_active = 1 ORDER BY name ASC")
+    team_members = cur.fetchall() or []
+
+    cur.close()
+    conn.close()
+
+    valid_statuses = [
+        "New", "Contacted", "Consultation Scheduled", "Proposal Sent",
+        "Negotiation", "Converted", "Rejected"
+    ]
+
+    return render_template(
+        "admin_composite_lab_enquiry_detail.html",
+        active_page="admin",
+        admin_active="composite_lab",
+        enquiry=enquiry,
+        notes=notes,
+        activity_logs=activity_logs,
+        team_members=team_members,
+        valid_statuses=valid_statuses,
+    )
+
+
+@app.route("/admin/composite-lab/enquiry/<int:enquiry_id>/status", methods=["POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_composite_lab_update_status(enquiry_id):
+    """Update status of a Composite Lab enquiry."""
+    new_status = request.form.get("status", "").strip()
+    valid_statuses = [
+        "New", "Contacted", "Consultation Scheduled", "Proposal Sent",
+        "Negotiation", "Converted", "Rejected"
+    ]
+    if new_status not in valid_statuses:
+        flash("Invalid enquiry status provided.", "error")
+        return redirect(url_for("admin_composite_lab_enquiry_detail", enquiry_id=enquiry_id))
+
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT school_name, status FROM composite_lab_enquiries WHERE id = %s", (enquiry_id,))
+    enq = cur.fetchone()
+    if not enq:
+        cur.close()
+        conn.close()
+        flash("Enquiry not found.", "error")
+        return redirect(url_for("admin_composite_lab"))
+
+    old_status = enq["status"]
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+    cur.execute(
+        "UPDATE composite_lab_enquiries SET status = %s, updated_at = %s WHERE id = %s",
+        (new_status, now_str, enquiry_id),
+    )
+
+    cur.execute(
+        """
+        INSERT INTO composite_lab_activity_logs (enquiry_id, user_id, user_name, action, created_at)
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        (enquiry_id, current_user.id, current_user.name, f"Status changed from '{old_status}' to '{new_status}'", now_str),
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    log_audit(current_user.id, "update_composite_enquiry_status", "composite_lab_enquiry", enquiry_id, f"Changed status of {enq['school_name']} to {new_status}")
+    flash(f"Status updated to '{new_status}'.", "success")
+    return redirect(url_for("admin_composite_lab_enquiry_detail", enquiry_id=enquiry_id))
+
+
+@app.route("/admin/composite-lab/enquiry/<int:enquiry_id>/assign", methods=["POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_composite_lab_assign(enquiry_id):
+    """Assign an enquiry to an internal team member."""
+    assigned_to_id = request.form.get("assigned_to", type=int)
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+
+    assigned_to_name = None
+    if assigned_to_id:
+        cur.execute("SELECT name FROM users WHERE id = %s", (assigned_to_id,))
+        u = cur.fetchone()
+        assigned_to_name = u["name"] if u else None
+
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    cur.execute(
+        "UPDATE composite_lab_enquiries SET assigned_to = %s, assigned_to_name = %s, updated_at = %s WHERE id = %s",
+        (assigned_to_id, assigned_to_name, now_str, enquiry_id),
+    )
+
+    action_msg = f"Assigned to {assigned_to_name}" if assigned_to_name else "Assignment cleared"
+    cur.execute(
+        """
+        INSERT INTO composite_lab_activity_logs (enquiry_id, user_id, user_name, action, created_at)
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        (enquiry_id, current_user.id, current_user.name, action_msg, now_str),
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    log_audit(current_user.id, "assign_composite_enquiry", "composite_lab_enquiry", enquiry_id, action_msg)
+    flash(f"Enquiry successfully {action_msg.lower()}.", "success")
+    return redirect(url_for("admin_composite_lab_enquiry_detail", enquiry_id=enquiry_id))
+
+
+@app.route("/admin/composite-lab/enquiry/<int:enquiry_id>/notes", methods=["POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_composite_lab_add_note(enquiry_id):
+    """Add a private internal administrative note to an enquiry."""
+    note = request.form.get("note", "").strip()
+    if not note:
+        flash("Note content cannot be empty.", "error")
+        return redirect(url_for("admin_composite_lab_enquiry_detail", enquiry_id=enquiry_id))
+
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+    cur.execute(
+        """
+        INSERT INTO composite_lab_notes (enquiry_id, author_id, author_name, note, created_at)
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        (enquiry_id, current_user.id, current_user.name, note, now_str),
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    flash("Internal note saved.", "success")
+    return redirect(url_for("admin_composite_lab_enquiry_detail", enquiry_id=enquiry_id))
+
+
+@app.route("/admin/composite-lab/enquiry/<int:enquiry_id>/delete", methods=["POST"])
+@login_required
+@admin_required
+def admin_composite_lab_delete_enquiry(enquiry_id):
+    """Delete a Composite Lab enquiry (Admin only)."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT school_name FROM composite_lab_enquiries WHERE id = %s", (enquiry_id,))
+    row = cur.fetchone()
+    if not row:
+        cur.close()
+        conn.close()
+        flash("Enquiry not found.", "error")
+        return redirect(url_for("admin_composite_lab"))
+
+    school_name = row["school_name"]
+    cur.execute("DELETE FROM composite_lab_notes WHERE enquiry_id = %s", (enquiry_id,))
+    cur.execute("DELETE FROM composite_lab_activity_logs WHERE enquiry_id = %s", (enquiry_id,))
+    cur.execute("DELETE FROM composite_lab_enquiries WHERE id = %s", (enquiry_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    log_audit(current_user.id, "delete_composite_enquiry", "composite_lab_enquiry", enquiry_id, f"Deleted enquiry from '{school_name}'")
+    flash(f"Enquiry from '{school_name}' has been deleted.", "success")
+    return redirect(url_for("admin_composite_lab"))
+
+
+# ---------- Package Management ----------
+
+@app.route("/admin/composite-lab/packages")
+@login_required
+@admin_or_subadmin_required
+def admin_composite_lab_packages():
+    """List all Composite Lab packages."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT * FROM composite_lab_packages ORDER BY display_order ASC, id ASC")
+    packages = cur.fetchall() or []
+    cur.close()
+    conn.close()
+    return render_template(
+        "admin_composite_lab_packages.html",
+        active_page="admin",
+        admin_active="composite_lab",
+        packages=packages,
+    )
+
+
+@app.route("/admin/composite-lab/packages/new", methods=["GET", "POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_composite_lab_add_package():
+    """Create a new Composite Lab package."""
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        slug = request.form.get("slug", "").strip()
+        price = request.form.get("price", type=float) or 0.0
+        price_display = request.form.get("price_display", "").strip() or f"₹{int(price):,}"
+        badge = request.form.get("badge", "").strip()
+        target_grades = request.form.get("target_grades", "Grades 6 - 10").strip()
+        ideal_for = request.form.get("ideal_for", "").strip()
+        description = request.form.get("description", "").strip()
+        features = request.form.get("features", "").strip()
+        display_order = request.form.get("display_order", 1, type=int)
+        is_active = 1 if request.form.get("is_active") in ("1", "on", "true", "yes") else 0
+
+        if not name:
+            flash("Package Name is required.", "error")
+            return render_template("admin_composite_lab_package_form.html", active_page="admin", admin_active="composite_lab", package=request.form, action="add")
+
+        if not slug:
+            slug = re.sub(r"[^\w\s-]", "", name).strip().lower()
+            slug = re.sub(r"[-\s]+", "-", slug)
+
+        conn = get_db_connection()
+        cur = get_db_cursor(conn)
+        cur.execute("SELECT id FROM composite_lab_packages WHERE slug = %s", (slug,))
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            flash(f"A package with slug '{slug}' already exists.", "error")
+            return render_template("admin_composite_lab_package_form.html", active_page="admin", admin_active="composite_lab", package=request.form, action="add")
+
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute(
+            """
+            INSERT INTO composite_lab_packages (
+                name, slug, price, price_display, badge, target_grades, ideal_for,
+                description, features, display_order, is_active, created_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                name, slug, price, price_display, badge or None, target_grades, ideal_for or None,
+                description, features, display_order, is_active, now_str, now_str
+            )
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        log_audit(current_user.id, "create_composite_package", "composite_lab_package", 0, f"Created package '{name}'")
+        flash(f"Package '{name}' created successfully.", "success")
+        return redirect(url_for("admin_composite_lab_packages"))
+
+    return render_template("admin_composite_lab_package_form.html", active_page="admin", admin_active="composite_lab", package=None, action="add")
+
+
+@app.route("/admin/composite-lab/packages/<int:package_id>/edit", methods=["GET", "POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_composite_lab_edit_package(package_id):
+    """Edit an existing Composite Lab package."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT * FROM composite_lab_packages WHERE id = %s", (package_id,))
+    package = cur.fetchone()
+    if not package:
+        cur.close()
+        conn.close()
+        flash("Package not found.", "error")
+        return redirect(url_for("admin_composite_lab_packages"))
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        slug = request.form.get("slug", "").strip()
+        price = request.form.get("price", type=float) or 0.0
+        price_display = request.form.get("price_display", "").strip() or f"₹{int(price):,}"
+        badge = request.form.get("badge", "").strip()
+        target_grades = request.form.get("target_grades", "Grades 6 - 10").strip()
+        ideal_for = request.form.get("ideal_for", "").strip()
+        description = request.form.get("description", "").strip()
+        features = request.form.get("features", "").strip()
+        display_order = request.form.get("display_order", 1, type=int)
+        is_active = 1 if request.form.get("is_active") in ("1", "on", "true", "yes") else 0
+
+        if not name:
+            flash("Package Name is required.", "error")
+            cur.close()
+            conn.close()
+            return render_template("admin_composite_lab_package_form.html", active_page="admin", admin_active="composite_lab", package=package, action="edit")
+
+        if not slug:
+            slug = re.sub(r"[^\w\s-]", "", name).strip().lower()
+            slug = re.sub(r"[-\s]+", "-", slug)
+
+        cur.execute("SELECT id FROM composite_lab_packages WHERE slug = %s AND id != %s", (slug, package_id))
+        if cur.fetchone():
+            flash(f"A package with slug '{slug}' already exists.", "error")
+            cur.close()
+            conn.close()
+            return render_template("admin_composite_lab_package_form.html", active_page="admin", admin_active="composite_lab", package=package, action="edit")
+
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute(
+            """
+            UPDATE composite_lab_packages
+            SET name = %s, slug = %s, price = %s, price_display = %s, badge = %s,
+                target_grades = %s, ideal_for = %s, description = %s, features = %s,
+                display_order = %s, is_active = %s, updated_at = %s
+            WHERE id = %s
+            """,
+            (
+                name, slug, price, price_display, badge or None, target_grades,
+                ideal_for or None, description, features, display_order, is_active,
+                now_str, package_id
+            )
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        log_audit(current_user.id, "edit_composite_package", "composite_lab_package", package_id, f"Updated package '{name}'")
+        flash(f"Package '{name}' updated successfully.", "success")
+        return redirect(url_for("admin_composite_lab_packages"))
+
+    cur.close()
+    conn.close()
+    return render_template("admin_composite_lab_package_form.html", active_page="admin", admin_active="composite_lab", package=package, action="edit")
+
+
+@app.route("/admin/composite-lab/packages/<int:package_id>/delete", methods=["POST"])
+@login_required
+@admin_required
+def admin_composite_lab_delete_package(package_id):
+    """Delete a Composite Lab package."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("DELETE FROM composite_lab_packages WHERE id = %s", (package_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    flash("Package deleted successfully.", "success")
+    return redirect(url_for("admin_composite_lab_packages"))
+
+
+@app.route("/admin/composite-lab/packages/<int:package_id>/toggle-active", methods=["POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_composite_lab_toggle_package_active(package_id):
+    """Toggle package active state."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT is_active, name FROM composite_lab_packages WHERE id = %s", (package_id,))
+    row = cur.fetchone()
+    if row:
+        new_status = 0 if row["is_active"] else 1
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute("UPDATE composite_lab_packages SET is_active = %s, updated_at = %s WHERE id = %s", (new_status, now_str, package_id))
+        conn.commit()
+        status_text = "published" if new_status else "unpublished"
+        flash(f"Package '{row['name']}' is now {status_text}.", "success")
+    cur.close()
+    conn.close()
+    return redirect(url_for("admin_composite_lab_packages"))
+
+
+# ---------- Skill Sectors Management ----------
+
+@app.route("/admin/composite-lab/sectors")
+@login_required
+@admin_or_subadmin_required
+def admin_composite_lab_sectors():
+    """List all Composite Lab skill sectors."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT * FROM composite_lab_sectors ORDER BY display_order ASC, id ASC")
+    sectors = cur.fetchall() or []
+    cur.close()
+    conn.close()
+    return render_template(
+        "admin_composite_lab_sectors.html",
+        active_page="admin",
+        admin_active="composite_lab",
+        sectors=sectors,
+    )
+
+
+@app.route("/admin/composite-lab/sectors/new", methods=["GET", "POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_composite_lab_add_sector():
+    """Create a new skill sector."""
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        code = request.form.get("code", "").strip()
+        icon = request.form.get("icon", "cpu").strip()
+        description = request.form.get("description", "").strip()
+        equipment_highlights = request.form.get("equipment_highlights", "").strip()
+        cbse_subject_code = request.form.get("cbse_subject_code", "").strip()
+        display_order = request.form.get("display_order", 1, type=int)
+        is_active = 1 if request.form.get("is_active") in ("1", "on", "true", "yes") else 0
+
+        if not name:
+            flash("Sector Name is required.", "error")
+            return render_template("admin_composite_lab_sector_form.html", active_page="admin", admin_active="composite_lab", sector=request.form, action="add")
+
+        if not code:
+            code = re.sub(r"[^\w\s-]", "", name).strip().lower()
+            code = re.sub(r"[-\s]+", "_", code)
+
+        image_path = request.form.get("image_preset", "images/services/workshop.jpg").strip() or None
+        img_file = request.files.get("image_file")
+        if img_file and img_file.filename:
+            is_valid, val_err = validate_uploaded_image_file(img_file)
+            if not is_valid:
+                flash(val_err, "error")
+                return render_template("admin_composite_lab_sector_form.html", active_page="admin", admin_active="composite_lab", sector=request.form, action="add")
+            success, saved_path, upload_err = storage.save_composite_lab_image(img_file, 0, img_file.filename)
+            if success:
+                image_path = saved_path
+
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        conn = get_db_connection()
+        cur = get_db_cursor(conn)
+        cur.execute(
+            """
+            INSERT INTO composite_lab_sectors (
+                name, code, icon, image_path, description, equipment_highlights,
+                cbse_subject_code, display_order, is_active, created_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                name, code, icon, image_path, description, equipment_highlights,
+                cbse_subject_code or None, display_order, is_active, now_str, now_str
+            )
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        flash(f"Sector '{name}' created successfully.", "success")
+        return redirect(url_for("admin_composite_lab_sectors"))
+
+    return render_template("admin_composite_lab_sector_form.html", active_page="admin", admin_active="composite_lab", sector=None, action="add")
+
+
+@app.route("/admin/composite-lab/sectors/<int:sector_id>/edit", methods=["GET", "POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_composite_lab_edit_sector(sector_id):
+    """Edit an existing skill sector."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT * FROM composite_lab_sectors WHERE id = %s", (sector_id,))
+    sector = cur.fetchone()
+    if not sector:
+        cur.close()
+        conn.close()
+        flash("Sector not found.", "error")
+        return redirect(url_for("admin_composite_lab_sectors"))
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        code = request.form.get("code", "").strip()
+        icon = request.form.get("icon", "cpu").strip()
+        description = request.form.get("description", "").strip()
+        equipment_highlights = request.form.get("equipment_highlights", "").strip()
+        cbse_subject_code = request.form.get("cbse_subject_code", "").strip()
+        display_order = request.form.get("display_order", 1, type=int)
+        is_active = 1 if request.form.get("is_active") in ("1", "on", "true", "yes") else 0
+
+        if not name:
+            flash("Sector Name is required.", "error")
+            cur.close()
+            conn.close()
+            return render_template("admin_composite_lab_sector_form.html", active_page="admin", admin_active="composite_lab", sector=sector, action="edit")
+
+        image_path = sector.get("image_path")
+        image_preset = request.form.get("image_preset", "").strip()
+        if image_preset:
+            image_path = image_preset
+
+        img_file = request.files.get("image_file")
+        if img_file and img_file.filename:
+            is_valid, val_err = validate_uploaded_image_file(img_file)
+            if not is_valid:
+                flash(val_err, "error")
+                cur.close()
+                conn.close()
+                return render_template("admin_composite_lab_sector_form.html", active_page="admin", admin_active="composite_lab", sector=sector, action="edit")
+            success, saved_path, upload_err = storage.save_composite_lab_image(img_file, sector_id, img_file.filename)
+            if success:
+                image_path = saved_path
+
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute(
+            """
+            UPDATE composite_lab_sectors
+            SET name = %s, code = %s, icon = %s, image_path = %s, description = %s,
+                equipment_highlights = %s, cbse_subject_code = %s, display_order = %s,
+                is_active = %s, updated_at = %s
+            WHERE id = %s
+            """,
+            (
+                name, code, icon, image_path, description, equipment_highlights,
+                cbse_subject_code or None, display_order, is_active, now_str, sector_id
+            )
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        flash(f"Sector '{name}' updated successfully.", "success")
+        return redirect(url_for("admin_composite_lab_sectors"))
+
+    cur.close()
+    conn.close()
+    return render_template("admin_composite_lab_sector_form.html", active_page="admin", admin_active="composite_lab", sector=sector, action="edit")
+
+
+@app.route("/admin/composite-lab/sectors/<int:sector_id>/delete", methods=["POST"])
+@login_required
+@admin_required
+def admin_composite_lab_delete_sector(sector_id):
+    """Delete a skill sector."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("DELETE FROM composite_lab_sectors WHERE id = %s", (sector_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    flash("Sector deleted successfully.", "success")
+    return redirect(url_for("admin_composite_lab_sectors"))
+
+
+# ---------- FAQs Management ----------
+
+@app.route("/admin/composite-lab/faqs")
+@login_required
+@admin_or_subadmin_required
+def admin_composite_lab_faqs():
+    """List all Composite Lab FAQs."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT * FROM composite_lab_faqs ORDER BY display_order ASC, id ASC")
+    faqs = cur.fetchall() or []
+    cur.close()
+    conn.close()
+    return render_template(
+        "admin_composite_lab_faqs.html",
+        active_page="admin",
+        admin_active="composite_lab",
+        faqs=faqs,
+    )
+
+
+@app.route("/admin/composite-lab/faqs/new", methods=["GET", "POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_composite_lab_add_faq():
+    """Create a new FAQ."""
+    if request.method == "POST":
+        question = request.form.get("question", "").strip()
+        answer = request.form.get("answer", "").strip()
+        category = request.form.get("category", "General").strip()
+        display_order = request.form.get("display_order", 1, type=int)
+        is_active = 1 if request.form.get("is_active") in ("1", "on", "true", "yes") else 0
+
+        if not question or not answer:
+            flash("Question and Answer are required.", "error")
+            return render_template("admin_composite_lab_faq_form.html", active_page="admin", admin_active="composite_lab", faq=request.form, action="add")
+
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        conn = get_db_connection()
+        cur = get_db_cursor(conn)
+        cur.execute(
+            """
+            INSERT INTO composite_lab_faqs (
+                question, answer, category, display_order, is_active, created_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (question, answer, category, display_order, is_active, now_str, now_str)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        flash("FAQ created successfully.", "success")
+        return redirect(url_for("admin_composite_lab_faqs"))
+
+    return render_template("admin_composite_lab_faq_form.html", active_page="admin", admin_active="composite_lab", faq=None, action="add")
+
+
+@app.route("/admin/composite-lab/faqs/<int:faq_id>/edit", methods=["GET", "POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_composite_lab_edit_faq(faq_id):
+    """Edit an existing FAQ."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("SELECT * FROM composite_lab_faqs WHERE id = %s", (faq_id,))
+    faq = cur.fetchone()
+    if not faq:
+        cur.close()
+        conn.close()
+        flash("FAQ not found.", "error")
+        return redirect(url_for("admin_composite_lab_faqs"))
+
+    if request.method == "POST":
+        question = request.form.get("question", "").strip()
+        answer = request.form.get("answer", "").strip()
+        category = request.form.get("category", "General").strip()
+        display_order = request.form.get("display_order", 1, type=int)
+        is_active = 1 if request.form.get("is_active") in ("1", "on", "true", "yes") else 0
+
+        if not question or not answer:
+            flash("Question and Answer are required.", "error")
+            cur.close()
+            conn.close()
+            return render_template("admin_composite_lab_faq_form.html", active_page="admin", admin_active="composite_lab", faq=faq, action="edit")
+
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute(
+            """
+            UPDATE composite_lab_faqs
+            SET question = %s, answer = %s, category = %s, display_order = %s,
+                is_active = %s, updated_at = %s
+            WHERE id = %s
+            """,
+            (question, answer, category, display_order, is_active, now_str, faq_id)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        flash("FAQ updated successfully.", "success")
+        return redirect(url_for("admin_composite_lab_faqs"))
+
+    cur.close()
+    conn.close()
+    return render_template("admin_composite_lab_faq_form.html", active_page="admin", admin_active="composite_lab", faq=faq, action="edit")
+
+
+@app.route("/admin/composite-lab/faqs/<int:faq_id>/delete", methods=["POST"])
+@login_required
+@admin_required
+def admin_composite_lab_delete_faq(faq_id):
+    """Delete an FAQ."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+    cur.execute("DELETE FROM composite_lab_faqs WHERE id = %s", (faq_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    flash("FAQ deleted successfully.", "success")
+    return redirect(url_for("admin_composite_lab_faqs"))
+
+
+# ---------- Content & Image CMS Management ----------
+
+@app.route("/admin/composite-lab/content", methods=["GET", "POST"])
+@login_required
+@admin_or_subadmin_required
+def admin_composite_lab_content():
+    """Manage landing page copy, images, and CBSE specifications."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+
+    if request.method == "POST":
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        for key in ["hero", "what_is", "cbse_specs", "turnkey"]:
+            title = request.form.get(f"{key}_title", "").strip()
+            subtitle = request.form.get(f"{key}_subtitle", "").strip()
+            body = request.form.get(f"{key}_body", "").strip()
+            image_alt = request.form.get(f"{key}_image_alt", "").strip()
+            image_preset = request.form.get(f"{key}_image_preset", "").strip()
+
+            cur.execute("SELECT image_path FROM composite_lab_content WHERE section_key = %s", (key,))
+            existing = cur.fetchone()
+            image_path = existing["image_path"] if existing else None
+            if image_preset:
+                image_path = image_preset
+
+            img_file = request.files.get(f"{key}_image_file")
+            if img_file and img_file.filename:
+                is_valid, val_err = validate_uploaded_image_file(img_file)
+                if is_valid:
+                    success, saved_path, _ = storage.save_composite_lab_image(img_file, 0, img_file.filename)
+                    if success:
+                        image_path = saved_path
+
+            if existing:
+                cur.execute(
+                    """
+                    UPDATE composite_lab_content
+                    SET title = %s, subtitle = %s, body = %s, image_path = %s, image_alt = %s, updated_at = %s
+                    WHERE section_key = %s
+                    """,
+                    (title, subtitle or None, body or None, image_path, image_alt or None, now_str, key)
+                )
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO composite_lab_content (
+                        section_key, title, subtitle, body, image_path, image_alt, updated_at
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (key, title, subtitle or None, body or None, image_path, image_alt or None, now_str)
+                )
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        flash("Composite Lab page content and images updated successfully.", "success")
+        return redirect(url_for("admin_composite_lab_content"))
+
+    cur.execute("SELECT * FROM composite_lab_content")
+    rows = cur.fetchall() or []
+    content = {r["section_key"]: r for r in rows}
+    cur.close()
+    conn.close()
+
+    return render_template(
+        "admin_composite_lab_content.html",
+        active_page="admin",
+        admin_active="composite_lab",
+        content=content,
+    )
+
+
+# ---------- Dedicated Composite Skill Lab Dashboard ----------
+
+@app.route("/dashboard/composite-lab")
+@login_required
+@admin_or_subadmin_required
+def dashboard_composite_lab():
+    """Dedicated analytical and reporting dashboard for Composite Skill Lab."""
+    conn = get_db_connection()
+    cur = get_db_cursor(conn)
+
+    # 1. Pipeline Status KPI Metrics
+    cur.execute("SELECT COUNT(*) AS count FROM composite_lab_enquiries")
+    total_enquiries = (cur.fetchone() or {}).get("count", 0)
+
+    cur.execute("SELECT COUNT(*) AS count FROM composite_lab_enquiries WHERE status = 'New'")
+    new_enquiries = (cur.fetchone() or {}).get("count", 0)
+
+    cur.execute("SELECT COUNT(*) AS count FROM composite_lab_enquiries WHERE status = 'Contacted'")
+    contacted_enquiries = (cur.fetchone() or {}).get("count", 0)
+
+    cur.execute("SELECT COUNT(*) AS count FROM composite_lab_enquiries WHERE status = 'Consultation Scheduled'")
+    consultations_scheduled = (cur.fetchone() or {}).get("count", 0)
+
+    cur.execute("SELECT COUNT(*) AS count FROM composite_lab_enquiries WHERE status = 'Proposal Sent'")
+    proposals_sent = (cur.fetchone() or {}).get("count", 0)
+
+    cur.execute("SELECT COUNT(*) AS count FROM composite_lab_enquiries WHERE status = 'Negotiation'")
+    negotiation_enquiries = (cur.fetchone() or {}).get("count", 0)
+
+    cur.execute("SELECT COUNT(*) AS count FROM composite_lab_enquiries WHERE status = 'Converted'")
+    converted_enquiries = (cur.fetchone() or {}).get("count", 0)
+
+    cur.execute("SELECT COUNT(*) AS count FROM composite_lab_enquiries WHERE status = 'Rejected'")
+    rejected_enquiries = (cur.fetchone() or {}).get("count", 0)
+
+    conversion_rate = round((converted_enquiries / total_enquiries * 100), 1) if total_enquiries > 0 else 0.0
+
+    # 2. Package-wise distribution
+    cur.execute(
+        """
+        SELECT preferred_package, COUNT(*) AS count
+        FROM composite_lab_enquiries
+        WHERE preferred_package IS NOT NULL AND preferred_package != ''
+        GROUP BY preferred_package
+        ORDER BY count DESC
+        """
+    )
+    pkg_rows = cur.fetchall() or []
+    package_breakdown = [
+        {
+            "package": r["preferred_package"],
+            "count": r["count"],
+            "percentage": round((r["count"] / total_enquiries * 100), 1) if total_enquiries > 0 else 0,
+        }
+        for r in pkg_rows
+    ]
+
+    # 3. Monthly Enquiry Trends (last 12 months)
+    cur.execute(
+        """
+        SELECT SUBSTR(created_at, 1, 7) AS month, COUNT(*) AS count
+        FROM composite_lab_enquiries
+        WHERE created_at IS NOT NULL AND created_at != ''
+        GROUP BY SUBSTR(created_at, 1, 7)
+        ORDER BY month ASC
+        LIMIT 12
+        """
+    )
+    monthly_trend = cur.fetchall() or []
+
+    # 4. State-wise Geographic Distribution
+    cur.execute(
+        """
+        SELECT state, COUNT(*) AS count
+        FROM composite_lab_enquiries
+        WHERE state IS NOT NULL AND state != ''
+        GROUP BY state
+        ORDER BY count DESC
+        LIMIT 8
+        """
+    )
+    state_breakdown = cur.fetchall() or []
+
+    # 5. Sector Demand Distribution
+    cur.execute("SELECT required_sectors FROM composite_lab_enquiries WHERE required_sectors IS NOT NULL AND required_sectors != ''")
+    all_sectors_raw = cur.fetchall() or []
+    sector_counts = {}
+    for r in all_sectors_raw:
+        for s in (r["required_sectors"] or "").split(","):
+            s_clean = s.strip()
+            if s_clean:
+                sector_counts[s_clean] = sector_counts.get(s_clean, 0) + 1
+    sector_demand = sorted(
+        [{"sector": k, "count": v} for k, v in sector_counts.items()],
+        key=lambda x: x["count"],
+        reverse=True,
+    )
+
+    # 6. Recent 10 Enquiries
+    cur.execute(
+        """
+        SELECT id, school_name, institution_type, contact_person, city, state,
+               preferred_package, status, created_at
+        FROM composite_lab_enquiries
+        ORDER BY created_at DESC, id DESC
+        LIMIT 10
+        """
+    )
+    recent_enquiries = cur.fetchall() or []
+
+    cur.close()
+    conn.close()
+
+    return render_template(
+        "dashboard_composite_lab.html",
+        active_page="dashboard",
+        admin_active="composite_lab_dashboard",
+        total_enquiries=total_enquiries,
+        new_enquiries=new_enquiries,
+        contacted_enquiries=contacted_enquiries,
+        consultations_scheduled=consultations_scheduled,
+        proposals_sent=proposals_sent,
+        negotiation_enquiries=negotiation_enquiries,
+        converted_enquiries=converted_enquiries,
+        rejected_enquiries=rejected_enquiries,
+        conversion_rate=conversion_rate,
+        package_breakdown=package_breakdown,
+        monthly_trend=monthly_trend,
+        state_breakdown=state_breakdown,
+        sector_demand=sector_demand,
+        recent_enquiries=recent_enquiries,
+    )
 
 
 @app.cli.command("init-db")

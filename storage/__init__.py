@@ -182,6 +182,36 @@ def solution_image_exists(storage_path: str) -> bool:
     return get_storage().solution_image_exists(storage_path)
 
 
+def save_lab_image(file_obj, lab_id: int, original_filename: str) -> Tuple[bool, str, Optional[str]]:
+    """Save laboratory image to active storage backend."""
+    return get_storage().save_lab_image(file_obj, lab_id, original_filename)
+
+
+def delete_lab_image(storage_path: str) -> bool:
+    """Delete laboratory image from active storage backend."""
+    return get_storage().delete_lab_image(storage_path)
+
+
+def lab_image_exists(storage_path: str) -> bool:
+    """Check if laboratory image exists on active storage backend."""
+    return get_storage().lab_image_exists(storage_path)
+
+
+def save_composite_lab_image(file_obj, item_id: int, original_filename: str) -> Tuple[bool, str, Optional[str]]:
+    """Save Composite Skill Lab image to active storage backend."""
+    return get_storage().save_composite_lab_image(file_obj, item_id, original_filename)
+
+
+def delete_composite_lab_image(storage_path: str) -> bool:
+    """Delete Composite Skill Lab image from active storage backend."""
+    return get_storage().delete_composite_lab_image(storage_path)
+
+
+def composite_lab_image_exists(storage_path: str) -> bool:
+    """Check if Composite Skill Lab image exists on active storage backend."""
+    return get_storage().composite_lab_image_exists(storage_path)
+
+
 __all__ = [
     "BaseStorageBackend",
     "LocalStorageBackend",
@@ -213,6 +243,12 @@ __all__ = [
     "save_solution_image",
     "delete_solution_image",
     "solution_image_exists",
+    "save_lab_image",
+    "delete_lab_image",
+    "lab_image_exists",
+    "save_composite_lab_image",
+    "delete_composite_lab_image",
+    "composite_lab_image_exists",
 ]
 
 

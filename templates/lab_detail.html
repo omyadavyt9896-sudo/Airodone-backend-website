@@ -1,0 +1,532 @@
+{% extends "base.html" %}
+
+{% block title %}{{ lab.name }} | AIRODRONE Lab Setup{% endblock %}
+{% block meta_description %}{{ lab.short_description or lab.description | truncate(160) }}{% endblock %}
+
+{% block content %}
+
+{% if is_preview %}
+<div style="background: #fef3c7; color: #92400e; border-bottom: 1px solid #fde68a; padding: 0.75rem 1rem; text-align: center; font-weight: 700; font-size: 0.9rem;">
+    <span>&#9888; ADMIN PREVIEW MODE: You are previewing "{{ lab.name }}". Status: {{ 'Published' if lab.is_active else 'Draft (Unpublished)' }}.</span>
+    <a href="{{ url_for('admin_labs') }}" style="color: #b45309; text-decoration: underline; margin-left: 1rem;">Return to Admin Lab List &rarr;</a>
+</div>
+{% endif %}
+
+<!-- ==========================================================================
+     SECTION 1: Premium Laboratory Hero (Two-Column Layout)
+     ========================================================================== -->
+<section class="lab-detail-page-hero" id="hero">
+    <div class="container">
+        <!-- Breadcrumb Navigation -->
+        <nav class="course-breadcrumb" aria-label="Breadcrumb" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+                <a href="{{ url_for('home') }}">Home</a>
+                <span aria-hidden="true">&rarr;</span>
+                <a href="{{ url_for('lab_setup') }}">Lab Setup</a>
+                <span aria-hidden="true">&rarr;</span>
+                <span class="current-breadcrumb">{{ lab.name }}</span>
+            </div>
+            <a href="{{ url_for('lab_setup') }}" class="lab-hero-back-link">
+                &larr; Back to All Laboratories
+            </a>
+        </nav>
+
+        <div class="lab-detail-hero-layout">
+            <!-- Left Column: Details & Primary Actions -->
+            <div>
+                <div class="hero-tagline-pill" style="margin-bottom: 0.85rem; display: inline-flex;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: middle; margin-right: 5px;">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    {{ lab.badge or 'STEM INNOVATION LAB' }}
+                </div>
+
+                <h1 class="lab-detail-hero-title">
+                    {{ lab.name }}
+                </h1>
+
+                <p class="lab-detail-hero-desc">
+                    {{ lab.short_description or lab.description }}
+                </p>
+
+                <!-- Key Value Highlights -->
+                {% set feat_list = lab.features | parse_list %}
+                <div class="lab-hero-highlights">
+                    {% if feat_list %}
+                        {% for highlight in feat_list[:3] %}
+                        <div class="lab-hero-highlight-pill">
+                            {% set h_low = highlight | lower %}
+                            {% if 'robot' in h_low or 'automat' in h_low %}
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><line x1="12" y1="7" x2="12" y2="11"/><line x1="8" y1="15" x2="8" y2="17"/><line x1="16" y1="15" x2="16" y2="17"/></svg>
+                            {% elif 'ai' in h_low or 'data' in h_low or 'vision' in h_low %}
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 0 1 5 5c0 1.5-.7 2.9-1.8 3.8l.8 2.2H8l.8-2.2C7.7 9.9 7 8.5 7 7a5 5 0 0 1 5-5z"/><path d="M9 18h6M10 22h4"/></svg>
+                            {% elif 'drone' in h_low or 'aero' in h_low or 'flight' in h_low %}
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M4 8l5 2M20 8l-5 2M4 16l5-2M20 16l-5-2"/></svg>
+                            {% elif '3d' in h_low or 'fabricat' in h_low or 'prototyp' in h_low %}
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                            {% elif 'nep' in h_low or 'curriculum' in h_low %}
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                            {% else %}
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            {% endif %}
+                            <span>{{ highlight }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="lab-hero-highlight-pill">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                            <span>Practical STEM Learning</span>
+                        </div>
+                        <div class="lab-hero-highlight-pill">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><line x1="12" y1="7" x2="12" y2="11"/></svg>
+                            <span>Robotics &amp; Electronics</span>
+                        </div>
+                        <div class="lab-hero-highlight-pill">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                            <span>Innovation &amp; Prototyping</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Primary & Secondary Action CTAs -->
+                <div class="lab-hero-actions">
+                    <a href="{{ url_for('lab_setup_inquiry', lab=lab.slug) }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.85rem 1.85rem; font-weight: 700;">
+                        Book This Lab &rarr;
+                    </a>
+                    <a href="#equipment" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.85rem 1.6rem; font-weight: 600;">
+                        Explore Equipment &darr;
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Column: Premium Visual Composition -->
+            <div class="lab-detail-hero-media">
+                <div class="lab-detail-main-img-wrap">
+                    {% set img_url = image_url(lab.cover_image) %}
+                    {% if img_url %}
+                    <img src="{{ img_url }}" alt="{{ lab.cover_image_alt or lab.name }}" loading="eager" onerror="this.src='{{ url_for('static', filename='images/services/atl.jpg') }}';">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='images/services/atl.jpg') }}" alt="{{ lab.cover_image_alt or lab.name }}" loading="eager">
+                    {% endif %}
+                </div>
+
+                <!-- Overlapping Inset Visual (Hands-on Student Workstations) -->
+                <div class="lab-detail-inset-img-wrap">
+                    {% if gallery %}
+                    {% set inset_media = gallery[0] %}
+                    <img src="{{ image_url(inset_media.image_path) }}" alt="{{ inset_media.alt_text or 'Hands-on learning workstations' }}" loading="eager">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='images/services/workshop.jpg') }}" alt="Hands-on learning workstations" loading="eager">
+                    {% endif %}
+                </div>
+
+                <!-- Floating Glassmorphic Pill Badge -->
+                <div class="lab-floating-badge">
+                    <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+                    <span>Turnkey STEM Setup &amp; Support</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     SECTION 2: About This Laboratory (Two-Column Layout with Admin-Managed Image)
+     ========================================================================== -->
+<section class="lab-detail-section lab-about-section" id="about">
+    <div class="container">
+        <div class="lab-about-grid">
+            <!-- Left Column: Heading, Laboratory Description & Pedagogical Callout (~55% width) -->
+            <div class="lab-about-col-left">
+                <div class="lab-about-intro reveal-on-scroll">
+                    <div class="hero-tagline-pill" style="margin-bottom: 0.65rem; display: inline-flex;">
+                        OVERVIEW &amp; PEDAGOGICAL PURPOSE
+                    </div>
+                    <h2 class="lab-about-heading">About the {{ lab.name }}</h2>
+                    <p class="lab-about-desc">
+                        {{ lab.description }}
+                    </p>
+                </div>
+
+                <!-- Educational Objectives Callout Box -->
+                <div class="lab-about-callout reveal-on-scroll">
+                    <h4>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent, #2563EB)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        Why Establish This Innovation Lab?
+                    </h4>
+                    <ul>
+                        <li><strong>Active Experiential Learning:</strong> Replaces passive rote learning with tangible physical prototyping and discovery.</li>
+                        <li><strong>Interdisciplinary Integration:</strong> Fosters seamless synthesis across science, technology, engineering, and mathematics.</li>
+                        <li><strong>Future Skills Mastery:</strong> Imparts critical thinking, problem-solving, collaboration, and 21st-century engineering mindsets.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Right Column: Large Premium Laboratory Photograph (~45% width) -->
+            <div class="lab-about-col-right reveal-on-scroll">
+                <div class="lab-about-image-wrapper">
+                    {% set about_src = image_url(lab.about_image) %}
+                    {% set lab_slug = (lab.slug or '') | lower %}
+                    {% if not about_src %}
+                        {% if 'atl' in lab_slug %}
+                            {% set fallback_img = url_for('static', filename='images/services/atl.jpg') %}
+                        {% elif 'robot' in lab_slug %}
+                            {% set fallback_img = url_for('static', filename='images/services/robotics.jpg') %}
+                        {% elif 'ai' in lab_slug or 'artificial' in lab_slug %}
+                            {% set fallback_img = url_for('static', filename='images/services/ai.jpg') %}
+                        {% elif 'drone' in lab_slug or 'aero' in lab_slug %}
+                            {% set fallback_img = url_for('static', filename='images/services/drone.jpg') %}
+                        {% elif 'stem' in lab_slug or 'electro' in lab_slug %}
+                            {% set fallback_img = url_for('static', filename='images/services/electronics.jpg') %}
+                        {% else %}
+                            {% set fallback_img = image_url(lab.cover_image) or url_for('static', filename='images/services/workshop.jpg') %}
+                        {% endif %}
+                        {% set about_src = fallback_img %}
+                    {% endif %}
+
+                    {% set default_alt = lab.name ~ ' Modern Setup & Hands-On Student Workstations' %}
+                    <img src="{{ about_src }}" 
+                         alt="{{ lab.about_image_alt or default_alt }}" 
+                         loading="lazy"
+                         class="lab-about-img"
+                         onerror="this.src='{{ url_for('static', filename='images/services/atl.jpg') }}';">
+                    
+                    <div class="lab-about-image-badge" aria-hidden="true">
+                        <span class="lab-about-badge-dot"></span>
+                        <span>{{ lab.badge or 'Active STEM Workstations' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===========================================================================
+     SECTION 2B: Editorial visual story, populated from the managed gallery
+     =========================================================================== -->
+{% if false %}
+{% if gallery %}
+<section class="lab-editorial-section" aria-label="Laboratory in action">
+    <div class="container">
+        {% for media in gallery[:2] %}
+        <article class="lab-editorial-block {% if loop.index is even %}lab-editorial-block--reverse{% endif %}">
+            <div class="lab-editorial-image reveal-on-scroll">
+                <img src="{{ image_url(media.image_path) }}" alt="{{ media.alt_text or (lab.name ~ ' in action') }}" loading="lazy">
+            </div>
+            <div class="lab-editorial-copy reveal-on-scroll">
+                <span class="lab-eyebrow">{% if loop.first %}MAKE, TEST, REPEAT{% else %}COLLABORATIVE DISCOVERY{% endif %}</span>
+                <h2>{% if loop.first %}A space built for ideas to become tangible.{% else %}Technology becomes meaningful when students use it together.{% endif %}</h2>
+                <p>{% if loop.first %}From first sketches to working prototypes, {{ lab.name }} gives learners the confidence to explore, build and improve through practical work.{% else %}Students collaborate across disciplines, turning curiosity into capability through guided experimentation and real-world problem solving.{% endif %}</p>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endif %}
+
+<!-- ==========================================================================
+     SECTION 3: Equipment & Infrastructure (3-Column Card Grid)
+     ========================================================================== -->
+{% set eq_list = lab.equipment | parse_list %}
+{% if eq_list %}
+<section class="lab-detail-section" id="equipment" style="background: var(--color-bg-subtle, #f8fafc); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border);">
+    <div class="container">
+        <div class="lab-section-header">
+            <div class="hero-tagline-pill" style="margin-bottom: 0.65rem; display: inline-flex;">
+                HARDWARE &amp; WORKSTATION SETUP
+            </div>
+            <h2>Equipment &amp; Infrastructure</h2>
+            <p>Turnkey hardware, precision tools, workstations, and safety kits included with this laboratory package.</p>
+        </div>
+
+        <div class="lab-equipment-grid">
+            {% for eq in eq_list[:5] %}
+            {% set eq_low = eq | lower %}
+            <div class="lab-equipment-card">
+                {% if gallery %}
+                {% set equipment_media = gallery[loop.index0 % (gallery|length)] %}
+                <div class="lab-equipment-image">
+                    <img src="{{ image_url(equipment_media.image_path) }}" alt="{{ equipment_media.alt_text or eq }}" loading="lazy">
+                </div>
+                {% endif %}
+                <div>
+                    <div class="lab-equipment-card-header">
+                        {% if '3d' in eq_low or 'filament' in eq_low or 'printer' in eq_low or 'fabricat' in eq_low %}
+                        <div class="lab-equipment-icon-wrap purple">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                        </div>
+                        <span class="lab-equipment-category-pill" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">3D Fabrication</span>
+                        {% elif 'robot' in eq_low or 'motor' in eq_low or 'servo' in eq_low or 'chassis' in eq_low or 'actuator' in eq_low %}
+                        <div class="lab-equipment-icon-wrap blue">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><line x1="12" y1="7" x2="12" y2="11"/><line x1="8" y1="15" x2="8" y2="17"/><line x1="16" y1="15" x2="16" y2="17"/></svg>
+                        </div>
+                        <span class="lab-equipment-category-pill">Robotics &amp; Mechanics</span>
+                        {% elif 'arduino' in eq_low or 'raspberry' in eq_low or 'microcontroller' in eq_low or 'jetson' in eq_low or 'compute' in eq_low or 'board' in eq_low %}
+                        <div class="lab-equipment-icon-wrap green">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+                        </div>
+                        <span class="lab-equipment-category-pill" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">Embedded &amp; Computing</span>
+                        {% elif 'sensor' in eq_low or 'camera' in eq_low or 'vision' in eq_low or 'multimeter' in eq_low or 'testing' in eq_low %}
+                        <div class="lab-equipment-icon-wrap cyan">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        </div>
+                        <span class="lab-equipment-category-pill" style="background: rgba(6, 182, 212, 0.1); color: #0891b2;">Sensory &amp; Vision</span>
+                        {% elif 'drone' in eq_low or 'airframe' in eq_low or 'flight' in eq_low or 'bldc' in eq_low or 'transmitter' in eq_low %}
+                        <div class="lab-equipment-icon-wrap blue">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M4 8l5 2M20 8l-5 2M4 16l5-2M20 16l-5-2"/></svg>
+                        </div>
+                        <span class="lab-equipment-category-pill">Aeronautics &amp; UAVs</span>
+                        {% elif 'tool' in eq_low or 'safety' in eq_low or 'soldering' in eq_low or 'workbench' in eq_low or 'esd' in eq_low %}
+                        <div class="lab-equipment-icon-wrap amber">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                        </div>
+                        <span class="lab-equipment-category-pill" style="background: rgba(245, 158, 11, 0.1); color: #d97706;">Tools &amp; Workstations</span>
+                        {% else %}
+                        <div class="lab-equipment-icon-wrap blue">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                        </div>
+                        <span class="lab-equipment-category-pill">Prototyping Hardware</span>
+                        {% endif %}
+                    </div>
+
+                    <h4 class="lab-equipment-name">{{ eq }}</h4>
+                </div>
+
+                <p class="lab-equipment-desc">
+                    {% if '3d' in eq_low or 'filament' in eq_low %}
+                    Industrial-grade additive manufacturing unit for rapid student conceptual prototyping.
+                    {% elif 'robot' in eq_low or 'chassis' in eq_low or 'motor' in eq_low %}
+                    Precision mechanical assemblies, high-torque actuators, and structural chassis components.
+                    {% elif 'arduino' in eq_low or 'raspberry' in eq_low or 'microcontroller' in eq_low %}
+                    Programmable controllers and embedded processing boards for real-time automation.
+                    {% elif 'sensor' in eq_low or 'vision' in eq_low %}
+                    Multi-modal transducer packs, machine vision cameras, and environmental telemetry modules.
+                    {% elif 'drone' in eq_low or 'flight' in eq_low %}
+                    Aerodynamic quadcopter components, ESCs, radio transmitters, and flight simulation suites.
+                    {% elif 'tool' in eq_low or 'safety' in eq_low %}
+                    Ergonomic hand tools, ESD antistatic workbenches, protective eyewear, and safety equipment.
+                    {% else %}
+                    Industry-tested STEM hardware verified for rigorous institutional educational usage.
+                    {% endif %}
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Full-width visual interlude -->
+<section class="lab-innovation-banner reveal-on-scroll">
+    {% if gallery %}
+    {% set story_media = gallery[-1] %}
+    <img src="{{ image_url(story_media.image_path) }}" alt="{{ story_media.alt_text or (lab.name ~ ' students collaborating') }}" loading="lazy">
+    {% else %}
+    <img src="{{ image_url(lab.cover_image) or url_for('static', filename='images/services/workshop.jpg') }}" alt="{{ lab.name }}" loading="lazy">
+    {% endif %}
+    <div class="lab-innovation-banner__overlay"></div>
+    <div class="container lab-innovation-banner__content">
+        <span class="lab-eyebrow lab-eyebrow--light">AIRODRONE LEARNING ENVIRONMENTS</span>
+        <h2>From Imagination to Innovation</h2>
+        <p>Students explore, experiment and build real-world solutions through hands-on STEM learning.</p>
+        <a href="{{ url_for('lab_setup_inquiry', lab=lab.slug) }}" class="btn btn-primary">Explore Our Laboratory <span aria-hidden="true">&rarr;</span></a>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     SECTION 4: Key Learning Areas & Technologies (3-Column Card Grid)
+     ========================================================================== -->
+{% if feat_list %}
+<section class="lab-detail-section" id="learning" style="background: var(--color-bg);">
+    <div class="container">
+        <div class="lab-section-header">
+            <div class="hero-tagline-pill" style="margin-bottom: 0.65rem; display: inline-flex;">
+                PRACTICAL SKILL BUILDING
+            </div>
+            <h2>Key Learning Areas &amp; Technologies</h2>
+            <p>Hands-on competencies and practical concepts students master through this laboratory curriculum.</p>
+        </div>
+
+        <div class="lab-learning-grid">
+            {% for feat in feat_list[:4] %}
+            {% set f_low = feat | lower %}
+            <div class="lab-learning-card">
+                {% if 'prototyp' in f_low or 'innovat' in f_low or 'design' in f_low %}
+                <div class="lab-learning-icon-wrap" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                </div>
+                {% elif '3d' in f_low or 'fabricat' in f_low %}
+                <div class="lab-learning-icon-wrap" style="background: rgba(6, 182, 212, 0.12); color: #0891b2;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                </div>
+                {% elif 'robot' in f_low or 'automat' in f_low %}
+                <div class="lab-learning-icon-wrap" style="background: rgba(37, 99, 235, 0.1); color: #2563eb;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><line x1="12" y1="7" x2="12" y2="11"/><line x1="8" y1="15" x2="8" y2="17"/><line x1="16" y1="15" x2="16" y2="17"/></svg>
+                </div>
+                {% elif 'ai' in f_low or 'machine' in f_low or 'data' in f_low or 'vision' in f_low %}
+                <div class="lab-learning-icon-wrap" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 0 1 5 5c0 1.5-.7 2.9-1.8 3.8l.8 2.2H8l.8-2.2C7.7 9.9 7 8.5 7 7a5 5 0 0 1 5-5z"/><path d="M9 18h6M10 22h4"/></svg>
+                </div>
+                {% elif 'drone' in f_low or 'flight' in f_low or 'aerial' in f_low %}
+                <div class="lab-learning-icon-wrap" style="background: rgba(2, 132, 199, 0.12); color: #0284c7;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M4 8l5 2M20 8l-5 2M4 16l5-2M20 16l-5-2"/></svg>
+                </div>
+                {% elif 'compet' in f_low or 'project' in f_low or 'challeng' in f_low %}
+                <div class="lab-learning-icon-wrap" style="background: rgba(245, 158, 11, 0.12); color: #d97706;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+                </div>
+                {% else %}
+                <div class="lab-learning-icon-wrap" style="background: rgba(37, 99, 235, 0.1); color: #2563eb;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                </div>
+                {% endif %}
+
+                <h4 class="lab-learning-title">{{ feat }}</h4>
+                <p class="lab-learning-desc">
+                    {% if 'prototyp' in f_low or 'innovat' in f_low %}
+                    Learn design thinking, rapid iterations, and translating raw concepts into functional prototypes.
+                    {% elif '3d' in f_low or 'fabricat' in f_low %}
+                    Master 3D spatial modeling, slicing software, and precision manufacturing techniques.
+                    {% elif 'robot' in f_low or 'mechanic' in f_low %}
+                    Explore kinematics, electronic motor drivers, sensory feedback, and automated robotics systems.
+                    {% elif 'program' in f_low or 'code' in f_low or 'comput' in f_low %}
+                    Develop algorithmic thinking through visual block programming and real-world script execution.
+                    {% elif 'ai' in f_low or 'machine' in f_low or 'data' in f_low %}
+                    Train computer vision classifiers, neural networks, and explore real-world AI applications.
+                    {% elif 'drone' in f_low or 'flight' in f_low %}
+                    Understand aerodynamics, avionics, radio telemetry, and certified multi-rotor piloting.
+                    {% elif 'nep' in f_low or 'curriculum' in f_low %}
+                    Structured pedagogical alignment meeting NEP 2020 hands-on experiential education benchmarks.
+                    {% elif 'compet' in f_low or 'project' in f_low %}
+                    Prepare students for ATL Marathons, national science fairs, and prestigious robotics hackathons.
+                    {% else %}
+                    Engaging experiential modules engineered to build independent student technical mastery.
+                    {% endif %}
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- ==========================================================================
+     SECTION 5: Benefits for Institutions & Students (3-Column Grid)
+     ========================================================================== -->
+{% set ben_list = lab.benefits | parse_list %}
+{% if ben_list %}
+<section class="lab-detail-section" id="benefits" style="background: var(--color-bg-subtle, #f8fafc); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border);">
+    <div class="container">
+        <div class="lab-section-header">
+            <div class="hero-tagline-pill" style="margin-bottom: 0.65rem; display: inline-flex;">
+                INSTITUTIONAL VALUE
+            </div>
+            <h2>Benefits for Institutions &amp; Students</h2>
+            <p>How this specialized laboratory drives student outcomes, teacher empowerment, and institutional prestige.</p>
+        </div>
+
+        <div class="lab-benefits-grid">
+            {% for ben in ben_list[:3] %}
+            {% set b_idx = loop.index0 %}
+            <div class="lab-benefit-card">
+                {% if b_idx % 4 == 0 %}
+                <div class="lab-benefit-icon-wrap" style="background: rgba(37, 99, 235, 0.1); color: #2563eb;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </div>
+                {% elif b_idx % 4 == 1 %}
+                <div class="lab-benefit-icon-wrap" style="background: rgba(245, 158, 11, 0.12); color: #d97706;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+                </div>
+                {% elif b_idx % 4 == 2 %}
+                <div class="lab-benefit-icon-wrap" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                </div>
+                {% else %}
+                <div class="lab-benefit-icon-wrap" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                {% endif %}
+
+                <h4 class="lab-benefit-title">
+                    {{ ben }}
+                </h4>
+                <p class="lab-benefit-desc">Practical learning that turns curiosity into confident problem solving.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- ==========================================================================
+     SECTION 6: Our Implementation Support (6 Feature Cards in 3 Columns)
+     ========================================================================== -->
+<section class="lab-detail-section" id="support" style="background: var(--color-bg);">
+    <div class="container">
+        <div class="lab-section-header">
+            <div class="hero-tagline-pill" style="margin-bottom: 0.65rem; display: inline-flex;">
+                END-TO-END SUPPORT
+            </div>
+            <h2>Our Implementation Support</h2>
+            <p>AIRODRONE delivers full-cycle enablement to ensure your laboratory runs smoothly and independently from day one.</p>
+        </div>
+
+        <div class="lab-support-grid">
+            <!-- Card 1 -->
+            <div class="lab-support-card">
+                <div class="lab-support-icon-wrap" style="background: rgba(37, 99, 235, 0.1); color: #2563eb;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </div>
+                <h4>Lab Planning &amp; Infrastructure</h4>
+                <p>Space planning, safe work zones and a practical setup from day one.</p>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="lab-support-card">
+                <div class="lab-support-icon-wrap" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                </div>
+                <h4>Equipment Installation &amp; Configuration</h4>
+                <p>Ready-to-use equipment, software and organised workstations.</p>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="lab-support-card">
+                <div class="lab-support-icon-wrap" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                </div>
+                <h4>Curriculum &amp; Teacher Training</h4>
+                <p>Guided activities and practical faculty enablement.</p>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="lab-support-card">
+                <div class="lab-support-icon-wrap" style="background: rgba(245, 158, 11, 0.12); color: #d97706;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <h4>Ongoing Technical Support</h4>
+                <p>Responsive help, maintenance and refresh support as your lab evolves.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     SECTION 7: Strong Laboratory-Specific CTA Banner
+     ========================================================================== -->
+<section class="section section-light" style="padding-top: 1rem; padding-bottom: 4.5rem;">
+    <div class="container highlight-strip">
+        <div class="highlight-text">
+            <h2>Ready to Set Up Your {{ lab.badge or lab.name }}?</h2>
+            <p>Let’s create an innovation space where students learn by building, experimenting and creating.</p>
+        </div>
+        <div class="highlight-action">
+            <a href="{{ url_for('lab_setup_inquiry', lab=lab.slug) }}" class="btn btn-primary" style="padding: 0.85rem 1.85rem; font-weight: 700;">
+                Book Your {{ lab.badge or lab.name }} &rarr;
+            </a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

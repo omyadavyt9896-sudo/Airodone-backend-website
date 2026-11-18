@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block title %}Request CBSE Composite Skill Lab Consultation | AIRODRONE{% endblock %}
+{% block meta_description %}Submit your institution's requirements for a CBSE-aligned Composite Skill Lab. Get tailored room layout, itemized turnkey quotation, and curriculum roadmap.{% endblock %}
+
+{% block content %}
+<!-- ==========================================================================
+     HERO SECTION: Institutional Consultation & Proposal Request
+     ========================================================================== -->
+<section class="csl-contact-hero">
+    <div class="container">
+        <div class="csl-contact-hero-grid">
+            <!-- Left Column: Copy & Value Proposition -->
+            <div>
+                <nav class="course-breadcrumb" aria-label="Breadcrumb" style="margin-bottom: 0.85rem;">
+                    <a href="{{ url_for('home') }}">Home</a>
+                    <span aria-hidden="true">&rarr;</span>
+                    <a href="{{ url_for('composite_lab') }}">Composite Skill Lab</a>
+                    <span aria-hidden="true">&rarr;</span>
+                    <span class="current-breadcrumb">Request Proposal</span>
+                </nav>
+
+                <div class="hero-tagline-pill" style="background: rgba(37, 99, 235, 0.1); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.25); display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.85rem; border-radius: 20px; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #2563eb;"></span>
+                    CBSE SKILL EDUCATION INITIATIVE
+                </div>
+
+                <h1 style="margin-top: 0.65rem; font-size: clamp(2rem, 3.2vw, 2.85rem); line-height: 1.2; font-weight: 800; color: #0f172a; letter-spacing: -0.02em;">
+                    Request Composite Skill Lab Proposal
+                </h1>
+
+                <p style="font-size: 1.05rem; color: #475569; margin: 0.85rem 0 1.25rem; max-width: 620px; line-height: 1.65;">
+                    Submit your institution's specifications below. Our CBSE education engineers will configure an itemized turnkey quotation, customized 2D floor zoning layout, and complete syllabus roadmap within 24 business hours.
+                </p>
+
+                <!-- Compact Benefits Panel -->
+                <div class="csl-benefits-pill-row">
+                    <span class="csl-benefit-pill">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                        14-Day Rapid Turnkey Setup
+                    </span>
+                    <span class="csl-benefit-pill">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                        100% CBSE Standard Curriculum
+                    </span>
+                    <span class="csl-benefit-pill">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                        On-site Faculty Training &amp; AMC
+                    </span>
+                </div>
+            </div>
+
+            <!-- Right Column: High Quality Laboratory Photo -->
+            <div class="csl-contact-hero-media">
+                <img src="{{ url_for('static', filename='images/services/atl.jpg') }}" 
+                     alt="Modern AIRODRONE Composite Skill Lab Environment" 
+                     class="csl-contact-hero-img"
+                     loading="eager">
+                <div class="csl-contact-hero-badge">
+                    <span class="csl-contact-hero-badge-dot"></span>
+                    <span><strong>150+ Schools Deployed</strong> &bull; NEP 2020 Aligned Turnkey Infrastructure</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     FORM SECTION: 6 Clear Numbered Sections
+     ========================================================================== -->
+<section class="section" style="padding: 2.5rem 0 5rem;">
+    <div class="container">
+        
+        <!-- Flash Alert Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div style="max-width: 920px; margin: 0 auto 1.5rem;">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}" style="border-radius: 10px; font-weight: 600;">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- Institutional Enquiry Form Card -->
+        <div class="csl-form-card">
+            <form method="POST" action="{{ url_for('composite_lab_contact') }}" novalidate>
+                
+                <!-- Section 1: Institution Details -->
+                <div class="csl-form-section">
+                    <div class="csl-form-section-header">
+                        <span class="csl-section-number">1</span>
+                        <h3 class="csl-form-section-title">School &amp; Institution Information</h3>
+                    </div>
+                    <div class="csl-form-section-subtitle">Basic details of your campus or educational trust</div>
+
+                    <div class="csl-form-grid-2">
+                        <div class="csl-form-group">
+                            <label for="school_name" class="csl-form-label">
+                                School / Institution Name <span class="csl-required-star">*</span>
+                            </label>
+                            <input type="text" id="school_name" name="school_name" required 
+                                   value="{{ form_data.get('school_name', '') }}" 
+                                   placeholder="e.g. Delhi Public School / St. Xavier's" 
+                                   class="csl-form-input">
+                        </div>
+
+                        <div class="csl-form-group">
+                            <label for="institution_type" class="csl-form-label">
+                                Institution Type <span class="csl-required-star">*</span>
+                            </label>
+                            <select id="institution_type" name="institution_type" required class="csl-form-select">
+                                <option value="">Select Institution Category</option>
+                                <option value="CBSE Private School" {% if form_data.get('institution_type') == 'CBSE Private School' %}selected{% endif %}>CBSE Private School</option>
+                                <option value="Kendriya Vidyalaya / JNV" {% if form_data.get('institution_type') == 'Kendriya Vidyalaya / JNV' %}selected{% endif %}>Kendriya Vidyalaya / JNV</option>
+                                <option value="State Board School" {% if form_data.get('institution_type') == 'State Board School' %}selected{% endif %}>State Board School</option>
+                                <option value="ICSE / International School" {% if form_data.get('institution_type') == 'ICSE / International School' %}selected{% endif %}>ICSE / International School</option>
+                                <option value="Educational Trust / Society" {% if form_data.get('institution_type') == 'Educational Trust / Society' %}selected{% endif %}>Educational Trust / Society</option>
+                                <option value="Other" {% if form_data.get('institution_type') == 'Other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+
+                        <div class="csl-form-group">
+                            <label for="cbse_affiliation_no" class="csl-form-label">
+                                CBSE Affiliation Number <span class="csl-optional-text">(if applicable)</span>
+                            </label>
+                            <input type="text" id="cbse_affiliation_no" name="cbse_affiliation_no" 
+                                   value="{{ form_data.get('cbse_affiliation_no', '') }}" 
+                                   placeholder="e.g. 2130123" 
+                                   class="csl-form-input">
+                        </div>
+
+                        <div class="csl-form-group">
+                            <label for="student_strength" class="csl-form-label">
+                                Total Student Strength <span class="csl-optional-text">(Campus size)</span>
+                            </label>
+                            <select id="student_strength" name="student_strength" class="csl-form-select">
+                                <option value="">Select Strength Range</option>
+                                <option value="Under 500 Students" {% if form_data.get('student_strength') == 'Under 500 Students' %}selected{% endif %}>Under 500 Students</option>
+                                <option value="500 - 1,200 Students" {% if form_data.get('student_strength') == '500 - 1,200 Students' %}selected{% endif %}>500 - 1,200 Students</option>
+                                <option value="1,200 - 2,500 Students" {% if form_data.get('student_strength') == '1,200 - 2,500 Students' %}selected{% endif %}>1,200 - 2,500 Students</option>
+                                <option value="2,500+ Students" {% if form_data.get('student_strength') == '2,500+ Students' %}selected{% endif %}>2,500+ Students</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Contact Person Details -->
+                <div class="csl-form-section">
+                    <div class="csl-form-section-header">
+                        <span class="csl-section-number">2</span>
+                        <h3 class="csl-form-section-title">Key Contact Person</h3>
+                    </div>
+                    <div class="csl-form-section-subtitle">School representative responsible for academic or lab decisions</div>
+
+                    <div class="csl-form-grid-2">
+                        <div class="csl-form-group">
+                            <label for="contact_person" class="csl-form-label">
+                                Contact Person Name <span class="csl-required-star">*</span>
+                            </label>
+                            <input type="text" id="contact_person" name="contact_person" required 
+                                   value="{{ form_data.get('contact_person', '') }}" 
+                                   placeholder="e.g. Dr. Ramesh Sharma" 
+                                   class="csl-form-input">
+                        </div>
+
+                        <div class="csl-form-group">
+                            <label for="designation" class="csl-form-label">
+                                Designation <span class="csl-required-star">*</span>
+                            </label>
+                            <select id="designation" name="designation" required class="csl-form-select">
+                                <option value="">Select Designation</option>
+                                <option value="Principal / Head of School" {% if form_data.get('designation') == 'Principal / Head of School' %}selected{% endif %}>Principal / Head of School</option>
+                                <option value="Vice Principal / Academic Director" {% if form_data.get('designation') == 'Vice Principal / Academic Director' %}selected{% endif %}>Vice Principal / Academic Director</option>
+                                <option value="Trustee / Management Board" {% if form_data.get('designation') == 'Trustee / Management Board' %}selected{% endif %}>Trustee / Management Board</option>
+                                <option value="STEM / Skill Lab In-Charge" {% if form_data.get('designation') == 'STEM / Skill Lab In-Charge' %}selected{% endif %}>STEM / Skill Lab In-Charge</option>
+                                <option value="Computer Science / Physics HOD" {% if form_data.get('designation') == 'Computer Science / Physics HOD' %}selected{% endif %}>Computer Science / Physics HOD</option>
+                                <option value="Administrative Officer" {% if form_data.get('designation') == 'Administrative Officer' %}selected{% endif %}>Administrative Officer</option>
+                            </select>
+                        </div>
+
+                        <div class="csl-form-group">
+                            <label for="email" class="csl-form-label">
+                                Official Email Address <span class="csl-required-star">*</span>
+                            </label>
+                            <input type="email" id="email" name="email" required 
+                                   value="{{ form_data.get('email', '') }}" 
+                                   placeholder="principal@yourschool.edu.in" 
+                                   class="csl-form-input">
+                        </div>
+
+                        <div class="csl-form-group">
+                            <label for="phone" class="csl-form-label">
+                                Mobile / WhatsApp Number <span class="csl-required-star">*</span>
+                            </label>
+                            <input type="tel" id="phone" name="phone" required 
+                                   value="{{ form_data.get('phone', '') }}" 
+                                   placeholder="10-digit mobile number" 
+                                   class="csl-form-input">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Geographic Location -->
+                <div class="csl-form-section">
+                    <div class="csl-form-section-header">
+                        <span class="csl-section-number">3</span>
+                        <h3 class="csl-form-section-title">Campus Location</h3>
+                    </div>
+                    <div class="csl-form-section-subtitle">Location for turnkey delivery and engineer site audit</div>
+
+                    <div class="csl-form-grid-2" style="margin-bottom: 1.25rem;">
+                        <div class="csl-form-group">
+                            <label for="state" class="csl-form-label">
+                                State / UT <span class="csl-required-star">*</span>
+                            </label>
+                            <input type="text" id="state" name="state" required 
+                                   value="{{ form_data.get('state', '') }}" 
+                                   placeholder="e.g. Maharashtra, Uttar Pradesh, Delhi" 
+                                   class="csl-form-input">
+                        </div>
+
+                        <div class="csl-form-group">
+                            <label for="city" class="csl-form-label">
+                                City / District <span class="csl-required-star">*</span>
+                            </label>
+                            <input type="text" id="city" name="city" required 
+                                   value="{{ form_data.get('city', '') }}" 
+                                   placeholder="e.g. Pune, Lucknow, Bengaluru" 
+                                   class="csl-form-input">
+                        </div>
+                    </div>
+
+                    <div class="csl-form-group">
+                        <label for="address" class="csl-form-label">
+                            Campus Street Address <span class="csl-optional-text">(Optional)</span>
+                        </label>
+                        <input type="text" id="address" name="address" 
+                               value="{{ form_data.get('address', '') }}" 
+                               placeholder="Campus Road, Sector / Area, PIN Code" 
+                               class="csl-form-input">
+                    </div>
+                </div>
+
+                <!-- Section 4: Laboratory Specifications -->
+                <div class="csl-form-section">
+                    <div class="csl-form-section-header">
+                        <span class="csl-section-number">4</span>
+                        <h3 class="csl-form-section-title">Laboratory Specifications</h3>
+                    </div>
+                    <div class="csl-form-section-subtitle">Scope, space allocation and budgetary parameters</div>
+
+                    <div class="csl-form-grid-4">
+                        <div class="csl-form-group">
+                            <label for="preferred_package" class="csl-form-label">
+                                Preferred Package
+                            </label>
+                            <select id="preferred_package" name="preferred_package" class="csl-form-select">
+                                <option value="">Select Package</option>
+                                {% for pkg in packages %}
+                                <option value="{{ pkg.name }}" {% if (preselected_package and preselected_package.lower() == pkg.name.lower()) or form_data.get('preferred_package') == pkg.name %}selected{% endif %}>
+                                    {{ pkg.name }} ({{ pkg.price_display }})
+                                </option>
+                                {% endfor %}
+                                <option value="Custom / Need Consultation" {% if preselected_package == 'custom' or form_data.get('preferred_package') == 'Custom / Need Consultation' %}selected{% endif %}>Custom / Need Consultation</option>
+                            </select>
+                        </div>
+
+                        <div class="csl-form-group">
+                            <label for="room_size" class="csl-form-label">
+                                Room Size
+                            </label>
+                            <select id="room_size" name="room_size" class="csl-form-select">
+                                <option value="">Select Size</option>
+                                <option value="400 Sq. Ft. (Standard CBSE)" {% if form_data.get('room_size') == '400 Sq. Ft. (Standard CBSE)' %}selected{% endif %}>400 Sq. Ft. (Standard CBSE)</option>
+                                <option value="600 Sq. Ft. (Recommended)" {% if form_data.get('room_size') == '600 Sq. Ft. (Recommended)' %}selected{% endif %}>600 Sq. Ft. (Recommended)</option>
+                                <option value="800+ Sq. Ft. (Full Makerspace)" {% if form_data.get('room_size') == '800+ Sq. Ft. (Full Makerspace)' %}selected{% endif %}>800+ Sq. Ft. (Full Makerspace)</option>
+                                <option value="Yet to Allocate Space" {% if form_data.get('room_size') == 'Yet to Allocate Space' %}selected{% endif %}>Yet to Allocate Space</option>
+                            </select>
+                        </div>
+
+                        <div class="csl-form-group">
+                            <label for="existing_lab" class="csl-form-label">
+                                Existing Lab Setup
+                            </label>
+                            <select id="existing_lab" name="existing_lab" class="csl-form-select">
+                                <option value="">Select Status</option>
+                                <option value="No Existing Skill Lab (Fresh Setup)" {% if form_data.get('existing_lab') == 'No Existing Skill Lab (Fresh Setup)' %}selected{% endif %}>Fresh Setup (No Lab)</option>
+                                <option value="Existing ATL Lab" {% if form_data.get('existing_lab') == 'Existing ATL Lab' %}selected{% endif %}>Existing ATL Lab</option>
+                                <option value="Computer / IT Lab Available" {% if form_data.get('existing_lab') == 'Computer / IT Lab Available' %}selected{% endif %}>Computer / IT Lab</option>
+                                <option value="Science Labs Only" {% if form_data.get('existing_lab') == 'Science Labs Only' %}selected{% endif %}>Science Labs Only</option>
+                            </select>
+                        </div>
+
+                        <div class="csl-form-group">
+                            <label for="budget" class="csl-form-label">
+                                Budget Range
+                            </label>
+                            <select id="budget" name="budget" class="csl-form-select">
+                                <option value="">Select Range</option>
+                                <option value="₹1.5 Lakh - ₹2.5 Lakh" {% if form_data.get('budget') == '₹1.5 Lakh - ₹2.5 Lakh' %}selected{% endif %}>₹1.5L - ₹2.5L (Foundation)</option>
+                                <option value="₹2.5 Lakh - ₹4.5 Lakh" {% if form_data.get('budget') == '₹2.5 Lakh - ₹4.5 Lakh' %}selected{% endif %}>₹2.5L - ₹4.5L (Makerspace)</option>
+                                <option value="₹4.5 Lakh - ₹7.0 Lakh" {% if form_data.get('budget') == '₹4.5 Lakh - ₹7.0 Lakh' %}selected{% endif %}>₹4.5L - ₹7.0L (Future Lab)</option>
+                                <option value="Flexible / Trust Approval Pending" {% if form_data.get('budget') == 'Flexible / Trust Approval Pending' %}selected{% endif %}>Flexible / Approval Pending</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 5: Required Skill Sectors -->
+                <div class="csl-form-section">
+                    <div class="csl-form-section-header">
+                        <span class="csl-section-number">5</span>
+                        <h3 class="csl-form-section-title">Required Skill Sectors</h3>
+                    </div>
+                    <div class="csl-form-section-subtitle">Select all practical vocational domains required for your school's curriculum:</div>
+
+                    <div class="csl-sectors-checkbox-grid">
+                        {% for sec in sectors %}
+                        <label class="csl-sector-checkbox-card">
+                            <input type="checkbox" name="required_sectors" value="{{ sec.name }}" 
+                                   {% if sec.name in selected_sectors %}checked{% endif %}>
+                            <span class="csl-checkbox-label-text">{{ sec.name }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Section 6: Additional Requirements -->
+                <div class="csl-form-section">
+                    <div class="csl-form-section-header">
+                        <span class="csl-section-number">6</span>
+                        <h3 class="csl-form-section-title">Additional Requirements</h3>
+                    </div>
+                    <div class="csl-form-section-subtitle">Specific timelines, affiliation deadlines, trainer needs, or custom equipment requests</div>
+
+                    <div class="csl-form-group">
+                        <textarea id="additional_requirements" name="additional_requirements" rows="4" 
+                                  placeholder="Mention any upcoming CBSE affiliation inspection deadlines, civil works status, electrical provisioning, or custom trainer requirements..." 
+                                  class="csl-form-textarea">{{ form_data.get('additional_requirements', '') }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Submission Actions Row -->
+                <div class="csl-form-submit-row">
+                    <div class="csl-trust-guarantee">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" style="vertical-align: middle; margin-right: 0.25rem;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        By submitting, your school leadership receives an official proposal, 2D floor zoning layout, and an advisory consultation. No spam guaranteed.
+                    </div>
+                    <button type="submit" class="csl-btn-enquire csl-btn-submit">
+                        <span>Submit School Enquiry &rarr;</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Lab Setup Management | Admin airodrone{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Lab Setup Management</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>Lab Setup Management</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    Manage ATL, Robotics, AI, STEM, Drone, and bespoke institutional laboratory packages, equipment specifications, and curricula.
+                </p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <a href="{{ url_for('admin_add_lab') }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <span>+</span> Add New Laboratory
+                </a>
+                <a href="{{ url_for('lab_setup') }}" target="_blank" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <span>👁️</span> View Live Page
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% set admin_active = 'labs' %}
+{% include "admin_nav.html" %}
+
+<section class="section" style="padding-top: 0.5rem;">
+    <div class="container" style="max-width: 1200px; margin: 0 auto;">
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else ('info' if category == 'info' else 'error') }}" style="margin-bottom: 1.75rem;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="card profile-form-card" style="padding: 1.75rem; border-radius: 14px; background: var(--color-card-bg, #ffffff); border: 1px solid var(--color-border, #e2e8f0);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                    <h2 style="font-size: 1.25rem; margin: 0; color: var(--color-text);">Configured Laboratories ({{ laboratories | length }})</h2>
+                    <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: var(--color-text-muted);">Published laboratories automatically appear dynamically on the public <code>/lab-setup</code> page.</p>
+                </div>
+                <span class="course-stat-pill" style="font-weight: 700; background: #e0f2fe; color: #0284c7;">
+                    {{ laboratories | selectattr('is_active') | list | length }} Published / {{ laboratories | length }} Total
+                </span>
+            </div>
+
+            {% if laboratories %}
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.925rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--color-border); color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            <th style="padding: 0.75rem 0.5rem; width: 50px;">Order</th>
+                            <th style="padding: 0.75rem 0.5rem; width: 80px;">Cover</th>
+                            <th style="padding: 0.75rem 0.75rem;">Laboratory Details</th>
+                            <th style="padding: 0.75rem 0.75rem;">Target Audience</th>
+                            <th style="padding: 0.75rem 0.5rem; width: 110px; text-align: center;">Status</th>
+                            <th style="padding: 0.75rem 0.5rem; width: 220px; text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lab in laboratories %}
+                        <tr style="border-bottom: 1px solid var(--color-border);">
+                            <td style="padding: 0.85rem 0.5rem; font-weight: 700; color: var(--color-text-muted); font-family: monospace;">
+                                #{{ lab.display_order }}
+                            </td>
+                            <td style="padding: 0.85rem 0.5rem;">
+                                {% set img_url = image_url(lab.cover_image) %}
+                                {% if img_url %}
+                                <img src="{{ img_url }}" alt="{{ lab.name }}" style="width: 64px; height: 42px; object-fit: cover; border-radius: 6px; border: 1px solid var(--color-border);" loading="lazy">
+                                {% else %}
+                                <div style="width: 64px; height: 42px; background: var(--color-bg-subtle, #f1f5f9); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: #94a3b8;">
+                                    No img
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0.85rem 0.75rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                    <strong style="color: var(--color-text); font-size: 1rem;">{{ lab.name }}</strong>
+                                    {% if lab.badge %}
+                                    <span style="background: rgba(2, 132, 199, 0.1); color: #0284c7; border: 1px solid rgba(2, 132, 199, 0.25); padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700;">
+                                        {{ lab.badge }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <div style="font-size: 0.8rem; color: var(--color-text-muted); font-family: monospace; margin-top: 0.15rem;">
+                                    slug: {{ lab.slug }}
+                                </div>
+                            </td>
+                            <td style="padding: 0.85rem 0.75rem; font-size: 0.85rem; color: var(--color-text-muted);">
+                                {{ lab.target_audience or '&mdash;' | safe }}
+                            </td>
+                            <td style="padding: 0.85rem 0.5rem; text-align: center;">
+                                <form action="{{ url_for('admin_toggle_lab_active', lab_id=lab.id) }}" method="POST" style="display: inline;">
+                                    <button type="submit" class="badge-status {% if lab.is_active %}badge-active{% else %}badge-inactive{% endif %}" style="cursor: pointer; border: none; font-size: 0.75rem; padding: 0.3rem 0.6rem;" title="Click to toggle status">
+                                        {% if lab.is_active %}&check; Published{% else %}&cross; Inactive{% endif %}
+                                    </button>
+                                </form>
+                            </td>
+                            <td style="padding: 0.85rem 0.5rem; text-align: right; white-space: nowrap;">
+                                <div style="display: inline-flex; gap: 0.4rem; align-items: center;">
+                                    <a href="{{ url_for('admin_preview_lab', lab_id=lab.id) }}" class="btn btn-secondary btn-sm" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; border-radius: 6px; text-decoration: none;" title="Preview Card">
+                                        Preview
+                                    </a>
+                                    <a href="{{ url_for('admin_edit_lab', lab_id=lab.id) }}" class="btn btn-primary btn-sm" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; border-radius: 6px; text-decoration: none;">
+                                        Edit
+                                    </a>
+                                    <form action="{{ url_for('admin_delete_lab', lab_id=lab.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete laboratory \'{{ lab.name }}\'? This action cannot be undone.');">
+                                        <button type="submit" class="btn btn-danger btn-sm" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; border-radius: 6px; background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; cursor: pointer;">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="padding: 3rem 1rem; text-align: center; color: var(--color-text-muted);">
+                <p style="font-size: 1.05rem; margin-bottom: 1rem;">No laboratories configured yet.</p>
+                <a href="{{ url_for('admin_add_lab') }}" class="btn btn-primary btn-sm">+ Add First Laboratory</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

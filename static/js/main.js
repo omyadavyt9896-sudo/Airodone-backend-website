@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   );
 
-  document.querySelectorAll(".section, .page-hero").forEach((el) => {
+  document.querySelectorAll(".section, .page-hero, .lab-detail-section, .lab-editorial-section, .lab-innovation-banner, .reveal-on-scroll").forEach((el) => {
     el.classList.add("pre-animate");
     observer.observe(el);
   });

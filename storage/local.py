@@ -291,6 +291,24 @@ class LocalStorageBackend(BaseStorageBackend):
     def solution_image_exists(self, storage_path: str) -> bool:
         return self._image_file_exists(storage_path, "solutions")
 
+    def save_lab_image(self, file_obj, lab_id: int, original_filename: str) -> Tuple[bool, str, Optional[str]]:
+        return self._save_image_file(file_obj, "labs", "lab", lab_id, original_filename)
+
+    def delete_lab_image(self, storage_path: str) -> bool:
+        return self._delete_image_file(storage_path, "labs")
+
+    def lab_image_exists(self, storage_path: str) -> bool:
+        return self._image_file_exists(storage_path, "labs")
+
+    def save_composite_lab_image(self, file_obj, item_id: int, original_filename: str) -> Tuple[bool, str, Optional[str]]:
+        return self._save_image_file(file_obj, "composite_lab", "composite", item_id, original_filename)
+
+    def delete_composite_lab_image(self, storage_path: str) -> bool:
+        return self._delete_image_file(storage_path, "composite_lab")
+
+    def composite_lab_image_exists(self, storage_path: str) -> bool:
+        return self._image_file_exists(storage_path, "composite_lab")
+
 
 
 

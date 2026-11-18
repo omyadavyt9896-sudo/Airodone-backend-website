@@ -282,3 +282,43 @@ class BaseStorageBackend(ABC):
     def solution_image_exists(self, storage_path: str) -> bool:
         """Check if solution image exists in storage."""
         pass
+
+    @abstractmethod
+    def save_lab_image(
+        self,
+        file_obj,
+        lab_id: int,
+        original_filename: str,
+    ) -> Tuple[bool, str, Optional[str]]:
+        """Save laboratory image to persistent storage."""
+        pass
+
+    @abstractmethod
+    def delete_lab_image(self, storage_path: str) -> bool:
+        """Delete laboratory image from persistent storage."""
+        pass
+
+    @abstractmethod
+    def lab_image_exists(self, storage_path: str) -> bool:
+        """Check if laboratory image exists in storage."""
+        pass
+
+    @abstractmethod
+    def save_composite_lab_image(
+        self,
+        file_obj,
+        item_id: int,
+        original_filename: str,
+    ) -> Tuple[bool, str, Optional[str]]:
+        """Save Composite Skill Lab image to persistent storage."""
+        pass
+
+    @abstractmethod
+    def delete_composite_lab_image(self, storage_path: str) -> bool:
+        """Delete Composite Skill Lab image from persistent storage."""
+        pass
+
+    @abstractmethod
+    def composite_lab_image_exists(self, storage_path: str) -> bool:
+        """Check if Composite Skill Lab image exists in storage."""
+        pass

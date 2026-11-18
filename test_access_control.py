@@ -216,13 +216,14 @@ class Phase77AccessControlTestCase(unittest.TestCase):
         self.assertIn("/login", res.location)
 
     def test_05_public_pages_remain_accessible(self):
-        for path in ["/", "/about", "/learn", "/contact", "/verify"]:
+        for path in ["/", "/learn", "/contact", "/verify"]:
             res = self.client.get(path)
             self.assertEqual(res.status_code, 200, f"Public path {path} failed")
 
-        # Verify /services no longer exposes a services page
-        res_services = self.client.get("/services")
-        self.assertEqual(res_services.status_code, 404, "Services page should return 404")
+        # Verify /about, /solutions and /services routes are removed and return 404
+        for removed_path in ["/about", "/solutions", "/services"]:
+            res_removed = self.client.get(removed_path)
+            self.assertEqual(res_removed.status_code, 404, f"Removed path {removed_path} should return 404")
 
         # Verify /courses redirects to /learn
         res_courses = self.client.get("/courses")

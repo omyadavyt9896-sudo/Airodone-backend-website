@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Enquiry #{{ enquiry.id }} - {{ enquiry.school_name }} | Admin AIRODRONE{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_composite_lab') }}">Composite Skill Lab</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Enquiry #{{ enquiry.id }}</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>{{ enquiry.school_name }}</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    {{ enquiry.city }}{% if enquiry.city and enquiry.state %}, {% endif %}{{ enquiry.state }} &bull; Submitted on {{ enquiry.created_at }}
+                </p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                {% set s_lower = enquiry.status|lower %}
+                <span style="display: inline-block; padding: 0.5rem 1.1rem; border-radius: 20px; font-size: 0.9rem; font-weight: 700;
+                    {% if s_lower == 'new' %}background: #e0f2fe; color: #0369a1;
+                    {% elif s_lower == 'contacted' %}background: #fef3c7; color: #b45309;
+                    {% elif 'consultation' in s_lower %}background: #ede9fe; color: #6d28d9;
+                    {% elif 'proposal' in s_lower %}background: #cffafe; color: #0e7490;
+                    {% elif 'negotiation' in s_lower %}background: #ffedd5; color: #c2410c;
+                    {% elif 'converted' in s_lower %}background: #dcfce7; color: #15803d;
+                    {% elif 'rejected' in s_lower %}background: #fee2e2; color: #b91c1c;
+                    {% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                    Status: {{ enquiry.status }}
+                </span>
+                <a href="{{ url_for('admin_composite_lab') }}" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 0.9rem;">
+                    &larr; Back to Inquiries
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% set admin_active = 'composite_lab' %}
+{% include "admin_nav.html" %}
+
+<section class="section" style="padding-top: 1rem; padding-bottom: 4rem;">
+    <div class="container" style="max-width: 1250px; margin: 0 auto;">
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}" style="margin-bottom: 1.5rem; border-radius: 10px;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; align-items: start;">
+            
+            <!-- Left Column: Details & Notes -->
+            <div>
+                <!-- Institutional & Contact Information Card -->
+                <div class="card" style="padding: 2rem; border-radius: 14px; background: #ffffff; border: 1px solid var(--color-border, #e2e8f0); margin-bottom: 2rem; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);">
+                    <h3 style="margin-top: 0; font-size: 1.2rem; color: #0f172a; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+                        🏫 Institution &amp; Key Contact
+                    </h3>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
+                        <div>
+                            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">School / Institution</span>
+                            <span style="font-size: 1rem; font-weight: 700; color: #0f172a;">{{ enquiry.school_name }}</span>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">Institution Type</span>
+                            <span style="font-size: 0.95rem; color: #1e293b;">{{ enquiry.institution_type }}</span>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">CBSE Affiliation No.</span>
+                            <span style="font-size: 0.95rem; color: #1e293b;">{{ enquiry.cbse_affiliation_no or 'N/A' }}</span>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">Student Strength</span>
+                            <span style="font-size: 0.95rem; color: #1e293b;">{{ enquiry.student_strength or 'Not Specified' }}</span>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">Contact Person</span>
+                            <span style="font-size: 0.95rem; font-weight: 600; color: #0f172a;">{{ enquiry.contact_person }}</span>
+                            <span style="font-size: 0.82rem; color: #64748b; display: block;">({{ enquiry.designation }})</span>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">Phone / WhatsApp</span>
+                            <a href="tel:{{ enquiry.phone }}" style="font-size: 0.95rem; font-weight: 600; color: #2563eb; text-decoration: none;">{{ enquiry.phone }}</a>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">Email</span>
+                            <a href="mailto:{{ enquiry.email }}" style="font-size: 0.95rem; font-weight: 600; color: #2563eb; text-decoration: none;">{{ enquiry.email }}</a>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">Location</span>
+                            <span style="font-size: 0.95rem; color: #1e293b;">{{ enquiry.city }}{% if enquiry.city and enquiry.state %}, {% endif %}{{ enquiry.state }}</span>
+                        </div>
+                    </div>
+
+                    {% if enquiry.address %}
+                    <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;">
+                        <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">Campus Address</span>
+                        <span style="font-size: 0.92rem; color: #334155;">{{ enquiry.address }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Laboratory Specifications Card -->
+                <div class="card" style="padding: 2rem; border-radius: 14px; background: #ffffff; border: 1px solid var(--color-border, #e2e8f0); margin-bottom: 2rem; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);">
+                    <h3 style="margin-top: 0; font-size: 1.2rem; color: #0f172a; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+                        🔬 Laboratory Requirements &amp; Scope
+                    </h3>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
+                        <div>
+                            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">Preferred Package</span>
+                            <span style="font-size: 1.05rem; font-weight: 800; color: #2563eb;">{{ enquiry.preferred_package or 'Open / Not chosen' }}</span>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">Allocated Room Size</span>
+                            <span style="font-size: 0.95rem; color: #1e293b;">{{ enquiry.room_size or 'Not specified' }}</span>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">Estimated Budget</span>
+                            <span style="font-size: 0.95rem; color: #1e293b;">{{ enquiry.budget or 'Flexible' }}</span>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">Existing Infrastructure</span>
+                            <span style="font-size: 0.95rem; color: #1e293b;">{{ enquiry.existing_lab or 'None' }}</span>
+                        </div>
+                    </div>
+
+                    {% if enquiry.required_sectors %}
+                    <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;">
+                        <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; display: block; margin-bottom: 0.5rem;">Requested Skill Sectors</span>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            {% for sec in enquiry.required_sectors.split(',') %}
+                            <span style="background: #eff6ff; color: #1d4ed8; font-size: 0.82rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid #dbeafe;">
+                                {{ sec.strip() }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if enquiry.additional_requirements %}
+                    <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;">
+                        <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; display: block; margin-bottom: 0.35rem;">Additional Notes from Institution</span>
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; font-size: 0.92rem; color: #334155; line-height: 1.6;">
+                            {{ enquiry.additional_requirements|replace('\n', '<br>')|safe }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Internal Notes Card -->
+                <div class="card" style="padding: 2rem; border-radius: 14px; background: #ffffff; border: 1px solid var(--color-border, #e2e8f0); margin-bottom: 2rem; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);">
+                    <h3 style="margin-top: 0; font-size: 1.2rem; color: #0f172a; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+                        📝 Internal Team Notes
+                    </h3>
+
+                    <!-- Add Note Form -->
+                    <form method="POST" action="{{ url_for('admin_composite_lab_add_note', enquiry_id=enquiry.id) }}" style="margin-bottom: 1.5rem;">
+                        <textarea name="note" rows="3" required placeholder="Add confidential notes on phone consultation, proposal quotation sent, school visit feedback..." style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.92rem; font-family: inherit; margin-bottom: 0.75rem;"></textarea>
+                        <div style="text-align: right;">
+                            <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1.2rem; font-size: 0.88rem; font-weight: 600;">
+                                Post Note
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Notes Thread -->
+                    {% if notes %}
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        {% for n in notes %}
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem 1.25rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span style="font-weight: 700; color: #0f172a; font-size: 0.9rem;">{{ n.user_name or 'Admin' }}</span>
+                                <span style="font-size: 0.78rem; color: #64748b;">{{ n.created_at }}</span>
+                            </div>
+                            <div style="font-size: 0.92rem; color: #334155; line-height: 1.55;">
+                                {{ n.note|replace('\n', '<br>')|safe }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p style="font-size: 0.88rem; color: #64748b; font-style: italic; margin: 0;">No internal notes recorded yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Right Column: Status & Assignment Controls -->
+            <div>
+                <!-- Status Control Box -->
+                <div class="card" style="padding: 1.75rem; border-radius: 14px; background: #ffffff; border: 1px solid var(--color-border, #e2e8f0); margin-bottom: 1.5rem; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);">
+                    <h4 style="margin-top: 0; font-size: 1.05rem; color: #0f172a; margin-bottom: 1rem;">
+                        Pipeline Status
+                    </h4>
+                    <form method="POST" action="{{ url_for('admin_composite_lab_update_status', enquiry_id=enquiry.id) }}">
+                        <label for="status" style="display: block; font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.35rem;">Update Stage</label>
+                        <select id="status" name="status" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem; margin-bottom: 1rem;">
+                            {% for st in valid_statuses %}
+                            <option value="{{ st }}" {% if enquiry.status == st %}selected{% endif %}>{{ st }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; font-weight: 600; font-size: 0.9rem;">
+                            Update Status
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Assignment Control Box -->
+                <div class="card" style="padding: 1.75rem; border-radius: 14px; background: #ffffff; border: 1px solid var(--color-border, #e2e8f0); margin-bottom: 1.5rem; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);">
+                    <h4 style="margin-top: 0; font-size: 1.05rem; color: #0f172a; margin-bottom: 1rem;">
+                        Team Assignment
+                    </h4>
+                    <form method="POST" action="{{ url_for('admin_composite_lab_assign', enquiry_id=enquiry.id) }}">
+                        <label for="assigned_to" style="display: block; font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.35rem;">Assigned Coordinator</label>
+                        <select id="assigned_to" name="assigned_to" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem; margin-bottom: 1rem;">
+                            <option value="">Unassigned</option>
+                            {% for tm in team_members %}
+                            <option value="{{ tm.id }}" {% if enquiry.assigned_to == tm.id %}selected{% endif %}>
+                                {{ tm.name }} ({{ tm.role }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center; font-weight: 600; font-size: 0.9rem;">
+                            Save Assignment
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Activity Log Timeline -->
+                <div class="card" style="padding: 1.75rem; border-radius: 14px; background: #ffffff; border: 1px solid var(--color-border, #e2e8f0); margin-bottom: 1.5rem; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);">
+                    <h4 style="margin-top: 0; font-size: 1.05rem; color: #0f172a; margin-bottom: 1rem;">
+                        Activity Timeline
+                    </h4>
+                    {% if activity_logs %}
+                    <div style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.85rem;">
+                        {% for log in activity_logs %}
+                        <div style="border-left: 2px solid #2563eb; padding-left: 0.75rem;">
+                            <div style="font-weight: 600; color: #0f172a;">{{ log.action }}</div>
+                            <div style="font-size: 0.75rem; color: #64748b;">
+                                By {{ log.user_name or 'System' }} &bull; {{ log.created_at }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p style="font-size: 0.82rem; color: #64748b; margin: 0;">No activity recorded yet.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Admin Delete Box -->
+                {% if current_user.is_admin() %}
+                <div class="card" style="padding: 1.5rem; border-radius: 14px; background: #fef2f2; border: 1px solid #fecaca;">
+                    <h4 style="margin-top: 0; color: #991b1b; font-size: 0.95rem; margin-bottom: 0.5rem;">Danger Zone</h4>
+                    <p style="font-size: 0.82rem; color: #7f1d1d; margin-bottom: 1rem; line-height: 1.5;">
+                        Permanently remove this enquiry, associated internal notes, and activity timeline logs.
+                    </p>
+                    <form method="POST" action="{{ url_for('admin_composite_lab_delete_enquiry', enquiry_id=enquiry.id) }}" onsubmit="return confirm('Are you sure you want to permanently delete this Composite Skill Lab enquiry? This action cannot be undone.');">
+                        <button type="submit" class="btn" style="background: #dc2626; color: #ffffff; width: 100%; justify-content: center; font-size: 0.85rem; font-weight: 600; padding: 0.5rem;">
+                            Delete Enquiry
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

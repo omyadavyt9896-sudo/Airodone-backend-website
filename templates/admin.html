@@ -158,6 +158,43 @@
                 </div>
             </div>
 
+            <!-- Lab Management Card -->
+            <div class="card" style="padding: 1.25rem; border-radius: 10px; border-top: 4px solid #0d9488; background: var(--color-bg-card, #ffffff);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Lab Management</div>
+                    <span style="font-size: 0.75rem; background: #ccfbf1; color: #0f766e; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">{{ published_laboratories }} Live</span>
+                </div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-text); line-height: 1;">{{ total_laboratories }}</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.5rem;">
+                    <a href="{{ url_for('admin_labs') }}" style="color: #0d9488; text-decoration: none; font-weight: 600;">Manage Labs &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Lab Setup Inquiries Card -->
+            <div class="card" style="padding: 1.25rem; border-radius: 10px; border-top: 4px solid #6366f1; background: var(--color-bg-card, #ffffff);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Lab Setup Inquiries</div>
+                    <span style="font-size: 0.75rem; background: #e0e7ff; color: #4338ca; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">{{ unreviewed_lab_inquiries }} New</span>
+                </div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-text); line-height: 1;">{{ total_lab_inquiries }}</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.5rem;">
+                    <a href="{{ url_for('admin_lab_inquiries') }}" style="color: #6366f1; text-decoration: none; font-weight: 600;">View Inquiries &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Composite Skill Lab (CBSE) Card -->
+            <div class="card" style="padding: 1.25rem; border-radius: 10px; border-top: 4px solid #2563eb; background: var(--color-bg-card, #ffffff);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">Composite Skill Lab (CBSE)</div>
+                    <span style="font-size: 0.75rem; background: #dbeafe; color: #1d4ed8; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">{{ new_composite_enquiries }} New</span>
+                </div>
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-text); line-height: 1;">{{ total_composite_enquiries }}</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.5rem;">
+                    <a href="{{ url_for('admin_composite_lab') }}" style="color: #2563eb; text-decoration: none; font-weight: 600;">Manage Module &rarr;</a>
+                    &bull; <a href="{{ url_for('dashboard_composite_lab') }}" style="color: #0284c7; text-decoration: none; font-weight: 600;">Analytics</a>
+                </div>
+            </div>
+
         </div>
         {% endif %}
 
@@ -342,6 +379,43 @@
                 </a>
             </article>
             {% endif %}
+
+            <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">🔬 Lab Setup Management</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Configure ATL, Robotics, AI, STEM, Drone, and custom institutional lab packages and equipment.</p>
+                </div>
+                <a href="{{ url_for('admin_labs') }}" class="card-link" style="margin-top: 1rem;">
+                    Manage Laboratories ({{ total_laboratories }})
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+
+            <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">📑 Lab Setup Inquiries</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Manage institutional bookings, school lab requests, status progression, and internal administrative notes.</p>
+                </div>
+                <a href="{{ url_for('admin_lab_inquiries') }}" class="card-link" style="margin-top: 1rem;">
+                    View Lab Inquiries ({{ total_lab_inquiries }})
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </article>
+
+            <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; border-left: 4px solid #2563eb;">
+                <div>
+                    <h3 style="margin-top: 0; font-size: 1.15rem; color: var(--color-text);">🛠️ Composite Skill Lab (CBSE)</h3>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5;">Manage CBSE Composite Skill Lab turnkey packages, skill sectors, FAQs, CMS content, and institutional enquiries.</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
+                    <a href="{{ url_for('admin_composite_lab') }}" class="card-link" style="flex: 1; text-align: center;">
+                        Enquiries ({{ total_composite_enquiries }}) &rarr;
+                    </a>
+                    <a href="{{ url_for('dashboard_composite_lab') }}" class="card-link" style="background: var(--color-bg, #f8fafc); border: 1px solid var(--color-border, #cbd5e1); color: var(--color-text); text-align: center;">
+                        Dashboard &rarr;
+                    </a>
+                </div>
+            </article>
 
             <article class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
                 <div>

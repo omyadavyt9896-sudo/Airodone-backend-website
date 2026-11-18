@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}CMS Content &amp; Images | Composite Skill Lab Admin{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_composite_lab') }}">Composite Skill Lab</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Landing Page CMS</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>Composite Skill Lab Page Content</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    Customize section headlines, pedagogical copy, CBSE compliance specifications, and upload lab banner images.
+                </p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <a href="{{ url_for('composite_lab') }}" target="_blank" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 0.9rem;">
+                    🌐 View Live Page &rarr;
+                </a>
+                <a href="{{ url_for('admin_composite_lab') }}" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 0.9rem;">
+                    &larr; Back to Enquiries
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% set admin_active = 'composite_lab' %}
+{% include "admin_nav.html" %}
+
+<section class="section" style="padding-top: 1rem; padding-bottom: 4rem;">
+    <div class="container" style="max-width: 1000px; margin: 0 auto;">
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}" style="margin-bottom: 1.5rem; border-radius: 10px;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" enctype="multipart/form-data">
+            
+            <!-- Block 1: Hero Section -->
+            <div class="card" style="padding: 2rem; border-radius: 16px; background: #ffffff; border: 1px solid var(--color-border, #e2e8f0); margin-bottom: 2rem; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+                    <h3 style="margin: 0; font-size: 1.2rem; color: #0f172a;">1. Hero Banner Section</h3>
+                    <span style="font-size: 0.78rem; background: #eff6ff; color: #2563eb; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px;">Top of Page</span>
+                </div>
+
+                {% set h = content.get('hero') %}
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="hero_title" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Main Heading</label>
+                    <input type="text" id="hero_title" name="hero_title" value="{{ h.title if h else 'Composite Skill Lab Setup for CBSE Schools' }}" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                </div>
+
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="hero_subtitle" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Subtitle / Lead Copy</label>
+                    <textarea id="hero_subtitle" name="hero_subtitle" rows="3" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem; font-family: inherit;">{{ h.subtitle if h else 'Empower your students with hands-on technical skills across Electronics, Robotics, AI, AVGC, Fabrication, and Design. A comprehensive, turnkey laboratory solution engineered specifically for CBSE affiliation and NEP 2020 experiential learning standards.' }}</textarea>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem;">
+                    <span style="font-size: 0.85rem; font-weight: 700; color: #334155; display: block; margin-bottom: 0.5rem;">Hero Section Image</span>
+                    
+                    {% if h and h.image_path %}
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">
+                        <img src="{{ image_url(h.image_path) }}" alt="{{ h.image_alt or 'Hero Image' }}" style="width: 120px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1;">
+                        <span style="font-size: 0.82rem; color: #64748b;">Current: {{ h.image_path }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.75rem;">
+                        <div>
+                            <label for="hero_image_file" style="display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 0.25rem;">Upload New Image</label>
+                            <input type="file" id="hero_image_file" name="hero_image_file" accept="image/*" style="font-size: 0.85rem;">
+                        </div>
+                        <div>
+                            <label for="hero_image_preset" style="display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 0.25rem;">Or Static Image Path</label>
+                            <input type="text" id="hero_image_preset" name="hero_image_preset" placeholder="images/services/atl.jpg" style="width: 100%; padding: 0.55rem 0.75rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem;">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="hero_image_alt" style="display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 0.25rem;">Image Alt Text</label>
+                        <input type="text" id="hero_image_alt" name="hero_image_alt" value="{{ h.image_alt if h and h.image_alt else 'CBSE Composite Skill Lab Setup' }}" style="width: 100%; padding: 0.55rem 0.75rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Block 2: What is a Composite Skill Lab? -->
+            <div class="card" style="padding: 2rem; border-radius: 16px; background: #ffffff; border: 1px solid var(--color-border, #e2e8f0); margin-bottom: 2rem; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+                    <h3 style="margin: 0; font-size: 1.2rem; color: #0f172a;">2. What is a Composite Skill Lab?</h3>
+                    <span style="font-size: 0.78rem; background: #e0f2fe; color: #0369a1; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px;">Pedagogy Overview</span>
+                </div>
+
+                {% set w = content.get('what_is') %}
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="what_is_title" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Section Title</label>
+                    <input type="text" id="what_is_title" name="what_is_title" value="{{ w.title if w else 'What is a Composite Skill Lab?' }}" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                </div>
+
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="what_is_body" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Body Text (Paragraphs)</label>
+                    <textarea id="what_is_body" name="what_is_body" rows="4" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem; font-family: inherit;">{{ w.body if w and w.body else 'Under the Central Board of Secondary Education (CBSE) skill education directives aligned with NEP 2020, affiliated schools are encouraged to establish a dedicated Composite Skill Lab. Unlike single-subject science laboratories, a Composite Skill Lab provides a shared, cross-disciplinary space where students engage in vocational and vocational-exploratory modules from Classes VI to XII.' }}</textarea>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem;">
+                    <span style="font-size: 0.85rem; font-weight: 700; color: #334155; display: block; margin-bottom: 0.5rem;">Section Image</span>
+                    
+                    {% if w and w.image_path %}
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">
+                        <img src="{{ image_url(w.image_path) }}" alt="{{ w.image_alt or 'What is Lab Image' }}" style="width: 120px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1;">
+                        <span style="font-size: 0.82rem; color: #64748b;">Current: {{ w.image_path }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label for="what_is_image_file" style="display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 0.25rem;">Upload New Image</label>
+                            <input type="file" id="what_is_image_file" name="what_is_image_file" accept="image/*" style="font-size: 0.85rem;">
+                        </div>
+                        <div>
+                            <label for="what_is_image_preset" style="display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 0.25rem;">Or Static Image Path</label>
+                            <input type="text" id="what_is_image_preset" name="what_is_image_preset" placeholder="images/services/stem.jpg" style="width: 100%; padding: 0.55rem 0.75rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Block 3: CBSE Specifications Section -->
+            <div class="card" style="padding: 2rem; border-radius: 16px; background: #ffffff; border: 1px solid var(--color-border, #e2e8f0); margin-bottom: 2rem; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+                    <h3 style="margin: 0; font-size: 1.2rem; color: #0f172a;">3. CBSE Requirements &amp; Specifications</h3>
+                    <span style="font-size: 0.78rem; background: #fef3c7; color: #b45309; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px;">Compliance</span>
+                </div>
+
+                {% set c = content.get('cbse_specs') %}
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="cbse_specs_title" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Section Title</label>
+                    <input type="text" id="cbse_specs_title" name="cbse_specs_title" value="{{ c.title if c else 'CBSE Requirements & Laboratory Specifications' }}" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                </div>
+
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="cbse_specs_subtitle" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Section Subtitle</label>
+                    <input type="text" id="cbse_specs_subtitle" name="cbse_specs_subtitle" value="{{ c.subtitle if c else 'Structured spatial, electrical, and pedagogical benchmarks recommended for institutional skill labs.' }}" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                </div>
+            </div>
+
+            <!-- Block 4: Turnkey Setup Inclusions -->
+            <div class="card" style="padding: 2rem; border-radius: 16px; background: #ffffff; border: 1px solid var(--color-border, #e2e8f0); margin-bottom: 2rem; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+                    <h3 style="margin: 0; font-size: 1.2rem; color: #0f172a;">4. Turnkey Setup Inclusions</h3>
+                    <span style="font-size: 0.78rem; background: #dcfce7; color: #15803d; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px;">Inclusions</span>
+                </div>
+
+                {% set t = content.get('turnkey') %}
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="turnkey_title" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Section Title</label>
+                    <input type="text" id="turnkey_title" name="turnkey_title" value="{{ t.title if t else 'Complete Turnkey Setup Inclusions' }}" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; position: sticky; bottom: 20px; background: rgba(255,255,255,0.95); backdrop-filter: blur(8px); padding: 1rem; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 8px 25px rgba(0,0,0,0.1);">
+                <a href="{{ url_for('admin_composite_lab') }}" class="btn btn-secondary" style="padding: 0.75rem 1.4rem;">Cancel</a>
+                <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2.2rem; font-weight: 700; font-size: 1rem;">
+                    Save CMS Changes &rarr;
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

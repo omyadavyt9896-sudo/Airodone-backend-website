@@ -187,7 +187,8 @@ def run_tests():
     print("\n--- TEST 7: Existing Functionality & Routes ---")
     routes = [
         ("/", 200),
-        ("/about", 200),
+        ("/about", 404),
+        ("/solutions", 404),
         ("/learn", 200),
         ("/products", 200),
         ("/contact", 200),

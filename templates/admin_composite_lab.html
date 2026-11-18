@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Composite Skill Lab Enquiries | Admin AIRODRONE{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">Composite Skill Lab (CBSE)</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>Composite Skill Lab Enquiries</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    Manage CBSE Composite Skill Lab institutional leads, consultation pipelines, team assignments, and turnkey proposals.
+                </p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <a href="{{ url_for('dashboard_composite_lab') }}" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 0.9rem;">
+                    📊 Analytics Dashboard
+                </a>
+                <a href="{{ url_for('admin_composite_lab_packages') }}" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 0.9rem;">
+                    📦 Packages
+                </a>
+                <a href="{{ url_for('admin_composite_lab_sectors') }}" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 0.9rem;">
+                    🎯 Skill Sectors
+                </a>
+                <a href="{{ url_for('admin_composite_lab_faqs') }}" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 0.9rem;">
+                    ❓ FAQs
+                </a>
+                <a href="{{ url_for('admin_composite_lab_content') }}" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 0.9rem;">
+                    ✏️ CMS Content
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% set admin_active = 'composite_lab' %}
+{% include "admin_nav.html" %}
+
+<section class="section" style="padding-top: 1rem; padding-bottom: 4rem;">
+    <div class="container" style="max-width: 1300px; margin: 0 auto;">
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}" style="margin-bottom: 1.5rem; border-radius: 10px;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Status Filter Pills -->
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+            <a href="{{ url_for('admin_composite_lab', q=search_q, package=current_package, date_from=date_from, date_to=date_to) }}" 
+               class="badge-status" style="text-decoration: none; padding: 0.45rem 0.85rem; border-radius: 20px; font-weight: 700; font-size: 0.85rem; background: {% if not current_status %}#2563eb; color: #fff;{% else %}#f1f5f9; color: #475569;{% endif %}">
+                All Enquiries ({{ total_enquiries }})
+            </a>
+            {% for st in ['New', 'Contacted', 'Consultation Scheduled', 'Proposal Sent', 'Negotiation', 'Converted', 'Rejected'] %}
+            {% set cnt = status_counts.get(st, 0) %}
+            <a href="{{ url_for('admin_composite_lab', status=st, q=search_q, package=current_package, date_from=date_from, date_to=date_to) }}" 
+               class="badge-status" style="text-decoration: none; padding: 0.45rem 0.85rem; border-radius: 20px; font-weight: 700; font-size: 0.85rem; background: {% if current_status == st %}#2563eb; color: #fff;{% else %}#f1f5f9; color: #475569;{% endif %}">
+                {{ st }} ({{ cnt }})
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- Filter & Search Controls Card -->
+        <div class="card" style="padding: 1.5rem; border-radius: 14px; background: #ffffff; border: 1px solid var(--color-border, #e2e8f0); margin-bottom: 1.75rem; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);">
+            <form method="GET" action="{{ url_for('admin_composite_lab') }}" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: flex-end;">
+                
+                <!-- Search Query -->
+                <div>
+                    <label for="q" style="display: block; font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.35rem;">Search</label>
+                    <input type="text" id="q" name="q" value="{{ search_q }}" placeholder="School, Contact, City..." style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem;">
+                </div>
+
+                <!-- Status Filter -->
+                <div>
+                    <label for="status" style="display: block; font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.35rem;">Status</label>
+                    <select id="status" name="status" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem;">
+                        <option value="">All Statuses</option>
+                        {% for st in ['New', 'Contacted', 'Consultation Scheduled', 'Proposal Sent', 'Negotiation', 'Converted', 'Rejected'] %}
+                        <option value="{{ st }}" {% if current_status == st %}selected{% endif %}>{{ st }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Package Filter -->
+                <div>
+                    <label for="package" style="display: block; font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.35rem;">Package</label>
+                    <select id="package" name="package" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem;">
+                        <option value="">All Packages</option>
+                        {% for p_opt in package_options %}
+                        <option value="{{ p_opt }}" {% if current_package == p_opt %}selected{% endif %}>{{ p_opt }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Date From -->
+                <div>
+                    <label for="date_from" style="display: block; font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.35rem;">From Date</label>
+                    <input type="date" id="date_from" name="date_from" value="{{ date_from }}" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem;">
+                </div>
+
+                <!-- Date To -->
+                <div>
+                    <label for="date_to" style="display: block; font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.35rem;">To Date</label>
+                    <input type="date" id="date_to" name="date_to" value="{{ date_to }}" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem;">
+                </div>
+
+                <!-- Actions -->
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="submit" class="btn btn-primary" style="padding: 0.65rem 1.25rem; font-weight: 600; font-size: 0.9rem;">
+                        Filter
+                    </button>
+                    {% if current_status or current_package or search_q or date_from or date_to %}
+                    <a href="{{ url_for('admin_composite_lab') }}" class="btn btn-secondary" style="padding: 0.65rem 0.9rem; font-size: 0.9rem;">
+                        Reset
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- Enquiries Table -->
+        <div class="card" style="padding: 0; border-radius: 14px; overflow: hidden; background: #ffffff; border: 1px solid var(--color-border, #e2e8f0); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                    <thead>
+                        <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: #475569; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            <th style="padding: 1rem 1.25rem;">ID</th>
+                            <th style="padding: 1rem 1.25rem;">Institution &amp; Location</th>
+                            <th style="padding: 1rem 1.25rem;">Contact Person</th>
+                            <th style="padding: 1rem 1.25rem;">Package &amp; Space</th>
+                            <th style="padding: 1rem 1.25rem;">Status</th>
+                            <th style="padding: 1rem 1.25rem;">Assigned To</th>
+                            <th style="padding: 1rem 1.25rem;">Date</th>
+                            <th style="padding: 1rem 1.25rem; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if enquiries %}
+                        {% for enq in enquiries %}
+                        <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;">
+                            <td style="padding: 1rem 1.25rem; font-weight: 700; color: #64748b;">
+                                #{{ enq.id }}
+                            </td>
+                            <td style="padding: 1rem 1.25rem;">
+                                <div style="font-weight: 700; color: #0f172a;">{{ enq.school_name }}</div>
+                                <div style="font-size: 0.8rem; color: #64748b;">
+                                    {{ enq.city }}{% if enq.city and enq.state %}, {% endif %}{{ enq.state }}
+                                    {% if enq.cbse_affiliation_no %}&bull; Affil: {{ enq.cbse_affiliation_no }}{% endif %}
+                                </div>
+                            </td>
+                            <td style="padding: 1rem 1.25rem;">
+                                <div style="font-weight: 600; color: #334155;">{{ enq.contact_person }}</div>
+                                <div style="font-size: 0.8rem; color: #64748b;">{{ enq.designation }}</div>
+                                <div style="font-size: 0.78rem; color: #2563eb;">{{ enq.phone }}</div>
+                            </td>
+                            <td style="padding: 1rem 1.25rem;">
+                                <div style="font-weight: 700; color: #1e293b;">
+                                    {{ enq.preferred_package or 'Not Specified' }}
+                                </div>
+                                <div style="font-size: 0.8rem; color: #64748b;">
+                                    {{ enq.room_size or 'Space TBD' }}
+                                </div>
+                            </td>
+                            <td style="padding: 1rem 1.25rem;">
+                                {% set s_lower = enq.status|lower %}
+                                <span style="display: inline-block; padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700;
+                                    {% if s_lower == 'new' %}background: #e0f2fe; color: #0369a1;
+                                    {% elif s_lower == 'contacted' %}background: #fef3c7; color: #b45309;
+                                    {% elif 'consultation' in s_lower %}background: #ede9fe; color: #6d28d9;
+                                    {% elif 'proposal' in s_lower %}background: #cffafe; color: #0e7490;
+                                    {% elif 'negotiation' in s_lower %}background: #ffedd5; color: #c2410c;
+                                    {% elif 'converted' in s_lower %}background: #dcfce7; color: #15803d;
+                                    {% elif 'rejected' in s_lower %}background: #fee2e2; color: #b91c1c;
+                                    {% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                                    {{ enq.status }}
+                                </span>
+                            </td>
+                            <td style="padding: 1rem 1.25rem; font-size: 0.85rem; color: #475569;">
+                                {{ enq.assigned_to_name or 'Unassigned' }}
+                            </td>
+                            <td style="padding: 1rem 1.25rem; font-size: 0.82rem; color: #64748b; white-space: nowrap;">
+                                {{ enq.created_at[:10] if enq.created_at else '' }}
+                            </td>
+                            <td style="padding: 1rem 1.25rem; text-align: right; white-space: nowrap;">
+                                <a href="{{ url_for('admin_composite_lab_enquiry_detail', enquiry_id=enq.id) }}" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.82rem; font-weight: 600;">
+                                    View &rarr;
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="8" style="padding: 3.5rem 1rem; text-align: center; color: #64748b;">
+                                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔍</div>
+                                <div style="font-size: 1.1rem; font-weight: 600; color: #334155;">No Composite Lab enquiries found</div>
+                                <p style="font-size: 0.9rem; margin-top: 0.25rem;">Adjust search filters or share the landing page URL with prospective schools.</p>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

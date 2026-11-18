@@ -24,11 +24,6 @@
                 <a href="{{ url_for('admin_solutions') }}" class="btn btn-outline" style="display: inline-flex; align-items: center; gap: 0.4rem;">
                     &larr; Back to Solutions
                 </a>
-                {% if solution %}
-                <a href="{{ url_for('solutions') }}#{{ solution.slug }}" target="_blank" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
-                    <span>🌐</span> View on Public Site &rarr;
-                </a>
-                {% endif %}
             </div>
         </div>
     </div>
@@ -88,7 +83,7 @@
                             URL Slug &amp; Section Anchor
                         </label>
                         <input type="text" id="slug" name="slug" value="{{ solution.slug if solution else '' }}" placeholder="e.g. school-programs" style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-size: 0.95rem;">
-                        <small style="color: var(--color-text-muted); font-size: 0.78rem;">Used as <code>#slug</code> anchor on /solutions. Leave blank to generate automatically.</small>
+                        <small style="color: var(--color-text-muted); font-size: 0.78rem;">Used as identifier slug. Leave blank to generate automatically.</small>
                     </div>
 
                     <div>
@@ -179,7 +174,7 @@
                         <span>Active on Website</span>
                     </label>
                     <small style="display: block; color: var(--color-text-muted); font-size: 0.8rem; margin-top: 0.2rem; margin-left: 1.8rem;">
-                        When unchecked, this solution and its items will not appear on the public /solutions page.
+                        When unchecked, this solution and its items will be inactive.
                     </small>
                 </div>
 

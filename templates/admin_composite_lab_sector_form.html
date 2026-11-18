@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if action == 'edit' else 'Add' }} Skill Sector | Composite Skill Lab Admin{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <nav class="course-breadcrumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('admin') }}">Admin</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_composite_lab') }}">Composite Skill Lab</a>
+            <span aria-hidden="true">&rarr;</span>
+            <a href="{{ url_for('admin_composite_lab_sectors') }}">Sectors</a>
+            <span aria-hidden="true">&rarr;</span>
+            <span class="current-breadcrumb">{{ 'Edit Sector' if action == 'edit' else 'New Sector' }}</span>
+        </nav>
+
+        <div class="page-hero-inner" style="margin-top: 0.75rem;">
+            <div>
+                <h1>{{ 'Edit Sector: ' ~ (sector.name if sector else '') if action == 'edit' else 'Add New Skill Sector' }}</h1>
+                <p style="font-size: 1.05rem; max-width: 650px; color: var(--color-text-muted);">
+                    Configure curricular details, CBSE vocational code mapping, and recommended hardware.
+                </p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin_composite_lab_sectors') }}" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 0.9rem;">
+                    &larr; Back to Sectors
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% set admin_active = 'composite_lab' %}
+{% include "admin_nav.html" %}
+
+<section class="section" style="padding-top: 1rem; padding-bottom: 4rem;">
+    <div class="container" style="max-width: 800px; margin: 0 auto;">
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}" style="margin-bottom: 1.5rem; border-radius: 10px;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="card" style="padding: 2.25rem; border-radius: 16px; background: #ffffff; border: 1px solid var(--color-border, #e2e8f0); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);">
+            <form method="POST" enctype="multipart/form-data">
+                
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label for="name" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Sector Name <span style="color: #ef4444;">*</span></label>
+                        <input type="text" id="name" name="name" required value="{{ sector.name if sector else '' }}" placeholder="e.g. Coding &amp; Robotics" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                    </div>
+
+                    <div>
+                        <label for="code" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Internal Code</label>
+                        <input type="text" id="code" name="code" value="{{ sector.code if sector else '' }}" placeholder="e.g. coding_robotics" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label for="icon" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Sector Icon</label>
+                        <select id="icon" name="icon" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                            <option value="cpu" {% if sector and sector.icon == 'cpu' %}selected{% endif %}>⚡ Electronics (cpu)</option>
+                            <option value="bot" {% if sector and sector.icon in ('bot', 'robot') %}selected{% endif %}>🤖 Robotics (bot)</option>
+                            <option value="network" {% if sector and sector.icon in ('network', 'ai') %}selected{% endif %}>🧠 IT / AI (network)</option>
+                            <option value="film" {% if sector and sector.icon in ('film', 'video') %}selected{% endif %}>🎬 Media (film)</option>
+                            <option value="tool" {% if sector and sector.icon in ('tool', 'hammer') %}selected{% endif %}>🔨 Fabrication (tool)</option>
+                            <option value="scissors" {% if sector and sector.icon in ('scissors', 'shirt') %}selected{% endif %}>✂️ Design (scissors)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="cbse_subject_code" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">CBSE Subject Code</label>
+                        <input type="text" id="cbse_subject_code" name="cbse_subject_code" value="{{ sector.cbse_subject_code if sector and sector.cbse_subject_code else '' }}" placeholder="e.g. Sub Code 417 / 801" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                    </div>
+
+                    <div>
+                        <label for="display_order" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Display Order</label>
+                        <input type="number" id="display_order" name="display_order" value="{{ sector.display_order if sector else 1 }}" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="description" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Description</label>
+                    <textarea id="description" name="description" rows="3" placeholder="Summary of learning outcomes and focus areas..." style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem; font-family: inherit;">{{ sector.description if sector else '' }}</textarea>
+                </div>
+
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="equipment_highlights" style="display: block; font-size: 0.88rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Equipment Highlights</label>
+                    <textarea id="equipment_highlights" name="equipment_highlights" rows="3" placeholder="e.g. Arduino UNO kits, breadboards, sensors, multimeters, soldering stations" style="width: 100%; padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem; font-family: inherit;">{{ sector.equipment_highlights if sector and sector.equipment_highlights else '' }}</textarea>
+                </div>
+
+                <div style="margin-bottom: 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem;">
+                    <span style="font-size: 0.88rem; font-weight: 700; color: #334155; display: block; margin-bottom: 0.5rem;">Sector Cover Image</span>
+                    
+                    {% if sector and sector.image_path %}
+                    <div style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 1rem;">
+                        <img src="{{ image_url(sector.image_path) }}" alt="{{ sector.name }}" style="width: 100px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1;">
+                        <span style="font-size: 0.82rem; color: #64748b;">Current: {{ sector.image_path }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label for="image_file" style="display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 0.25rem;">Upload Image File</label>
+                            <input type="file" id="image_file" name="image_file" accept="image/*" style="font-size: 0.85rem;">
+                        </div>
+                        <div>
+                            <label for="image_preset" style="display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 0.25rem;">Or Static Image Path</label>
+                            <input type="text" id="image_preset" name="image_preset" placeholder="images/services/workshop.jpg" style="width: 100%; padding: 0.55rem 0.75rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.92rem; font-weight: 600; color: #1e293b;">
+                        <input type="checkbox" name="is_active" value="1" {% if not sector or sector.is_active %}checked{% endif %} style="width: 18px; height: 18px; accent-color: #2563eb;">
+                        <span>Publish sector live on the website</span>
+                    </label>
+                </div>
+
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 1.5rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                    <a href="{{ url_for('admin_composite_lab_sectors') }}" class="btn btn-secondary" style="padding: 0.75rem 1.4rem;">Cancel</a>
+                    <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.8rem; font-weight: 700;">
+                        {{ 'Update Sector' if action == 'edit' else 'Create Sector' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
